@@ -59,12 +59,14 @@
 `define DataBus 31:0
 `define TagBus 3:0
 `define OpBus 4:0
-`define NameBus 31:0
+`define NameBus 4:0
+
 
 `define regSize 32
 
 `define rsWidth 128
-`define rsSize 4
+`define rsSize 6
 
 `define tagFree 4'b0000
-`define NOP 4'b00000
+
+`define NOP 5'b00000

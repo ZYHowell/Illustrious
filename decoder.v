@@ -6,19 +6,34 @@
 
 module id(
     input wire                  rst,
-    input wire[`InstAddrBus]    pc_i,
-    input wire[`InstBus]        ins_i,
+    input wire[`InstAddrBus]    instPc,
+    input wire[`InstBus]        inst,
+
+    //simply output everything to the dispatcher
+    output wire[`NameBus]       regNameO, 
+    output wire[`NameBus]       regNameT, 
+    output wire[`NameBus]       rdName,
+    output wire[`OpBus]         opCode
+    //Imm
 );
 
-    wire[6:0] opcode = ins_i[6:0];
-    wire[2:0] func3  = ins_i[14:12];
-    wire[6:0] func7  = ins_i[31:25];
+    wire[6:0] opcode 
+    wire[2:0] func3;
+    wire[6:0] func7;
 
-    always @ (*) begin
-        if (rst == `RstEnable) begin
+    assign opcode = inst[6:0];
+    assign func3 = inst[14:12];
+    assign func7 = inst[31:25];
 
-        end else begin
+    assign regNameO = inst[19:15];
+    assign regNameT = inst[24:20];
 
+    always @ (posedge rst) begin
+        
+    end
+
+    always @ (posedge clk) begin
+        begin
             case(opcode)
                 `EXE_LUI_OP:    begin
 
