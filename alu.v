@@ -3,28 +3,33 @@
 module ALU(
     input wire clk, 
     input wire rst, 
-    //from CDB
-    input wire[`TagBus]     CDBTag, 
-    input wire[`DataBus]    CDBData, 
-    //from decoder
+    input wire stall, 
+
+    //from dispatcher
     input wire[`DataBus]    operandO, 
     input wire[`DataBus]    operandT, 
     input wire[`TagBus]     wrtTag, 
+    input wire[`NameBus]    wrtName, 
     input wire[`OpBus]      opCode, 
     //to ROB
-    output wire[`TagBus]    CDBTagW, 
-    output wire[`DataBus]   CDBDataW
+    output wire[`TagBus]    ROBtagW, 
+    output wire[`DataBus]   ROBdataW,
+    output wire[`NameBus]   ROBnameW
+);
 
-)
-    always @ (posedge clk) begin
-        ROBTag <= rsTagW[i];
-        case(rsOp[i]) begin
-            `ADD: ROBData <= rsDataO + rsDataT;
-            `SUB: ROBData <= rsDataO - rsDataT;
+    always @ (posedge clk or posedge rst) begin
+        if (rst) begin
+          ROBtagW <= `tagFree;
+          ROBdataW <= `datafree;
+          ROBnameW <= `nameFree;
+        end else begin
+          ROBtagW <= wrtTag;
+          ROBnameW <= wrtName;
+          case(rstOp[i])
+            `ADD: ROBdataW <= operandO + operandT;
+            `SUB: ROBdataW <= operandO - operandT;
             //...
-            default :;
-        endcase
-        //
-        rsOp[i] <= `NOP;
+          endcase
+        end
     end
 endmodule

@@ -1,23 +1,25 @@
 //
-`define RstEnable 1'b1
-`define RstDisable 1'b0
-`define WriteEnable 1'b1
-`define WriteDisable 1'b0
-`define ReadEnable 1'b1
-`define ReadDisable 1'b0
+`define Enable 1'b1
+`define Disable 1'b0
 `define InstValid 1'b0
 `define InstInvalid 1'b1
+`define NotFree 1'b0
+`define IsFree  1'b1
+`define NoFreeTag 1'b111
+`define ALUtagPrefix 1'b0
+`define LStagPrefix 1'b1
 
 //opcodes
-`define EXE_LUI_OP 7'b0110111
-`define EXE_AUIPC_OP 7'b0010111
-`define EXE_JAL_OP 7'b1101111
-`define EXE_JALR_OP 7'b1100111
-`define EXE_BRANCH_OP 7'b1100011
-`define EXE_LD_OP 7'b0000011
-`define EXE_ST_OP 7'b0100011
-`define EXE_IMM_OP 7'b0010011
-`define EXE_INT_OP 7'b0110011
+`define ClassNOP 3'b0000000
+`define ClassLUI 7'b0110111
+`define ClassAUIPC 7'b0010111
+`define ClassJAL 7'b1101111
+`define ClassJALR 7'b1100111
+`define ClassB 7'b1100011
+`define ClassLD 7'b0000011
+`define ClassST 7'b0100011
+`define ClassRI 7'b0010011
+`define ClassRR 7'b0110011
 
 //funct3 codes
 `define FUN_JALR_OP 3'b000
@@ -58,6 +60,7 @@
 `define DataAddrBus 31:0
 `define DataBus 31:0
 `define TagBus 3:0
+`define TagRootBus 2:0
 `define OpBus 4:0
 `define NameBus 4:0
 
@@ -66,7 +69,38 @@
 
 `define rsWidth 128
 `define rsSize 6
+`define ROBsize 64
 
 `define tagFree 4'b0000
+`define nameFree 5'b00000
+`define dataFree 32'b00000000000000000000000000000000
 
-`define NOP 5'b00000
+`define NOP     5'b00000
+`define LUI     5'b00001
+`define AUIPC   5'b00010
+`define JAL     5'b00011
+`define JALR    5'b00100
+`define BEQ     5'b00101
+`define BNE     5'b00110
+`define BLT     5'b00111 
+`define BGE     5'b01000
+`define BLTU    5'b01001 
+`define BGEU    5'b01010 
+`define LB      5'b01011 
+`define LH      5'b01100 
+`define LW      5'b01101 
+`define LBU     5'b01110 
+`define LHU     5'b01111 
+`define SB      5'b10000 
+`define SH      5'b10001 
+`define SW      5'b10010 
+`define ADD     5'b10011 
+`define SUB     5'b10100 
+`define SLL     5'b10101 
+`define SLT     5'b10110 
+`define SLTU    5'b10111 
+`define XOR     5'b11000 
+`define SRL     5'b11001 
+`define SRA     5'b11010 
+`define OR      5'b11011 
+`define AND     5'b11100 
