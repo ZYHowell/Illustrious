@@ -14,10 +14,10 @@ module fetch(
     //from mem
     input wire[`InstBus] memInst, 
     //to mem_ctrl
-    output wire[`InstAddrBus] PC, 
+    output reg[`InstAddrBus] PC, 
     //to decoder
-    output wire[`InstAddrBus] instAddr, 
-    output wire[`InstBus]   inst
+    output reg[`InstAddrBus] instAddr, 
+    output reg[`InstBus]   inst
 
 );
 

@@ -17,12 +17,12 @@ module BranchRS(
     input wire[`DataBus]        BranchImm, 
     input wire[`InstAddrBus]    BranchPC
     //to branchEx
-    output wire BranchWorkEn, 
-    output wire[`DataBus]       operandO, 
-    output wire[`DataBus]       operandT, 
-    output wire[`DataBus]       imm, 
-    output wire[`OpBus]         opCode, 
-    output wire[`InstAddrBus]   PC, 
+    output reg BranchWorkEn, 
+    output reg[`DataBus]        operandO, 
+    output reg[`DataBus]        operandT, 
+    output reg[`DataBus]        imm, 
+    output reg[`OpBus]          opCode, 
+    output reg[`InstAddrBus]    PC, 
     //to dispatcher
     output wire[`rsSize - 1 : 0] BranchFreeStatus
 );
@@ -44,17 +44,17 @@ module BranchRS(
     assign BranchFreeStatus = empty;
 
     integer i;
-    //deal with rst
-    always @ (posedge rst) begin
-        empty <= {`rsSize{1'b1}};
-        ready <= {`rsSize{1'b0}};
-    end
 
     //check readyState and issue
     always @ (*) begin
-        for (i = 1; i < `rsSize;i = i + 1) begin
+        if (rst) begin
+          empty <= {`rsSize{1'b1}};
+          ready <= {`rsSize{1'b0}};
+        end else begin
+          for (i = 1; i < `rsSize;i = i + 1) begin
             empty[i] = rsOp[i] == `NOP;
             ready[i] = !empty[i] && rsTagO[i] == `freeTag && rsTagT[i] == `freeTag;
+          end
         end
     end
 

@@ -9,13 +9,13 @@ module ALU(
     input wire[`NameBus]    wrtName, 
     input wire[`OpBus]      opCode, 
     //to ROB
-    output wire ROBen, 
-    output wire[`TagBus]    ROBtagW, 
-    output wire[`DataBus]   ROBdataW,
-    output wire[`NameBus]   ROBnameW
+    output reg ROBen, 
+    output reg[`TagBus]     ROBtagW, 
+    output reg[`DataBus]    ROBdataW,
+    output reg[`NameBus]    ROBnameW
     //todo: to PC
-    output wire jumpEn, 
-    output wire[`InstAddrBus] jumpAddr
+    output reg jumpEn, 
+    output reg[`InstAddrBus]  jumpAddr
 );
 
     always @ (*) begin

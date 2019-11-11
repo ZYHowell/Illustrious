@@ -16,10 +16,10 @@ module Regfile(
     input wire [`TagBus]    wrtTagDec, 
     input wire [`NameBus]   wrtNameDec, 
 
-    output wire [`DataBus]  regDataO, 
-    output wire [`TagBus]   regTagO, 
-    output wire [`DataBus]  regDataT, 
-    output wire [`TagBus]   regTagT
+    output reg [`DataBus]   regDataO, 
+    output reg [`TagBus]    regTagO, 
+    output reg [`DataBus]   regDataT, 
+    output reg [`TagBus]    regTagT
 );
     reg [`regSize - 1 : 0] data[`DataBus];
     reg [`regSize - 1 : 0] tag[`TagBus];

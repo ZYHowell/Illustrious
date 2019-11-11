@@ -19,12 +19,12 @@ module ALUrs(
     input wire[`OpBus]      DecOpCode, 
 
     //to ALU
-    output wire ALUworkEn, 
-    output wire[`DataBus]   operandO, 
-    output wire[`DataBus]   operandT,
-    output wire[`TagBus]    wrtTag, 
-    output wire[`NameBus]   wrtName, 
-    output wire[`OpBus]     opCode, 
+    output reg ALUworkEn, 
+    output reg[`DataBus]    operandO, 
+    output reg[`DataBus]    operandT,
+    output reg[`TagBus]     wrtTag, 
+    output reg[`NameBus]    wrtName, 
+    output reg[`OpBus]      opCode, 
     //to dispatcher
     output wire[`rsSize - 1 : 0] ALUfreeStatus
 );

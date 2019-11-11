@@ -11,16 +11,16 @@ module decoder(
     input wire[`InstBus]        inst,
 
     //simply output everything to the dispatcher
-    output wire[`NameBus]       regNameO, 
-    output wire[`NameBus]       regNameT, 
-    output wire[`NameBus]       rdName,
-    output wire[`OpBus]         opCode, 
-    output wire[`OpClassBus]    opClass
-    output wire[`DataBus]       imm, 
-    output wire[`DataBus]       Uimm, 
-    output wire[`DataBus]       Jimm, 
-    output wire[`DataBus]       Simm, 
-    output wire[`DataBus]       Bimm
+    output reg[`NameBus]        regNameO, 
+    output reg[`NameBus]        regNameT, 
+    output reg[`NameBus]        rdName,
+    output reg[`OpBus]          opCode, 
+    output reg[`OpClassBus]     opClass
+    output reg[`DataBus]        imm, 
+    output reg[`DataBus]        Uimm, 
+    output reg[`DataBus]        Jimm, 
+    output reg[`DataBus]        Simm, 
+    output reg[`DataBus]        Bimm
     //Imm
 );
 

@@ -9,8 +9,8 @@ module Branch(
     input wire[`DataBus]    imm, 
     input wire[`DataBus]    PC, 
     //to the PC
-    output wire BranchResultEn, 
-    output wire[`InstAddrBus]   BranchAddr
+    output reg BranchResultEn, 
+    output reg[`InstAddrBus]    BranchAddr
 );
     wire [`InstAddrBus] jmpAddr, nxtAddr;
 

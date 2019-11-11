@@ -9,10 +9,10 @@ module ROB(
     input wire[`DataBus]    ROBdataW, 
     input wire[`NameBus]    ROBnameW, 
     //output
-    output wire             enCDBWrt, 
-    output wire[`NameBus]   CDBwrtName, 
-    output wire[`TagBus]    CDBwrtTag, 
-    output wire[`DataBus]   CDBwrtData
+    output reg enCDBWrt, 
+    output reg[`NameBus]    CDBwrtName, 
+    output reg[`TagBus]     CDBwrtTag, 
+    output reg[`DataBus]    CDBwrtData
 );
     reg [`DataBus] ROBdata[`ROBsize - 1 : 0];
     reg [`TagBus]  ROBtag[`ROBsize - 1 : 0];
