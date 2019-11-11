@@ -1,5 +1,5 @@
 `include "defines.v";
-module LSbuffer(
+module lsBuffer(
     //input from CDB
     input wire             enCDBwrt, 
     input wire[`TagBus]    CDBTag, 

@@ -8,6 +8,9 @@
 `define NoFreeTag 1'b111
 `define ALUtagPrefix 1'b0
 `define LStagPrefix 1'b1
+`define JALRnum 32'b00000000000000000000000000000001;
+//******************12345678901234567890123456789012
+`define PCnext  32'b00000000000000000000000000000100;
 
 //opcodes
 `define ClassNOP 3'b0000000
@@ -64,7 +67,8 @@
 `define OpBus 4:0
 `define NameBus 4:0
 
-
+`define immFillLen 20
+`define UimmFillLen 12
 `define regSize 32
 
 `define rsWidth 128
@@ -74,6 +78,7 @@
 `define tagFree 4'b0000
 `define nameFree 5'b00000
 `define dataFree 32'b00000000000000000000000000000000
+//*******************12345678901234567890123456789012
 
 `define NOP     5'b00000
 `define LUI     5'b00001

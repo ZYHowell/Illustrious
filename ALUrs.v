@@ -16,9 +16,10 @@ module ALUrs(
     input wire[`TagBus]     ALUtagT,
     input wire[`TagBus]     ALUtagW,
     input wire[`NameBus]    ALUnameW,  
-    input wire[`OpBus]      DecopCode, 
+    input wire[`OpBus]      DecOpCode, 
 
     //to ALU
+    output wire ALUworkEn, 
     output wire[`DataBus]   operandO, 
     output wire[`DataBus]   operandT,
     output wire[`TagBus]    wrtTag, 
@@ -31,7 +32,6 @@ module ALUrs(
     reg [`rsSize - 1 : 0] ready;
     reg [`rsSize - 1 : 0] empty;
 
-    wire [`rsSize - 1 : 0] freeRS;
     wire [`rsSize - 1 : 0] issueRS;
 
     reg [`DataBus]  rsDataO[`rsSize - 1:0];
@@ -39,17 +39,17 @@ module ALUrs(
     reg [`TagBus]   rsTagO[`rsSize - 1:0];
     reg [`TagBus]   rsTagT[`rsSize - 1:0];
     reg [`OpBus]    rsOp[`rsSize - 1:0];
-    reg [`TagBus]   rsTagW[`rsSize - 1:0];
+    reg [`TagBus]   rsNameW[`rsSize - 1:0];
 
-    assign freeRS = empty & -empty;
     assign issueRS = ready & -ready;
 
-    assign ALUfreeStatus = freeRS;
+    assign ALUfreeStatus = empty;
 
     integer i;
     //deal with rst
     always @ (posedge rst) begin
-
+        empty <= {`rsSize{1'b1}};
+        ready <= {`rsSize{1'b0}};
     end
 
     //check readyState and issue
@@ -62,7 +62,7 @@ module ALUrs(
 
     //receive boardcast from CDB
     always @ (negedge clk) begin
-        if (CDBTag != `tagFree) begin
+        if (CDBTag != `tagFree && enCDBwrt) begin
             for (i = 0;i < `rsSize;i = i + 1) begin
                 if (!empty[i] && rsTagO[i] == CDBTag) begin
                     rsTagO[i] <= `tagFree;
@@ -76,27 +76,27 @@ module ALUrs(
         end
     end
 
-    //push inst to RS, by freeRS.
+    //push inst to RS, each tag can be assigned to an RS
     always @ (posedge clk) begin
-        for (i = 0;i < `rsSize;i = i + 1) begin
-            if (freeRS == `IsFree << (i - 1)) begin
-                rsOp[i] <= DecopCode;
-                rsDataO[i] <= DecOperandO;
-                rsDataT[i] <= DecOperandT;
-                rsTagO[i] <= DecOpTagO;
-                rsTagT[i] <= DecOpTagT;
-                rsTagW[i] <= DecWrtTag;
-            end
-        end
+      if (ALUen) begin
+        rsOp[rsTagW]    <= DecOpCode;
+        rsDataO[rsTagW] <= DecOperandO;
+        rsDataT[rsTagW] <= DecOperandT;
+        rsTagO[rsTagW]  <= DecOpTagO;
+        rsTagT[rsTagW]  <= DecOpTagT;
+        rsNameW[rsTagW] <= DecWrtTag;
+      end
     end
 
     always @ (posedge clk) begin
         for (i = 0;i < rsSize;i = i + 1) begin
-            if (readyRS == 1'b1 << (i - 1)) begin
+            if (issueRS == 1'b1 << (i - 1)) begin
+                ALUworkEn <= `Enable;
                 operandO <= rsDataO[i];
                 operandT <= rsDataT[i];
                 opCode <= rsOp[i];
-                wrtTag <= rsTagW[i];
+                wrtName <= rsNameW[i];
+                wrtTag <= i;
             end
         end
     end

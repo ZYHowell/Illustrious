@@ -16,6 +16,11 @@ module decoder(
     output wire[`NameBus]       rdName,
     output wire[`OpBus]         opCode, 
     output wire[`OpClassBus]    opClass
+    output wire[`DataBus]       imm, 
+    output wire[`DataBus]       Uimm, 
+    output wire[`DataBus]       Jimm, 
+    output wire[`DataBus]       Simm, 
+    output wire[`DataBus]       Bimm
     //Imm
 );
 
@@ -30,10 +35,16 @@ module decoder(
     assign regNameO = inst[19:15];
     assign regNameT = inst[24:20];
 
+    assign imm = {{`immFillLen{inst[31]}, inst[31:20]}};
+    assign Uimm = {inst[31:12], `UimmFillLen{1'b0}};
+    assign Jimm = {`UimmFillLen{inst[31]}, inst[19:12], inst[20], inst[30:21], 1'b0};
+    assign Simm = {`immFillLen{inst[31]}, inst[31:25], inst[11:7]};
+    assign Bimm = {`immFillLen{inst[31]}, inst[7], inst[30:25], inst[11:8], 1'b0};
+
     always @ (posedge rst) begin
-        regNameO <= nameFree;
-        regNameT <= nameFree;
-        rdName <= nameFree;
+        regNameO <= `nameFree;
+        regNameT <= `nameFree;
+        rdName <= `nameFree;
         opCode <= `NOP;
         noClass <= `ClassNOP;
     end
