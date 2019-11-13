@@ -1,4 +1,4 @@
-`include "defines.v";
+`include "defines.v"
 //maybe for all rs, i need to add a "next data" and "next tag" to prevent some problems waiting to improve.
 module BranchRS(
     input rst, 
@@ -47,55 +47,78 @@ module BranchRS(
 
     //check readyState and issue
     always @ (*) begin
-        if (rst) begin
+        if (rst == `Enable) begin
           empty <= {`rsSize{1'b1}};
           ready <= {`rsSize{1'b0}};
         end else begin
           for (i = 1; i < `rsSize;i = i + 1) begin
             empty[i] = rsOp[i] == `NOP;
-            ready[i] = !empty[i] && rsTagO[i] == `freeTag && rsTagT[i] == `freeTag;
+            ready[i] = !empty[i] && rsTagO[i] == `tagFree && rsTagT[i] == `tagFree;
           end
         end
     end
 
-    //receive boardcast from CDB
-    always @ (negedge clk) begin
-        if (CDBTag != `tagFree && enCDBwrt) begin
+    //receive boardcast from CDB and deal with rst of rs
+    always @ (negedge clk or posedge rst) begin
+        if (rst == `Disable) begin
+          if (CDBTag != `tagFree && enCDBwrt) begin
             for (i = 0;i < `rsSize;i = i + 1) begin
-                if (!empty[i] && rsTagO[i] == CDBTag) begin
-                    rsTagO[i] <= `tagFree;
-                    rsDataO[i] <= CDBData;
-                end
-                if (!empty[i] && rsTagT[i] == CDBTag) begin
-                    rsTagT[i] <= `tagFree;
-                    rsDataT[i] <= CDBData;
-                end
+              if (!empty[i] && rsTagO[i] == CDBTag) begin
+                rsTagO[i] <= `tagFree;
+                rsDataO[i] <= CDBData;
+              end
+              if (!empty[i] && rsTagT[i] == CDBTag) begin
+                rsTagT[i] <= `tagFree;
+                rsDataT[i] <= CDBData;
+              end
             end
+          end
+        end else begin
+          for (i = 0;i < `rsSize;i = i + 1) begin
+            rsDataO[i] <= `dataFree;
+            rsTagO[i] <= `tagFree;
+            rsDataT[i] <= `dataFree;
+            rsTagT[i] <= `tagFree;
+            rsOp[i] <= `NOP;
+            rsImm[i] <= `dataFree;
+            rsPC[i] <= `addrFree;
+          end
         end
     end
 
     //push inst to RS, each tag can be assigned to an RS
     always @ (posedge clk) begin
-      if (BranchEn) begin
-        rsOp[rsTagW]    <= BranchOp;
-        rsDataO[rsTagW] <= BranchOperandO;
-        rsDataT[rsTagW] <= BranchOperandT;
-        rsTagO[rsTagW]  <= BranchTagO;
-        rsTagT[rsTagW]  <= BranchTagT;
-        rsPC[rsTagW]    <= BranchPC;
+      if (rst == `Disable) begin
+        if (BranchEn) begin
+          rsOp[rsTagW]    <= BranchOp;
+          rsDataO[rsTagW] <= BranchOperandO;
+          rsDataT[rsTagW] <= BranchOperandT;
+          rsTagO[rsTagW]  <= BranchTagO;
+          rsTagT[rsTagW]  <= BranchTagT;
+          rsPC[rsTagW]    <= BranchPC;
+        end
       end
     end
 
     always @ (posedge clk) begin
-      for (i = 0;i < rsSize; i = i + 1) begin
-        if (issueRS == 1'b1 << (i - 1)) begin
-          BranchWorkEn <= `Enable;
-          operandO <= rsDataO[i];
-          operandT <= rsDataT[i];
-          imm <= rsImm[i];
-          opCode <= rsOp[i];
-          PC <= rsPC[i];
+      if (rst == `Disable) begin
+        for (i = 0;i < rsSize; i = i + 1) begin
+          if (issueRS == 1'b1 << (i - 1)) begin
+            BranchWorkEn <= `Enable;
+            operandO <= rsDataO[i];
+            operandT <= rsDataT[i];
+            imm <= rsImm[i];
+            opCode <= rsOp[i];
+            PC <= rsPC[i];
+          end
         end
+      end else begin
+        BranchWorkEn <= `Disable;
+        operandO <= `dataFree;
+        operandT <= `dataFree;
+        imm <= `dataFree;
+        opCode <= `NOP;
+        PC <= `dataFree;
       end
     end
 endmodule

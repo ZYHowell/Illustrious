@@ -27,53 +27,49 @@ module Regfile(
     integer i;
     //change tags and datas
     always @ (posedge clk) begin
-        if (rst) begin
-
-            for (i = 0;i < regSize;i = i + 1) begin
-                tag[i] = `tagFree;
-            end
-
-        end else begin
-            if (enCDBWrt) begin
-                if (CDBwrtName) begin
-                    data[CDBwrtName] <= CDBwrtData;
-                    if (CDBwrtTag == tag[CDBwrtName] && CDBwrtTag != wrtTagDec) begin
-                        tag[CDBwrtName] <= `tagFree;
-                    end
-                end
-            end
-
-            if (enWrtDec) begin
-                tag[wrtNameDec] <= wrtTagDec;
-            end
+      if (rst == `Enable) begin
+        for (i = 0;i < regSize;i = i + 1) begin
+          tag[i] = `tagFree;
+          data[i] = `dataFree;
         end
+      end else begin
+        if (enCDBWrt == `Enable) begin
+          if (CDBwrtName) begin
+            data[CDBwrtName] <= CDBwrtData;
+            if (CDBwrtTag == tag[CDBwrtName] && CDBwrtTag != wrtTagDec) 
+              tag[CDBwrtName] <= `tagFree;
+          end
+        end
+
+        if (enWrtDec == `Enable) tag[wrtNameDec] <= wrtTagDec;
+      end
     end
 
     //reg1
     always @ (*) begin
-      if (rst) begin
-        
-
+      if (rst == `Enable) begin
+        regDataO = `dataFree;
+        regTagO = `tagFree; 
       end else if (enWrt && wrtName == regNameO) begin
-          regDataO <= wrtData;
-          regTagO <= `tagFree;
+        regDataO = wrtData;
+        regTagO = `tagFree;
       end else begin
-          regDataO <= data[regNameO];
-          regTagO <= tag[regNameO];
+        regDataO = data[regNameO];
+        regTagO = tag[regNameO];
       end
     end
 
     //reg2
     always @ (*) begin
-        if (rst) begin
-          
-
-        end else if (enWrt && wrtName == regNameT) begin
-            regDataT <= wrtData;
-            regTagT <= `tagFree;
-        end else begin
-            regDataT <= data[regNameT];
-            regTagT <= tag[regNameT];
-        end
+      if (rst == `Enable) begin
+        regDataT = `dataFree;
+        regTagT = `tagFree;
+      end else if (enWrt && wrtName == regNameT) begin
+        regDataT <= wrtData;
+        regTagT <= `tagFree;
+      end else begin
+        regDataT <= data[regNameT];
+        regTagT <= tag[regNameT];
+      end
     end
 endmodule 

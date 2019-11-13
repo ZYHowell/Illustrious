@@ -1,22 +1,23 @@
 `include "defines.v"
 //caution! not test if Status == 0
+//CAUTION! there is a mistake that the input tagW has a prefix(ALU prefix)
 module ALUrs(
     input rst,
     input clk,
     //from CDB
-    input wire             enCDBwrt, 
+    input wire enCDBwrt, 
     input wire[`TagBus]    CDBTag, 
     input wire[`DataBus]   CDBData
     
     //from dispatcher
-    input wire              ALUen, 
-    input wire[`DataBus]    ALUOperandO, 
+    input wire ALUen, 
+    input wire[`DataBus]    ALUoperandO, 
     input wire[`DataBus]    ALUoperandO, 
     input wire[`TagBus]     ALUtagO, 
     input wire[`TagBus]     ALUtagT,
     input wire[`TagBus]     ALUtagW,
     input wire[`NameBus]    ALUnameW,  
-    input wire[`OpBus]      DecOpCode, 
+    input wire[`OpBus]      ALUop, 
 
     //to ALU
     output reg ALUworkEn, 
@@ -46,58 +47,79 @@ module ALUrs(
     assign ALUfreeStatus = empty;
 
     integer i;
-    //deal with rst
-    always @ (posedge rst) begin
-        empty <= {`rsSize{1'b1}};
-        ready <= {`rsSize{1'b0}};
-    end
-
     //check readyState and issue
     always @ (*) begin
+      if (rst == `Enable) begin
+        empty = {`rsSize{1'b1}};
+        ready = {`rsSize{1'b0}};
+      end else begin
         for (i = 1; i < `rsSize;i = i + 1) begin
-            empty[i] = rsOp[i] == `NOP;
-            ready[i] = !empty[i] && rsTagO[i] == `freeTag && rsTagT[i] == `freeTag;
+          empty[i] = rsOp[i] == `NOP;
+          ready[i] = !empty[i] && rsTagO[i] == `tagFree && rsTagT[i] == `tagFree;
         end
+      end
     end
 
     //receive boardcast from CDB
-    always @ (negedge clk) begin
+    always @ (negedge clk or posedge rst) begin
+      if (rst == `Disable) begin
         if (CDBTag != `tagFree && enCDBwrt) begin
-            for (i = 0;i < `rsSize;i = i + 1) begin
-                if (!empty[i] && rsTagO[i] == CDBTag) begin
-                    rsTagO[i] <= `tagFree;
-                    rsDataO[i] <= CDBData;
-                end
-                if (!empty[i] && rsTagT[i] == CDBTag) begin
-                    rsTagT[i] <= `tagFree;
-                    rsDataT[i] <= CDBData;
-                end
+          for (i = 0;i < `rsSize;i = i + 1) begin
+            if (!empty[i] && rsTagO[i] == CDBTag) begin
+              rsTagO[i] <= `tagFree;
+              rsDataO[i] <= CDBData;
             end
+            if (!empty[i] && rsTagT[i] == CDBTag) begin
+              rsTagT[i] <= `tagFree;
+              rsDataT[i] <= CDBData;
+            end
+          end
         end
+      end else begin
+        for (i = 0;i < `rsSize;i = i + 1) begin
+          rsTagO[i] <= `tagFree;
+          rsDataO[i] <= `dataFree;
+          rsTagT[i] <= `tagFree;
+          rsDataT[i] <= `dataFree;
+          rsOp[i] <= `NOP;
+          rsNameW[i] <= `nameFree;
+        end
+      end
     end
 
     //push inst to RS, each tag can be assigned to an RS
     always @ (posedge clk) begin
-      if (ALUen) begin
-        rsOp[rsTagW]    <= DecOpCode;
-        rsDataO[rsTagW] <= DecOperandO;
-        rsDataT[rsTagW] <= DecOperandT;
-        rsTagO[rsTagW]  <= DecOpTagO;
-        rsTagT[rsTagW]  <= DecOpTagT;
-        rsNameW[rsTagW] <= DecWrtTag;
+      if (rst == `Disable) begin
+        if (ALUen) begin
+          rsOp[ALUtagW[`TagRootBus]]    <= ALUop;
+          rsDataO[ALUtagW[`TagRootBus]] <= ALUoperandO;
+          rsDataT[ALUtagW[`TagRootBus]] <= ALUoperandT;
+          rsTagO[ALUtagW[`TagRootBus]]  <= ALUtagO;
+          rsTagT[ALUtagW[`TagRootBus]]  <= ALUtagT;
+          rsNameW[ALUtagW[`TagRootBus]] <= ALUnameW;
+        end
       end
     end
 
     always @ (posedge clk) begin
+      if (rst == `Disable) begin
         for (i = 0;i < rsSize;i = i + 1) begin
-            if (issueRS == 1'b1 << (i - 1)) begin
-                ALUworkEn <= `Enable;
-                operandO <= rsDataO[i];
-                operandT <= rsDataT[i];
-                opCode <= rsOp[i];
-                wrtName <= rsNameW[i];
-                wrtTag <= i;
-            end
+          if (issueRS == 1'b1 << (i - 1)) begin
+            ALUworkEn <= `Enable;
+            operandO <= rsDataO[i];
+            operandT <= rsDataT[i];
+            opCode <= rsOp[i];
+            wrtName <= rsNameW[i];
+            wrtTag <= {`ALUtagPrefix,i};
+          end
         end
+      end else begin
+        ALUworkEn <= `Disable;
+        operandO <= `dataFree;
+        operandT <= `dataFree;
+        opCode <= `NOP;
+        wrtName <= `nameFree;
+        wrtTag <= `tagFree;
+      end
     end
 endmodule

@@ -18,7 +18,7 @@ module Branch(
     assign nxtAddr = PC + `PCnext;
 
     always @ (*) begin
-      if (BranchWorkEn) begin
+      if (BranchWorkEn == `Enable) begin
         case (opCode):
           `BEQ: BranchAddr = operandO == operandT ? jmpAddr : nxtAddr;
           `BNE: BranchAddr = operandO != operandT ? jmpAddr : nxtAddr;

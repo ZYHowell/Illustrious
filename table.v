@@ -6,7 +6,7 @@ module Table(
     input wire[`rsSize - 1] freeStatusLS,
     output wire[`TagRootBus] freeTagALU, 
     output wire[`TagRootBus] freeTagLS
-)
+);
     reg[`TagRootBus] list[`rsSize - 1];
 
     assign freeTagALU = list[freeStatusALU];

@@ -19,45 +19,45 @@ module ALU(
 );
 
     always @ (*) begin
-        if (ALUworkEn) begin
-          ROBen = `Enable;
-          ROBtagW = wrtTag;
-          ROBnameW = wrtName;
-          jumpEn = `Disable;
-          jumpAddr = `addrFree;
-          case(rstOp[i])
-            `ADD: ROBdataW = $signed(operandO) + $signed(operandT);
-            `SUB: ROBdataW = $signed(operandO) - $signed(operandT);
-            `SLL: ROBdataW = 
-            `SLT: ROBdataW = $signed(operandO) < $signed(operandT) ? 1 : 0;
-            `SLTU:ROBdataW = operandO < operandT ? 1 : 0;
-            `XOR: ROBdataW = $signed(operandO) ^ $signed(operandT);
-            `SRL: ROBdataW = 
-            `SRA: ROBdataW = 
-            `OR : ROBdataW = operandO || operandT;
-            `AND: ROBdataW = operandO && operandT;
-            `LUI: ROBdataW = operandT;
-            `JAL: begin
-              jumpEn = `Enable;
-              jumpAddr = $signed(operandO) + $signed(operandT);
-              ROBdataW = $signed(operandT) + 4;
-            end
-            `JALR: begin
-              jumpEn = `Enable;
-              jumpAddr = ($signed(operandO) + $signed(operandT)) & `JALRnum;
-              //...
-            end
-            `AUIPC:ROBdataW = $signed(operandO) + $signed(operandT);
-            default:;
+      if (ALUworkEn == `Enable) begin
+        ROBen = `Enable;
+        ROBtagW = wrtTag;
+        ROBnameW = wrtName;
+        jumpEn = `Disable;
+        jumpAddr = `addrFree;
+        case(rstOp[i])
+          `ADD: ROBdataW = $signed(operandO) + $signed(operandT);
+          `SUB: ROBdataW = $signed(operandO) - $signed(operandT);
+          `SLL: ROBdataW = 
+          `SLT: ROBdataW = $signed(operandO) < $signed(operandT) ? 1 : 0;
+          `SLTU:ROBdataW = operandO < operandT ? 1 : 0;
+          `XOR: ROBdataW = $signed(operandO) ^ $signed(operandT);
+          `SRL: ROBdataW = 
+          `SRA: ROBdataW = 
+          `OR : ROBdataW = operandO || operandT;
+          `AND: ROBdataW = operandO && operandT;
+          `LUI: ROBdataW = operandT;
+          `JAL: begin
+            jumpEn = `Enable;
+            jumpAddr = $signed(operandO) + $signed(operandT);
+            ROBdataW = $signed(operandT) + 4;
+          end
+          `JALR: begin
+            jumpEn = `Enable;
+            jumpAddr = ($signed(operandO) + $signed(operandT)) & `JALRnum;
             //...
-          endcase
-        end else begin
-          ROBen = `Disable;
-          ROBtagW = `tagFree;
-          ROBnameW = `nameFree;
-          ROBdataW = `dataFree;
-          jumpEn = `Disable;
-          jumpAddr = `addrFree;
-        end
+          end
+          `AUIPC:ROBdataW = $signed(operandO) + $signed(operandT);
+          default:;
+          //...
+        endcase
+      end else begin
+        ROBen = `Disable;
+        ROBtagW = `tagFree;
+        ROBnameW = `nameFree;
+        ROBdataW = `dataFree;
+        jumpEn = `Disable;
+        jumpAddr = `addrFree;
+      end
     end
 endmodule

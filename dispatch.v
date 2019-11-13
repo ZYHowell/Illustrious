@@ -74,245 +74,270 @@ module dispatcher(
     assign prefix   = opClass == `ClassLD ? `LStagPrefix : `ALUtagPrefix;
     assign finalTag = {prefix, prefix == `ALUtagPrefix ? ALUfreeTag : LSfreeTag};
     //assign the tag and acquire required datas.
-    always @ (posedge clk) begin
+    always @ (posedge clk or posedge rst) begin
+      if (rst == `Enable) begin
+        ALUen <= `Disable;
+        ALUop <= `NOP;
+        ALUoperandO <= `dataFree;
+        ALUoperandT <= `dataFree;
+        ALUtagO <= `tagFree;
+        ALUtagT <= `tagFree;
+        ALUtagW <= `tagFree;
+        ALUnameW <= `nameFree;
+        BranchEn <= `Disable;
+        BranchOperandO <= `dataFree;
+        BranchOperandT <= `dataFree;
+        BranchTagO <= `tagFree;
+        BranchTagT <= `tagFree;
+        BranchOp <= `NOP;
+        BranchImm <= `dataFree;
+        LSen <= `Disable;
+        LSoperandO <= `dataFree;
+        LSoperandT <= `dataFree;
+        LStagO <= `tagFree;
+        LStagT <= `tagFree;
+        LStagW <= `tagFree;
+        LSnameW <= `nameFree;
+        LSimm <= `dataFree;
+      end else begin
         case(opClass):
-            `ClassLUI: begin
-              ALUen <= `Enable;
-              ALUop <= `opCode;
-              ALUoperandO <= regDataO;
-              ALUoperandT <= Uimm;
-              ALUtagO <= regTagO;
-              ALUtagT <= `tagFree;
-              ALUtagW <= finalTag;
-              ALUnameW <= rdName;
+          `ClassLUI: begin
+            ALUen <= `Enable;
+            ALUop <= `opCode;
+            ALUoperandO <= regDataO;
+            ALUoperandT <= Uimm;
+            ALUtagO <= regTagO;
+            ALUtagT <= `tagFree;
+            ALUtagW <= finalTag;
+            ALUnameW <= rdName;
 
-              BranchEn <= `Disable;
-              BranchOperandO <= `dataFree;
-              BranchOperandT <= `dataFree;
-              BranchTagO <= `tagFree;
-              BranchTagT <= `tagFree;
-              BranchOp <= `NOP;
-              BranchImm <= `dataFree;
-              LSen <= `Disable;
-              LSoperandO <= `dataFree;
-              LSoperandT <= `dataFree;
-              LStagO <= `tagFree;
-              LStagT <= `tagFree;
-              LStagW <= `tagFree;
-              LSnameW <= `nameFree;
-              LSimm <= `dataFree;
-            end
-            `ClassAUIPC: begin
-              ALUen <= `Enable;
-              ALUop <= `opCode;
-              ALUoperandO <= regDataO;
-              ALUoperandT <= Uimm;
-              ALUtagO <= regTagO;
-              ALUtagT <= `tagFree;
-              ALUtagW <= finalTag;
-              ALUnameW <= rdName;
+            BranchEn <= `Disable;
+            BranchOperandO <= `dataFree;
+            BranchOperandT <= `dataFree;
+            BranchTagO <= `tagFree;
+            BranchTagT <= `tagFree;
+            BranchOp <= `NOP;
+            BranchImm <= `dataFree;
+            LSen <= `Disable;
+            LSoperandO <= `dataFree;
+            LSoperandT <= `dataFree;
+            LStagO <= `tagFree;
+            LStagT <= `tagFree;
+            LStagW <= `tagFree;
+            LSnameW <= `nameFree;
+            LSimm <= `dataFree;
+          end
+          `ClassAUIPC: begin
+            ALUen <= `Enable;
+            ALUop <= `opCode;
+            ALUoperandO <= regDataO;
+            ALUoperandT <= Uimm;
+            ALUtagO <= regTagO;
+            ALUtagT <= `tagFree;
+            ALUtagW <= finalTag;
+            ALUnameW <= rdName;
 
-              BranchEn <= `Disable;
-              BranchOperandO <= `dataFree;
-              BranchOperandT <= `dataFree;
-              BranchTagO <= `tagFree;
-              BranchTagT <= `tagFree;
-              BranchOp <= `NOP;
-              BranchImm <= `dataFree;
-              LSen <= `Disable;
-              LSoperandO <= `dataFree;
-              LSoperandT <= `dataFree;
-              LStagO <= `tagFree;
-              LStagT <= `tagFree;
-              LStagW <= `tagFree;
-              LSnameW <= `nameFree;
-              LSimm <= `dataFree;
-            end
-            `ClassJAL: begin
-              ALUen <= `Enable;
-              ALUop <= `opCode;
-              ALUoperandO <= regDataO;
-              ALUoperandT <= Jimm;
-              ALUtagO <= regTagO;
-              ALUtagT <= `tagFree;
-              ALUtagW <= finalTag;
-              ALUnameW <= rdName;
+            BranchEn <= `Disable;
+            BranchOperandO <= `dataFree;
+            BranchOperandT <= `dataFree;
+            BranchTagO <= `tagFree;
+            BranchTagT <= `tagFree;
+            BranchOp <= `NOP;
+            BranchImm <= `dataFree;
+            LSen <= `Disable;
+            LSoperandO <= `dataFree;
+            LSoperandT <= `dataFree;
+            LStagO <= `tagFree;
+            LStagT <= `tagFree;
+            LStagW <= `tagFree;
+            LSnameW <= `nameFree;
+            LSimm <= `dataFree;
+          end
+          `ClassJAL: begin
+            ALUen <= `Enable;
+            ALUop <= `opCode;
+            ALUoperandO <= regDataO;
+            ALUoperandT <= Jimm;
+            ALUtagO <= regTagO;
+            ALUtagT <= `tagFree;
+            ALUtagW <= finalTag;
+            ALUnameW <= rdName;
 
-              BranchEn <= `Disable;
-              BranchOperandO <= `dataFree;
-              BranchOperandT <= `dataFree;
-              BranchTagO <= `tagFree;
-              BranchTagT <= `tagFree;
-              BranchOp <= `NOP;
-              BranchImm <= `dataFree;
-              LSen <= `Disable;
-              LSoperandO <= `dataFree;
-              LSoperandT <= `dataFree;
-              LStagO <= `tagFree;
-              LStagT <= `tagFree;
-              LStagW <= `tagFree;
-              LSnameW <= `nameFree;
-              LSimm <= `dataFree;
-            end
-            `ClassJALR: begin
-              ALUen <= `Enable;
-              ALUop <= `opCode;
-              ALUoperandO <= regDataO;
-              ALUoperandT <= imm;
-              ALUtagO <= regTagO;
-              ALUtagT <= `tagFree;
-              ALUtagW <= finalTag;
-              ALUnameW <= rdName;
+            BranchEn <= `Disable;
+            BranchOperandO <= `dataFree;
+            BranchOperandT <= `dataFree;
+            BranchTagO <= `tagFree;
+            BranchTagT <= `tagFree;
+            BranchOp <= `NOP;
+            BranchImm <= `dataFree;
+            LSen <= `Disable;
+            LSoperandO <= `dataFree;
+            LSoperandT <= `dataFree;
+            LStagO <= `tagFree;
+            LStagT <= `tagFree;
+            LStagW <= `tagFree;
+            LSnameW <= `nameFree;
+            LSimm <= `dataFree;
+          end
+          `ClassJALR: begin
+            ALUen <= `Enable;
+            ALUop <= `opCode;
+            ALUoperandO <= regDataO;
+            ALUoperandT <= imm;
+            ALUtagO <= regTagO;
+            ALUtagT <= `tagFree;
+            ALUtagW <= finalTag;
+            ALUnameW <= rdName;
 
-              BranchEn <= `Disable;
-              BranchOperandO <= `dataFree;
-              BranchOperandT <= `dataFree;
-              BranchTagO <= `tagFree;
-              BranchTagT <= `tagFree;
-              BranchOp <= `NOP;
-              BranchImm <= `dataFree;
-              LSen <= `Disable;
-              LSoperandO <= `dataFree;
-              LSoperandT <= `dataFree;
-              LStagO <= `tagFree;
-              LStagT <= `tagFree;
-              LStagW <= `tagFree;
-              LSnameW <= `nameFree;
-              LSimm <= `dataFree;
-            end
-            `ClassB:    begin
-              ALUen <= `Disable;
-              ALUop <= `NOP;
-              ALUoperandO <= `dataFree;
-              ALUoperandT <= `dataFree;
-              ALUtagO <= `tagFree;
-              ALUtagT <= `tagFree;
-              ALUtagW <= `tagFree;
-              ALUnameW <= `nameFree;
+            BranchEn <= `Disable;
+            BranchOperandO <= `dataFree;
+            BranchOperandT <= `dataFree;
+            BranchTagO <= `tagFree;
+            BranchTagT <= `tagFree;
+            BranchOp <= `NOP;
+            BranchImm <= `dataFree;
+            LSen <= `Disable;
+            LSoperandO <= `dataFree;
+            LSoperandT <= `dataFree;
+            LStagO <= `tagFree;
+            LStagT <= `tagFree;
+            LStagW <= `tagFree;
+            LSnameW <= `nameFree;
+            LSimm <= `dataFree;
+          end
+          `ClassB:    begin
+            ALUen <= `Disable;
+            ALUop <= `NOP;
+            ALUoperandO <= `dataFree;
+            ALUoperandT <= `dataFree;
+            ALUtagO <= `tagFree;
+            ALUtagT <= `tagFree;
+            ALUtagW <= `tagFree;
+            ALUnameW <= `nameFree;
 
-              BranchEn <= `Enable;
-              BranchOperandO <= regDataO;
-              BranchOperandT <= regDataT;
-              BranchTagO <= regTagO;
-              BranchTagT <= regTagT;
-              BranchOp <= opCode;
-              BranchImm <= Bimm;
+            BranchEn <= `Enable;
+            BranchOperandO <= regDataO;
+            BranchOperandT <= regDataT;
+            BranchTagO <= regTagO;
+            BranchTagT <= regTagT;
+            BranchOp <= opCode;
+            BranchImm <= Bimm;
 
-              LSen <= `Disable;
-              LSoperandO <= `dataFree;
-              LSoperandT <= `dataFree;
-              LStagO <= `tagFree;
-              LStagT <= `tagFree;
-              LStagW <= `tagFree;
-              LSnameW <= `nameFree;
-              LSimm <= `dataFree;
-            end
-            `ClassLD:   begin
-              ALUen <= `Disable;
-              ALUop <= `NOP;
-              ALUoperandO <= `dataFree;
-              ALUoperandT <= `dataFree;
-              ALUtagO <= `tagFree;
-              ALUtagT <= `tagFree;
-              ALUtagW <= `tagFree;
-              ALUnameW <= `nameFree;
-              BranchEn <= `Disable;
-              BranchOperandO <= `dataFree;
-              BranchOperandT <= `dataFree;
-              BranchTagO <= `tagFree;
-              BranchTagT <= `tagFree;
-              BranchOp <= `NOP;
-              BranchImm <= `dataFree;
+            LSen <= `Disable;
+            LSoperandO <= `dataFree;
+            LSoperandT <= `dataFree;
+            LStagO <= `tagFree;
+            LStagT <= `tagFree;
+            LStagW <= `tagFree;
+            LSnameW <= `nameFree;
+            LSimm <= `dataFree;
+          end
+          `ClassLD:   begin
+            ALUen <= `Disable;
+            ALUop <= `NOP;
+            ALUoperandO <= `dataFree;
+            ALUoperandT <= `dataFree;
+            ALUtagO <= `tagFree;
+            ALUtagT <= `tagFree;
+            ALUtagW <= `tagFree;
+            ALUnameW <= `nameFree;
+            BranchEn <= `Disable;
+            BranchOperandO <= `dataFree;
+            BranchOperandT <= `dataFree;
+            BranchTagO <= `tagFree;
+            BranchTagT <= `tagFree;
+            BranchOp <= `NOP;
+            BranchImm <= `dataFree;
 
-              LSen <= `Enable;
-              LSoperandO <= regDataO;
-              LSoperandT <= `dataFree;
-              LStagO <= regTagO;
-              LStagT <= `tagFree;
-              LStagW <= finalTag;
-              LSnameW <= rdName;
-              LSimm <= imm;
-            end
-            `ClassST:   begin
-              ALUen <= `Disable;
-              ALUop <= `NOP;
-              ALUoperandO <= `dataFree;
-              ALUoperandT <= `dataFree;
-              ALUtagO <= `tagFree;
-              ALUtagT <= `tagFree;
-              ALUtagW <= `tagFree;
-              ALUnameW <= `nameFree;
-              BranchEn <= `Disable;
-              BranchOperandO <= `dataFree;
-              BranchOperandT <= `dataFree;
-              BranchTagO <= `tagFree;
-              BranchTagT <= `tagFree;
-              BranchOp <= `NOP;
-              BranchImm <= `dataFree;
+            LSen <= `Enable;
+            LSoperandO <= regDataO;
+            LSoperandT <= `dataFree;
+            LStagO <= regTagO;
+            LStagT <= `tagFree;
+            LStagW <= finalTag;
+            LSnameW <= rdName;
+            LSimm <= imm;
+          end
+          `ClassST:   begin
+            ALUen <= `Disable;
+            ALUop <= `NOP;
+            ALUoperandO <= `dataFree;
+            ALUoperandT <= `dataFree;
+            ALUtagO <= `tagFree;
+            ALUtagT <= `tagFree;
+            ALUtagW <= `tagFree;
+            ALUnameW <= `nameFree;
+            BranchEn <= `Disable;
+            BranchOperandO <= `dataFree;
+            BranchOperandT <= `dataFree;
+            BranchTagO <= `tagFree;
+            BranchTagT <= `tagFree;
+            BranchOp <= `NOP;
+            BranchImm <= `dataFree;
 
-              LSen <= `Enable;
-              LSoperandO <= regDataO;
-              LSoperandT <= regDataT;
-              LStagO <= regTagO;
-              LStagT <= regTagT;
-              LStagW <= `tagFree;
-              LSnameW <= `nameFree;
-              LSimm <= Simm;
-            end
-            `ClassRI:   begin
-              ALUen <= `Enable;
-              ALUop <= `opCode;
-              ALUoperandO <= regDataO;
-              ALUoperandT <= imm;
-              ALUtagO <= regTagO;
-              ALUtagT <= `tagFree;
-              ALUtagW <= finalTag;
-              ALUnameW <= rdName;
+            LSen <= `Enable;
+            LSoperandO <= regDataO;
+            LSoperandT <= regDataT;
+            LStagO <= regTagO;
+            LStagT <= regTagT;
+            LStagW <= `tagFree;
+            LSnameW <= `nameFree;
+            LSimm <= Simm;
+          end
+          `ClassRI:   begin
+            ALUen <= `Enable;
+            ALUop <= `opCode;
+            ALUoperandO <= regDataO;
+            ALUoperandT <= imm;
+            ALUtagO <= regTagO;
+            ALUtagT <= `tagFree;
+            ALUtagW <= finalTag;
+            ALUnameW <= rdName;
 
-              BranchEn <= `Disable;
-              BranchOperandO <= `dataFree;
-              BranchOperandT <= `dataFree;
-              BranchTagO <= `tagFree;
-              BranchTagT <= `tagFree;
-              BranchOp <= `NOP;
-              BranchImm <= `dataFree;
-              LSen <= `Disable;
-              LSoperandO <= `dataFree;
-              LSoperandT <= `dataFree;
-              LStagO <= `tagFree;
-              LStagT <= `tagFree;
-              LStagW <= `tagFree;
-              LSnameW <= `nameFree;
-              LSimm <= `dataFree;
-            end
-            `ClassRR:   begin
-              ALUen <= `Enable;
-              ALUop <= `opCode;
-              ALUoperandO <= regDataO;
-              ALUoperandT <= regDataT;
-              ALUtagO <= regtagO;
-              ALUtagT <= regtagT;
-              ALUtagW <= finalTag;
-              ALUnameW <= rdName;
+            BranchEn <= `Disable;
+            BranchOperandO <= `dataFree;
+            BranchOperandT <= `dataFree;
+            BranchTagO <= `tagFree;
+            BranchTagT <= `tagFree;
+            BranchOp <= `NOP;
+            BranchImm <= `dataFree;
+            LSen <= `Disable;
+            LSoperandO <= `dataFree;
+            LSoperandT <= `dataFree;
+            LStagO <= `tagFree;
+            LStagT <= `tagFree;
+            LStagW <= `tagFree;
+            LSnameW <= `nameFree;
+            LSimm <= `dataFree;
+          end
+          `ClassRR:   begin
+            ALUen <= `Enable;
+            ALUop <= `opCode;
+            ALUoperandO <= regDataO;
+            ALUoperandT <= regDataT;
+            ALUtagO <= regtagO;
+            ALUtagT <= regtagT;
+            ALUtagW <= finalTag;
+            ALUnameW <= rdName;
 
-              BranchEn <= `Disable;
-              BranchOperandO <= `dataFree;
-              BranchOperandT <= `dataFree;
-              BranchTagO <= `tagFree;
-              BranchTagT <= `tagFree;
-              BranchOp <= `NOP;
-              BranchImm <= `dataFree;
-              LSen <= `Disable;
-              LSoperandO <= `dataFree;
-              LSoperandT <= `dataFree;
-              LStagO <= `tagFree;
-              LStagT <= `tagFree;
-              LStagW <= `tagFree;
-              LSnameW <= `nameFree;
-              LSimm <= `dataFree;
-            end
-            default:;
+            BranchEn <= `Disable;
+            BranchOperandO <= `dataFree;
+            BranchOperandT <= `dataFree;
+            BranchTagO <= `tagFree;
+            BranchTagT <= `tagFree;
+            BranchOp <= `NOP;
+            BranchImm <= `dataFree;
+            LSen <= `Disable;
+            LSoperandO <= `dataFree;
+            LSoperandT <= `dataFree;
+            LStagO <= `tagFree;
+            LStagT <= `tagFree;
+            LStagW <= `tagFree;
+            LSnameW <= `nameFree;
+            LSimm <= `dataFree;
+          end
+          default:;
         endcase
+      end
     end
-
 endmodule

@@ -24,36 +24,46 @@ module ROB(
     reg [`ROBsize - 1 : 0] readyStatus;
     wire [`ROBsize - 1 : 0] readyROB;
 
-    assign freeROB = freeStatus & (-freeStatus);
+    assign freeROB  = freeStatus & (-freeStatus);
     assign readyROB = readyStatus & (-readyStatus);
 
-    always @(*) begin
-      if (ROBenW) begin
-        for (i = 0; i < `ROBsize;i = i + 1) begin
-          if (freeROB == 1'b1 << (i - 1)) begin
-            ROBname[i] = ROBnameW;
-            ROBtag[i] =ROBtagW;
-            ROBdata[i] = ROBdataW;
-          end
-        end
-      end
+    always @ (*) begin
+      if (rst == `Disable) begin
+        if (ROBenW) begin
+          for (i = 0; i < `ROBsize;i = i + 1)
+            if (freeROB == 1'b1 << (i - 1)) begin
+              ROBname[i] =  ROBnameW;
+              ROBtag[i]  =  ROBtagW;
+              ROBdata[i] =  ROBdataW;
+            end else;
+        end else;
+      end else;
     end
 
     integer i;
     always @(*) begin
-      for (i = 0;i < `ROBsize;i = i + 1) begin
-        freeStatus[i] = ROBname[i] == `nameFree;
-        readyStatus[i] = ROBname[i] ~= `nameFree;
-        //readyStatus[i] = BranchTag[i] == `tagFree;
-      end
+      if (rst == `Disable) begin
+        for (i = 0;i < `ROBsize;i = i + 1) begin
+          freeStatus[i] = ROBname[i] == `nameFree;
+          readyStatus[i] = ROBname[i] ~= `nameFree;
+          //readyStatus[i] = BranchTag[i] == `tagFree;
+        end
+      end else;
     end
 
     always @(posedge clk or posedge rst) begin
-      if (rst) begin
-        enCDBWrt <= `WrtDisable;
-        CDBwrtName <= `nameFree;
-        CDBwrtTag <= `tagFree;
-        CDBwrtData <= `dataFree;
+      if (rst == `Enable) begin
+        enCDBWrt    <= `WrtDisable;
+        CDBwrtName  <= `nameFree;
+        CDBwrtTag   <= `tagFree;
+        CDBwrtData  <= `dataFree;
+        freeStatus  <= {`ROBsize{1'b0}};
+        readyStatus <= {`ROBsize{1'b0}};
+        for (i = 0;i < `ROBsize;i = i + 1) begin
+          ROBdata[i]  = `dataFree;
+          ROBtag[i]   = `tagFree;
+          ROBname[i]  = `nameFree;
+        end
       end
       else begin
         enCDBWrt <= `WrtEnable;
