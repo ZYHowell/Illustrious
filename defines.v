@@ -5,12 +5,21 @@
 `define InstInvalid 1'b1
 `define NotFree 1'b0
 `define IsFree  1'b1
+`define NotUsing 1'b0
+`define IsUsing 1'b1
+`define MemRead 1'b1
+`define MemWrite 1'b0
 `define NoFreeTag 1'b111
 `define ALUtagPrefix 1'b0
 `define LStagPrefix 1'b1
-`define JALRnum 32'b00000000000000000000000000000001;
+`define JALRnum 32'h00000001;
 //******************12345678901234567890123456789012
-`define PCnext  32'b00000000000000000000000000000100;
+`define PCnext  32'h00000004;
+`define Read 1'b0
+`define Write 1'b1
+`define FinalStage 2'b11
+`define instPort 1'b0
+`define LSport 1'b1
 
 //opcodes
 `define ClassNOP 3'b0000000
@@ -58,6 +67,7 @@
 `define FUN_SPECIAL2_OP 7'b0100000 
 
 //
+`define AddrBus 31:0
 `define InstAddrBus 31:0
 `define InstBus 31:0
 `define DataAddrBus 31:0
@@ -66,6 +76,8 @@
 `define TagRootBus 2:0
 `define OpBus 4:0
 `define NameBus 4:0
+`define RAMBus 7:0
+`define StageBus 1:0
 
 `define immFillLen 20
 `define UimmFillLen 12
@@ -77,8 +89,10 @@
 
 `define tagFree 4'b0000
 `define nameFree 5'b00000
-`define dataFree 32'b00000000000000000000000000000000
-//*******************12345678901234567890123456789012
+`define dataFree 32'h00000000
+`define addrFree 32'h00000000
+//*******************12345678
+`define RAMdataFree 8'b00000000
 
 `define NOP     5'b00000
 `define LUI     5'b00001

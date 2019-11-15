@@ -34,11 +34,11 @@ module decoder(
 
 
     always @ (posedge clk) begin
-      imm = {{`immFillLen{inst[31]}, inst[31:20]}};
-      Uimm = {inst[31:12], `UimmFillLen{1'b0}};
-      Jimm = {`UimmFillLen{inst[31]}, inst[19:12], inst[20], inst[30:21], 1'b0};
-      Simm = {`immFillLen{inst[31]}, inst[31:25], inst[11:7]};
-      Bimm = {`immFillLen{inst[31]}, inst[7], inst[30:25], inst[11:8], 1'b0};
+      imm <= {{`immFillLen{inst[31]}, inst[31:20]}};
+      Uimm <= {inst[31:12], `UimmFillLen{1'b0}};
+      Jimm <= {`UimmFillLen{inst[31]}, inst[19:12], inst[20], inst[30:21], 1'b0};
+      Simm <= {`immFillLen{inst[31]}, inst[31:25], inst[11:7]};
+      Bimm <= {`immFillLen{inst[31]}, inst[7], inst[30:25], inst[11:8], 1'b0};
       if (rst == `Enable) begin
         regNameO <= `nameFree;
         regNameT <= `nameFree;
