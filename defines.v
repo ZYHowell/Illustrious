@@ -17,7 +17,6 @@
 `define PCnext  32'h00000004;
 `define Read 1'b0
 `define Write 1'b1
-`define FinalStage 2'b11
 `define instPort 1'b0
 `define LSport 1'b1
 

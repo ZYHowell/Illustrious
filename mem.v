@@ -13,6 +13,7 @@ module mem(
     input wire dataEn, 
     input wire LSRW, //always 0 for read and 1 for write
     input wire[`DataAddrBus]    dataAddr,
+    input wire[1:0]             LSlen, 
     input wire[`DataBus]        Sdata, 
       //is DataFree when it is read
     output reg LOutEn, 
@@ -31,6 +32,7 @@ module mem(
     reg             WaitingRW[1:0];
     //Waiting[0]:inst, Waiting[1]:LS
     reg [`AddrBus]  WaitingAddr[1:0];
+    reg [1:0]       WaitingLen[1:0];
     reg [`DataBus]  WaitingData;
     //only Save can put something here
     
@@ -40,6 +42,7 @@ module mem(
     reg [`AddrBus]  AddrPlatform;
     reg [`DataBus]  DataPlatformR;
     reg [`RAMBus]   DataPlatformW[3:0];
+    reg [1:0]       Lens;
 
     assign instFree = status == `IsFree || Waiting[`instPort] == `NotUsing;
     assign LSfree = status == `IsFree || Waiting[`LSport] == `NotUsing;
@@ -55,12 +58,14 @@ module mem(
           Waiting[i] <= `NotUsing;
           WaitingRW[i] <= `Read;
           WaitingAddr[i] <= `addrFree;
-          DataPlatform[i] <= `dataFree;
+          WaitingLen[i] <= 2'b00;
         end
         WaitingData <= `dataFree;
         RW <= `Read;
         stage <= 2'b00;
         AddrPlatform <= `addrFree;
+        DataPlatformR <= `dataFree;
+        DataPlatformW <= `dataFree;
 
         //output
         instOutEn <= `Disable;
@@ -70,11 +75,14 @@ module mem(
         RWstate <= `Read;
         WrtData <= `RAMdataFree;
       end else begin
+        instOutEn <= `Disable;
+        LOutEn <= `Disable;
         //input and fill in
         if (instEn == `Enable && Waiting[`instPort] == `NotUsing) begin
           Waiting[`instPort] <= `IsUsing;
           WaitingAddr[`instPort] <= instAddr;
           WaitingRW[`instPort] <= `Read;
+          WaitingLen[`instPort] <= 2'b11;
         end
         //input and fill in
         if (dataEn == `Enable && Waiting[`LSport] == `NotUsing) begin
@@ -82,6 +90,7 @@ module mem(
           WaitingAddr[`LSport] <= dataAddr;
           WaitingRW[`LSport] <= LSRW;
           WaitingData <= Sdata;
+          WaitingLen[`LSport] <= LSlen;
         end
 
         case (status)
@@ -94,6 +103,7 @@ module mem(
               DataPlatformR <= `dataFree;
               DataPlatformW <= Sdata;
               AddrPlatform <= dataAddr;
+              Lens <= LSlen;
               stage <= 2'b00;
               status <= `NotFree;
               Port <= `LSport;
@@ -102,11 +112,13 @@ module mem(
               WaitingRW[`LSport] <= `Read;
               WaitingAddr[`LSport] <= `addrFree;
               WaitingData <= `dataFree;
+              WaitingLen[`LSport] <= 2'b00;
             end else if (instEn == `Enable)begin
               RW <= `Read;
               DataPlatformR <= `dataFree;
               DataPlatformW <= `dataFree;
               AddrPlatform <= instAddr;
+              Lens <= 2'b11;
               stage <= 2'b00;
               status <= `NotFree;
               Port <= `instPort;
@@ -114,6 +126,7 @@ module mem(
               Waiting[`instPort] <= `NotUsing;
               WaitingRW[`instPort] <= `Read;
               WaitingAddr[`instPort] <= `addrFree;
+              WaitingLen[`instPort] <= 2'b00;
             end else begin
               status <= `IsFree;
             end
@@ -125,16 +138,21 @@ module mem(
               2'b10: DataPlatformR[23:16] <= ReadData;
               2'b11: DataPlatformR[31:24] <= ReadData;
             endcase
-            if (stage == `FinalStage) begin
+            if (stage == Lens) begin
+              if (Port == `instPort) begin
+                inst <= DataPlatformR;
+              end else begin
+                Ldata <= DataPlatformR;
+              end
+              //the port not read should remains, instead of make it dataFree;
               instOutEn <= Port == `instPort;
-              inst <= Port == `instPort ? DataPlatformR : `dataFree;
               LSoutEn <= Port == `LSport;
-              Ldata <= Port == `Lport ? DataPlatformR : `dataFree;
               if (Waiting[`LSport] == `Enable) begin
                 RW <= WaitingRW[`LSport];
                 DataPlatformR <= `dataFree;
                 DataPlatformW <= WaitingData;
                 AddrPlatform <= WaitingAddr[`LSport];
+                Lens <= WaitingLens[`LSport];
                 stage <= 2'b00;
                 status <= `NotFree;
                 Port <= `LSport;
@@ -143,11 +161,13 @@ module mem(
                 WaitingRW[`LSport] <= `Read;
                 WaitingAddr[`LSport] <= `addrFree;
                 WaitingData <= `dataFree;
+                WaitingLen[`LSport] <= 2'b00;
               end else if (Waiting[`instPort] == `Enable) begin
                 RW <= WaitingRW[`instPort];
                 DataPlatformR <= `dataFree;
                 DataPlatformW <= `dataFree;
                 AddrPlatform <= WaitingAddr[`instPort];
+                Lens <= WaitingLens[`instPort];
                 stage <= 2'b00;
                 status <= `NotFree;
                 Port <= `instPort;
@@ -155,11 +175,13 @@ module mem(
                 Waiting[`instPort] <= `NotUsing;
                 WaitingRW[`instPort] <= `Read;
                 WaitingAddr[`instPort] <= `addrFree;
+                WaitingLen[`instPort] <= 2'b00;
               end else if (dataEn == `Enable) begin
                 RW <= LSRW;
                 DataPlatformR <= `dataFree;
                 DataPlatformW <= Sdata;
                 AddrPlatform <= dataAddr;
+                Lens <= LSlen;
                 stage <= 2'b00;
                 status <= `NotFree;
                 Port <= `LSport;
@@ -168,11 +190,13 @@ module mem(
                 WaitingRW[`LSport] <= `Read;
                 WaitingAddr[`LSport] <= `addrFree;
                 WaitingData <= `dataFree;
+                WaitingLen[`LSport] <= 2'b00;
               end else if (instEn == `Enable) begin
                 RW <= `Read;
                 DataPlatformR <= `dataFree;
                 DataPlatformW <= `dataFree;
                 AddrPlatform <= instAddr;
+                Lens <= 2'b11;
                 stage <= 2'b00;
                 status <= `NotFree;
                 Port <= `instPort;
@@ -180,6 +204,7 @@ module mem(
                 Waiting[`instPort] <= `NotUsing;
                 WaitingRW[`instPort] <= `Read;
                 WaitingAddr[`instPort] <= `addrFree;
+                WaitingLen[`instPort] <= 2'b00;
               end else begin
                 stage <= 2'b00;
                 status <= `IsFree;

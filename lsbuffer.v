@@ -18,7 +18,7 @@ module lsBuffer(
     input wire[`DataBus]        LSimm, 
     //from the LS
     input wire LSreadEn, 
-    //to branchEx
+    //to LS
     output reg LSworkEn, 
     output reg[`DataBus]        operandO, 
     output reg[`DataBus]        operandT,

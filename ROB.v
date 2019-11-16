@@ -8,6 +8,8 @@ module ROB(
     input wire[`TagBus]     ROBtagW, 
     input wire[`DataBus]    ROBdataW, 
     input wire[`NameBus]    ROBnameW, 
+    //input from LS
+    
     //output
     output reg enCDBWrt, 
     output reg[`NameBus]    CDBwrtName, 

@@ -11,22 +11,103 @@ module fetch(
     input wire enBranch, 
     input wire[`InstAddrBus] BranchAddr,
 
-    //from mem
+    //to decoder
+    output reg DecEn, 
+    output reg[`InstAddrBus] PC, 
+    output reg[`InstBus]   inst, 
+    //with mem
     input wire memInstFree, 
     input wire memInstOutEn, 
     input wire[`InstBus] memInst, 
-    //to mem_ctrl
-    output reg[`InstAddrBus] PC, 
-    //to decoder
-    output reg[`InstAddrBus] instAddr, 
-    output reg[`InstBus]   inst
-    //to mem
+
     output reg instEn, 
-    output ret[`InstAddrBus]
+    output reg[`InstAddrBus] instAddr
 );
-    always @(*) begin
+    localparam StatusFree = 2'b00;
+    localparam StatusWork = 2'b01;
+    localparam StatusWaitBJ = 2'b10;
+    localparam StatusStall = 2'b11;
+
+    reg[1:0] status;
+    wire isBJ;
+
+    assign isBJ = memInst[6];
+
+    always @(posedge clk or posedge clk) begin
       if (rst == `Enable) begin
-        ret <= 
+        status <= `IsFree;
+        instEn <= `Disable;
+        instAddr <= `addrFree;
+        DecEn <= `Disable;
+        PC <= `addrFree;
+        inst <= `dataFree;
+      end else begin
+        case(status)
+          StatusFree: begin
+            DecEn <= `Disable;
+            instEn <= `Enable;
+            instAddr <= instAddr;
+            status <= StatusWork;
+          end
+          StatusWork: begin
+            if (memInstOutEn) begin
+              if (!stall) begin
+                DecEn <= `Enable;
+                PC <= instAddr;
+                inst <= memInst;
+                if (isBJ) begin
+                  instEn <= `Disable;
+                  instAddr <= instAddr;
+                  status <= StatusWaitBJ;
+                end else begin
+                  instEn <= `Enable;
+                  instAddr <= instAddr + 4;
+                  status <= StatusWork;
+                end
+              end else begin
+                instEn <= `Disable;
+                status <= StatusStall;
+              end
+            end else begin
+              DecEn <= `Disable;
+              PC <= instAddr;
+              inst <= `dataFree;
+              instEn <= `Disable;
+              instAddr <= instAddr;
+              status <= StatusWork;
+            end
+          end
+          StatusWaitBJ: begin
+            if (!stall) begin
+              DecEn <= `Disable;
+            end
+            if (enJump) begin
+              instAddr <= JumpAddr;
+              instEn <= `Enable;
+              status <= StatusWork;
+            end else if (enBranch) begin
+              instAddr <= BranchAddr;
+              instEn <= `Enable;
+              status <= StatusWork;
+            end else begin
+              instEn <= `Disable;
+              instAddr <= instAddr;
+              status <= StatusWaitBJ;
+            end
+          end
+          StatusStall: begin
+            if (stall) begin
+              status <= StatusStall;
+              instEn <= `Disable;
+            end else begin
+              DecEn <= `Enable;
+              PC <= instAddr;
+              inst <= memInst;
+              //when stalls, the meminst won't change(because instEn is disable), 
+              //so when the stall ends, it returns the correct answer. 
+            end
+          end
+        endcase
       end
     end
 
