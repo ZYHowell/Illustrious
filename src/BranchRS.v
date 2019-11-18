@@ -15,7 +15,7 @@ module BranchRS(
     input wire[`TagBus]         BranchTagT, 
     input wire[`OpBus]          BranchOp, 
     input wire[`DataBus]        BranchImm, 
-    input wire[`InstAddrBus]    BranchPC
+    input wire[`InstAddrBus]    BranchPC, 
     //to branchEx
     output reg BranchWorkEn, 
     output reg[`DataBus]        operandO, 

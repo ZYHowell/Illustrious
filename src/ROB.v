@@ -14,7 +14,8 @@ module ROB(
     output reg enCDBWrt, 
     output reg[`NameBus]    CDBwrtName, 
     output reg[`TagBus]     CDBwrtTag, 
-    output reg[`DataBus]    CDBwrtData
+    output reg[`DataBus]    CDBwrtData, 
+    output reg[`ROBsize - 1 : 0] ROBfreeStatus
 );
     reg [`DataBus] ROBdata[`ROBsize - 1 : 0];
     reg [`TagBus]  ROBtag[`ROBsize - 1 : 0];

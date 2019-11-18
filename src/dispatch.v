@@ -9,6 +9,7 @@ module dispatcher(
     input wire[`NameBus]        rdName,
     input wire[`OpBus]          opCode,
     input wire[`OpClassBus]     opClass,
+    input wire[`InstAddrBus]    instAddr,
     input wire[`DataBus]        imm, 
     input wire[`DataBus]        Uimm, 
     input wire[`DataBus]        Jimm, 
@@ -37,6 +38,7 @@ module dispatcher(
     output reg[`TagBus]         ALUtagW, 
     output reg[`NameBus]        ALUnameW, 
     output reg[`OpBus]          ALUop, 
+    output reg[`InstAddrBus]    ALUaddr, 
     //to BranchRS
     output reg BranchEn, 
     output reg[`DataBus]        BranchOperandO, 
@@ -45,6 +47,7 @@ module dispatcher(
     output reg[`TagBus]         BranchTagT, 
     output reg[`OpBus]          BranchOp, 
     output reg[`DataBus]        BranchImm, 
+    output reg[`InstAddrBus]    BranchAddr, 
     //to LSbuffer
     output reg LSen, 
     output reg[`DataBus]        LSoperandO, 
@@ -52,8 +55,9 @@ module dispatcher(
     output reg[`TagBus]         LStagO, 
     output reg[`TagBus]         LStagT,
     output reg[`OpBus]          LStagW, 
-    output reg[`NameBus]        ALUnameW, 
-    output reg[`DataBus]        LSimm
+    output reg[`NameBus]        LSnameW, 
+    output reg[`DataBus]        LSimm, 
+    output reg[`OpBus]          LSop
 
 );
     wire [`TagRootBus] ALUfreeTag;
@@ -73,6 +77,8 @@ module dispatcher(
     //choose the correct and avaliable tag
     assign prefix   = opClass == `ClassLD ? `LStagPrefix : `ALUtagPrefix;
     assign finalTag = {prefix, prefix == `ALUtagPrefix ? ALUfreeTag : LSfreeTag};
+    assign ALUaddr = instAddr;
+    assign BranchAddr = instAddr;
     //assign the tag and acquire required datas.
     always @ (posedge clk or posedge rst) begin
       if (rst == `Enable) begin
@@ -99,6 +105,7 @@ module dispatcher(
         LStagW <= `tagFree;
         LSnameW <= `nameFree;
         LSimm <= `dataFree;
+        LSop <= `NOP;
       end else begin
         case(opClass):
           `ClassLUI: begin
@@ -126,6 +133,7 @@ module dispatcher(
             LStagW <= `tagFree;
             LSnameW <= `nameFree;
             LSimm <= `dataFree;
+            LSop <= `NOP;
           end
           `ClassAUIPC: begin
             ALUen <= `Enable;
@@ -152,6 +160,7 @@ module dispatcher(
             LStagW <= `tagFree;
             LSnameW <= `nameFree;
             LSimm <= `dataFree;
+            LSop <= `NOP;
           end
           `ClassJAL: begin
             ALUen <= `Enable;
@@ -178,6 +187,7 @@ module dispatcher(
             LStagW <= `tagFree;
             LSnameW <= `nameFree;
             LSimm <= `dataFree;
+            LSop <= `NOP;
           end
           `ClassJALR: begin
             ALUen <= `Enable;
@@ -204,6 +214,7 @@ module dispatcher(
             LStagW <= `tagFree;
             LSnameW <= `nameFree;
             LSimm <= `dataFree;
+            LSop <= `NOP;
           end
           `ClassB:    begin
             ALUen <= `Disable;
@@ -231,6 +242,7 @@ module dispatcher(
             LStagW <= `tagFree;
             LSnameW <= `nameFree;
             LSimm <= `dataFree;
+            LSop <= `NOP;
           end
           `ClassLD:   begin
             ALUen <= `Disable;
@@ -257,6 +269,7 @@ module dispatcher(
             LStagW <= finalTag;
             LSnameW <= rdName;
             LSimm <= imm;
+            LSop <= opCode;
           end
           `ClassST:   begin
             ALUen <= `Disable;
@@ -283,6 +296,7 @@ module dispatcher(
             LStagW <= `tagFree;
             LSnameW <= `nameFree;
             LSimm <= Simm;
+            LSop <= opCode;
           end
           `ClassRI:   begin
             ALUen <= `Enable;
@@ -309,6 +323,7 @@ module dispatcher(
             LStagW <= `tagFree;
             LSnameW <= `nameFree;
             LSimm <= `dataFree;
+            LSop <= `NOP;
           end
           `ClassRR:   begin
             ALUen <= `Enable;
@@ -335,6 +350,7 @@ module dispatcher(
             LStagW <= `tagFree;
             LSnameW <= `nameFree;
             LSimm <= `dataFree;
+            LSop <= `NOP;
           end
           default:;
         endcase

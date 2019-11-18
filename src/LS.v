@@ -3,7 +3,6 @@
 module LS(
     input wire clk, 
     input wire rst, 
-    input wire stall, 
 
     //from lsbuffer
     input wire LSworkEn, 
@@ -20,7 +19,7 @@ module LS(
     //with mem
     input wire LOutEn, 
     input wire[`DataBus]  Ldata, 
-    input reg LSfree, 
+    input wire LSfree, 
 
     output reg dataEn, 
     output reg LSRW, 

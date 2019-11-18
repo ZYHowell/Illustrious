@@ -8,6 +8,7 @@ module ALU(
     input wire[`TagBus]     wrtTag, 
     input wire[`NameBus]    wrtName, 
     input wire[`OpBus]      opCode, 
+    input wire[`InstAddrBus]instAddr, 
     //to ROB
     output reg ROBen, 
     output reg[`TagBus]     ROBtagW, 

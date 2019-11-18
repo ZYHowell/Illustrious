@@ -7,7 +7,8 @@
 module decoder(
     input wire                  clk, 
     input wire                  rst,
-    input wire[`InstAddrBus]    instPc,
+    input wire                  DecEn, 
+    input wire[`InstAddrBus]    instPC,
     input wire[`InstBus]        inst,
 
     //simply output everything to the dispatcher
@@ -15,7 +16,8 @@ module decoder(
     output reg[`NameBus]        regNameT, 
     output reg[`NameBus]        rdName,
     output reg[`OpBus]          opCode, 
-    output reg[`OpClassBus]     opClass
+    output reg[`OpClassBus]     opClass, 
+    output reg[`InstAddrBus]    instAddr, 
     output reg[`DataBus]        imm, 
     output reg[`DataBus]        Uimm, 
     output reg[`DataBus]        Jimm, 
@@ -31,7 +33,7 @@ module decoder(
     assign opType = inst[6:0];
     assign func3 = inst[14:12];
     assign func7 = inst[31:25];
-
+    assign instAddr = instPC;
 
     always @ (posedge clk) begin
       imm <= {{`immFillLen{inst[31]}, inst[31:20]}};
@@ -45,7 +47,7 @@ module decoder(
         rdName <= `nameFree;
         opCode <= `NOP;
         opClass <= `ClassNOP;
-      end else begin
+      end else if (DecEn) begin
         opClass <= opType;
         regNameO = inst[19:15];
         regNameT <= inst[24:20];
@@ -131,6 +133,12 @@ module decoder(
             end
             default:;
         endcase
+      end else begin
+        regNameO <= `nameFree;
+        regNameT <= `nameFree;
+        rdName <= `nameFree;
+        opCode <= `NOP;
+        opClass <= `ClassNOP;
       end
     end
 

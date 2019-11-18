@@ -12,12 +12,13 @@ module ALUrs(
     //from dispatcher
     input wire ALUen, 
     input wire[`DataBus]    ALUoperandO, 
-    input wire[`DataBus]    ALUoperandO, 
+    input wire[`DataBus]    ALUoperandT, 
     input wire[`TagBus]     ALUtagO, 
     input wire[`TagBus]     ALUtagT,
     input wire[`TagBus]     ALUtagW,
     input wire[`NameBus]    ALUnameW,  
     input wire[`OpBus]      ALUop, 
+    input wire[`InstAddrBus]ALUaddr, 
 
     //to ALU
     output reg ALUworkEn, 
@@ -26,6 +27,7 @@ module ALUrs(
     output reg[`TagBus]     wrtTag, 
     output reg[`NameBus]    wrtName, 
     output reg[`OpBus]      opCode, 
+    output reg[`InstAddrBus]instAddr,
     //to dispatcher
     output wire[`rsSize - 1 : 0] ALUfreeStatus
 );
@@ -41,6 +43,7 @@ module ALUrs(
     reg [`TagBus]   rsTagT[`rsSize - 1:0];
     reg [`OpBus]    rsOp[`rsSize - 1:0];
     reg [`TagBus]   rsNameW[`rsSize - 1:0];
+    reg [`InstAddrBus] rsPC[`rsSize - 1:0];
 
     assign issueRS = ready & -ready;
 
@@ -83,6 +86,7 @@ module ALUrs(
           rsDataT[i] <= `dataFree;
           rsOp[i] <= `NOP;
           rsNameW[i] <= `nameFree;
+          rsPC[i] <= `addrFree;
         end
       end
     end
@@ -97,6 +101,7 @@ module ALUrs(
           rsTagO[ALUtagW[`TagRootBus]]  <= ALUtagO;
           rsTagT[ALUtagW[`TagRootBus]]  <= ALUtagT;
           rsNameW[ALUtagW[`TagRootBus]] <= ALUnameW;
+          rsPC[ALUtagW[`TagRootBus]]  <= ALUaddr;
         end
       end
     end
@@ -111,6 +116,7 @@ module ALUrs(
             opCode <= rsOp[i];
             wrtName <= rsNameW[i];
             wrtTag <= {`ALUtagPrefix,i};
+            instAddr <= rsPC[i];
           end
         end
       end else begin
