@@ -14,20 +14,20 @@ module LS(
     input wire[`OpBus]          opCode, 
 
     //to lsbuffer
-    output reg LSreadEn, 
+    // output reg LSreadEn, 
 
     //with mem
     input wire LOutEn, 
     input wire[`DataBus]  Ldata, 
-    input wire LSfree, 
+    input wire LSfree//, 
 
-    output reg dataEn, 
-    output reg LSRW, 
-    output reg[`DataAddrBus] dataAddr,
-    output reg[1:0] LSlen, 
-    output reg[`DataBus]  Sdata
-    //to ROB
-    output reg LS
+    // output reg dataEn, 
+    // output reg LSRW, 
+    // output reg[`DataAddrBus] dataAddr,
+    // output reg[1:0] LSlen, 
+    // output reg[`DataBus]  Sdata
+    // //to ROB
+    // output reg LSROBen
 );
     reg status;
 endmodule

@@ -48,7 +48,7 @@ module ROB(
       if (rst == `Disable) begin
         for (i = 0;i < `ROBsize;i = i + 1) begin
           freeStatus[i] = ROBname[i] == `nameFree;
-          readyStatus[i] = ROBname[i] ~= `nameFree;
+          readyStatus[i] = ROBname[i] != `nameFree;
           //readyStatus[i] = BranchTag[i] == `tagFree;
         end
       end else;
@@ -56,7 +56,7 @@ module ROB(
 
     always @(posedge clk or posedge rst) begin
       if (rst == `Enable) begin
-        enCDBWrt    <= `WrtDisable;
+        enCDBWrt    <= `Disable;
         CDBwrtName  <= `nameFree;
         CDBwrtTag   <= `tagFree;
         CDBwrtData  <= `dataFree;
@@ -69,7 +69,7 @@ module ROB(
         end
       end
       else begin
-        enCDBWrt <= `WrtEnable;
+        enCDBWrt <= `Enable;
         for (i = 0;i < `ROBsize;i = i + 1) begin
           if (readyROB == 1'b1 << i) begin
             CDBwrtName <= ROBname[i];

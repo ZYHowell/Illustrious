@@ -90,19 +90,19 @@ module BranchRS(
     always @ (posedge clk) begin
       if (rst == `Disable) begin
         if (BranchEn) begin
-          rsOp[rsTagW]    <= BranchOp;
-          rsDataO[rsTagW] <= BranchOperandO;
-          rsDataT[rsTagW] <= BranchOperandT;
-          rsTagO[rsTagW]  <= BranchTagO;
-          rsTagT[rsTagW]  <= BranchTagT;
-          rsPC[rsTagW]    <= BranchPC;
+          rsOp[0]    <= BranchOp;
+          rsDataO[0] <= BranchOperandO;
+          rsDataT[0] <= BranchOperandT;
+          rsTagO[0]  <= BranchTagO;
+          rsTagT[0]  <= BranchTagT;
+          rsPC[0]    <= BranchPC;
         end
       end
     end
 
     always @ (posedge clk) begin
       if (rst == `Disable) begin
-        for (i = 0;i < rsSize; i = i + 1) begin
+        for (i = 0;i < `rsSize; i = i + 1) begin
           if (issueRS == 1'b1 << (i - 1)) begin
             BranchWorkEn <= `Enable;
             operandO <= rsDataO[i];

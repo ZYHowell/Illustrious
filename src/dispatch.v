@@ -3,6 +3,8 @@
 //CAUTION! THE TABLE IS BETTER TO BE PUT IN CPU RANTHER THAN DISPATCHER
 
 module dispatcher(
+    input wire clk, 
+    input wire rst,
     //from decoder
     input wire[`NameBus]        regNameO, 
     input wire[`NameBus]        regNameT, 
@@ -66,21 +68,14 @@ module dispatcher(
     wire [`TagBus]      finalTag;
     wire                prefix;
     //get the avaliable tag. 
-    //IN FACT, THIS SHOULD BE PUT IN CPU RATHER THAN DISPATCHER
-    Table freetag(
-        .rst(rst),
-        .freeStatusALU(ALUfreeStatus), 
-        .freeStatusLS(LSfreeStatus),
-        .freeTagALU(ALUfreeTag), 
-        .freeTagLS(LSfreeTag)
-    );
     //choose the correct and avaliable tag
     assign prefix   = opClass == `ClassLD ? `LStagPrefix : `ALUtagPrefix;
     assign finalTag = {prefix, prefix == `ALUtagPrefix ? ALUfreeTag : LSfreeTag};
-    assign ALUaddr = instAddr;
-    assign BranchAddr = instAddr;
+
     //assign the tag and acquire required datas.
     always @ (posedge clk or posedge rst) begin
+      ALUaddr <= instAddr;
+      BranchAddr <= instAddr;
       if (rst == `Enable) begin
         ALUen <= `Disable;
         ALUop <= `NOP;
@@ -107,10 +102,10 @@ module dispatcher(
         LSimm <= `dataFree;
         LSop <= `NOP;
       end else begin
-        case(opClass):
+        case(opClass)
           `ClassLUI: begin
             ALUen <= `Enable;
-            ALUop <= `opCode;
+            ALUop <= opCode;
             ALUoperandO <= regDataO;
             ALUoperandT <= Uimm;
             ALUtagO <= regTagO;
@@ -137,7 +132,7 @@ module dispatcher(
           end
           `ClassAUIPC: begin
             ALUen <= `Enable;
-            ALUop <= `opCode;
+            ALUop <= opCode;
             ALUoperandO <= regDataO;
             ALUoperandT <= Uimm;
             ALUtagO <= regTagO;
@@ -164,7 +159,7 @@ module dispatcher(
           end
           `ClassJAL: begin
             ALUen <= `Enable;
-            ALUop <= `opCode;
+            ALUop <= opCode;
             ALUoperandO <= regDataO;
             ALUoperandT <= Jimm;
             ALUtagO <= regTagO;
@@ -191,7 +186,7 @@ module dispatcher(
           end
           `ClassJALR: begin
             ALUen <= `Enable;
-            ALUop <= `opCode;
+            ALUop <= opCode;
             ALUoperandO <= regDataO;
             ALUoperandT <= imm;
             ALUtagO <= regTagO;
@@ -300,7 +295,7 @@ module dispatcher(
           end
           `ClassRI:   begin
             ALUen <= `Enable;
-            ALUop <= `opCode;
+            ALUop <= opCode;
             ALUoperandO <= regDataO;
             ALUoperandT <= imm;
             ALUtagO <= regTagO;
@@ -327,11 +322,11 @@ module dispatcher(
           end
           `ClassRR:   begin
             ALUen <= `Enable;
-            ALUop <= `opCode;
+            ALUop <= opCode;
             ALUoperandO <= regDataO;
             ALUoperandT <= regDataT;
-            ALUtagO <= regtagO;
-            ALUtagT <= regtagT;
+            ALUtagO <= regTagO;
+            ALUtagT <= regTagT;
             ALUtagW <= finalTag;
             ALUnameW <= rdName;
 

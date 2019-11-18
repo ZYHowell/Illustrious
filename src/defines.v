@@ -9,19 +9,19 @@
 `define IsUsing 1'b1
 `define MemRead 1'b1
 `define MemWrite 1'b0
-`define NoFreeTag 1'b111
+`define NoFreeTag 3'b111
 `define ALUtagPrefix 1'b0
 `define LStagPrefix 1'b1
 `define JALRnum 32'h00000001;
 //******************12345678901234567890123456789012
-`define PCnext  32'h00000004;
+`define PCnext  32'b00000000000000000000000000000100;
 `define Read 1'b0
 `define Write 1'b1
 `define instPort 1'b0
 `define LSport 1'b1
 
 //opcodes
-`define ClassNOP 3'b0000000
+`define ClassNOP 7'b0000000
 `define ClassLUI 7'b0110111
 `define ClassAUIPC 7'b0010111
 `define ClassJAL 7'b1101111
@@ -77,6 +77,7 @@
 `define NameBus 4:0
 `define RAMBus 7:0
 `define StageBus 1:0
+`define OpClassBus 6:0
 
 `define immFillLen 20
 `define UimmFillLen 12

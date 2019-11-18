@@ -28,7 +28,7 @@ module Regfile(
     //change tags and datas
     always @ (posedge clk) begin
       if (rst == `Enable) begin
-        for (i = 0;i < regSize;i = i + 1) begin
+        for (i = 0;i < `regSize;i = i + 1) begin
           tag[i] = `tagFree;
           data[i] = `dataFree;
         end
@@ -50,8 +50,8 @@ module Regfile(
       if (rst == `Enable) begin
         regDataO = `dataFree;
         regTagO = `tagFree; 
-      end else if (enWrt && wrtName == regNameO) begin
-        regDataO = wrtData;
+      end else if (enCDBWrt && CDBwrtName == regNameO) begin
+        regDataO = CDBwrtData;
         regTagO = `tagFree;
       end else begin
         regDataO = data[regNameO];
@@ -64,8 +64,8 @@ module Regfile(
       if (rst == `Enable) begin
         regDataT = `dataFree;
         regTagT = `tagFree;
-      end else if (enWrt && wrtName == regNameT) begin
-        regDataT <= wrtData;
+      end else if (enCDBWrt && CDBwrtName == regNameT) begin
+        regDataT <= CDBwrtData;
         regTagT <= `tagFree;
       end else begin
         regDataT <= data[regNameT];

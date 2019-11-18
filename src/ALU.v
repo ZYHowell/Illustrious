@@ -13,7 +13,7 @@ module ALU(
     output reg ROBen, 
     output reg[`TagBus]     ROBtagW, 
     output reg[`DataBus]    ROBdataW,
-    output reg[`NameBus]    ROBnameW
+    output reg[`NameBus]    ROBnameW,
     //todo: to PC
     output reg jumpEn, 
     output reg[`InstAddrBus]  jumpAddr
@@ -26,15 +26,15 @@ module ALU(
         ROBnameW = wrtName;
         jumpEn = `Disable;
         jumpAddr = `addrFree;
-        case(rstOp[i])
+        case(opCode)
           `ADD: ROBdataW = $signed(operandO) + $signed(operandT);
           `SUB: ROBdataW = $signed(operandO) - $signed(operandT);
-          `SLL: ROBdataW = 
+          `SLL: ROBdataW = operandO << operandT[4:0];
           `SLT: ROBdataW = $signed(operandO) < $signed(operandT) ? 1 : 0;
           `SLTU:ROBdataW = operandO < operandT ? 1 : 0;
           `XOR: ROBdataW = $signed(operandO) ^ $signed(operandT);
-          `SRL: ROBdataW = 
-          `SRA: ROBdataW = 
+          `SRL: ROBdataW = operandO >> operandT[4:0];
+          `SRA: ROBdataW = $signed(operandO) >>> operandT[4:0];
           `OR : ROBdataW = operandO || operandT;
           `AND: ROBdataW = operandO && operandT;
           `LUI: ROBdataW = operandT;
@@ -46,7 +46,7 @@ module ALU(
           `JALR: begin
             jumpEn = `Enable;
             jumpAddr = ($signed(operandO) + $signed(operandT)) & `JALRnum;
-            //...
+            ROBdataW = instAddr + 4;
           end
           `AUIPC:ROBdataW = $signed(operandO) + $signed(operandT);
           default:;

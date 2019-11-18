@@ -92,20 +92,20 @@ module lsBuffer(
     always @ (posedge clk) begin
       if (rst == `Disable) begin
         if (LSen) begin
-          rsOp[rsTagW[`TagRootBus]]     <= LSop;
-          rsDataO[rsTagW[`TagRootBus]]  <= LSoperandO;
-          rsDataT[rsTagW[`TagRootBus]]  <= LSoperandT;
-          rsTagO[rsTagW[`TagRootBus]]   <= LStagO;
-          rsTagT[rsTagW[`TagRootBus]]   <= LStagT;
-          rsNameW[rsTagW[`TagRootBus]]  <= LSnameW;
-          rsImm[rsTagW[`TagRootBus]]    <= LSimm;
+          rsOp[LStagW[`TagRootBus]]     <= LSop;
+          rsDataO[LStagW[`TagRootBus]]  <= LSoperandO;
+          rsDataT[LStagW[`TagRootBus]]  <= LSoperandT;
+          rsTagO[LStagW[`TagRootBus]]   <= LStagO;
+          rsTagT[LStagW[`TagRootBus]]   <= LStagT;
+          rsNameW[LStagW[`TagRootBus]]  <= LSnameW;
+          rsImm[LStagW[`TagRootBus]]    <= LSimm;
         end
       end
     end
 
     always @ (posedge clk) begin
       if (rst == `Disable && LSreadEn == `Enable) begin
-        for (i = 0;i < rsSize;i = i + 1) begin
+        for (i = 0;i < `rsSize;i = i + 1) begin
           if (issueRS == 1'b1 << (i - 1)) begin
             LSworkEn <= `Enable;
             operandO <= rsDataO[i];

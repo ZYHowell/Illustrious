@@ -1,5 +1,6 @@
 // RISCV32I CPU top module
 // port modification allowed for debugging purposes
+`include "defines.v"
 
 module cpu(
     input  wire                 clk_in,			// system clock signal
@@ -171,7 +172,7 @@ module cpu(
     .Bimm(DecBimm)
   );
 
-  Table table(
+  Table Table(
     .rst(rst_in), 
     .freeStatusALU(), 
     .freeStatusLS(),

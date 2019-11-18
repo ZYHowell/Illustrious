@@ -7,7 +7,7 @@ module ALUrs(
     //from CDB
     input wire enCDBwrt, 
     input wire[`TagBus]    CDBTag, 
-    input wire[`DataBus]   CDBData
+    input wire[`DataBus]   CDBData, 
     
     //from dispatcher
     input wire ALUen, 
@@ -108,7 +108,7 @@ module ALUrs(
 
     always @ (posedge clk) begin
       if (rst == `Disable) begin
-        for (i = 0;i < rsSize;i = i + 1) begin
+        for (i = 0;i < `rsSize;i = i + 1) begin
           if (issueRS == 1'b1 << (i - 1)) begin
             ALUworkEn <= `Enable;
             operandO <= rsDataO[i];
