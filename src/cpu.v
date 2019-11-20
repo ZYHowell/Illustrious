@@ -1,6 +1,21 @@
 // RISCV32I CPU top module
 // port modification allowed for debugging purposes
 `include "defines.v"
+`include "ALU.v"
+`include "ALUrs.v"
+`include "Branch.v"
+`include "Branchrs.v"
+`include "decoder.v"
+`include "defines.v"
+`include "dispatch.v"
+`include "fetch.v"
+`include "LS.v"
+`include "lsbuffer.v"
+`include "mem.v"
+`include "ram.v"
+`include "regfile.v"
+`include "ROB.v"
+`include "table.v"
 
 module cpu(
     input  wire                 clk_in,			// system clock signal
@@ -96,59 +111,88 @@ module cpu(
     wire[`NameBus] ALUROBnameW;
     wire jumpEn;
     wire [`InstAddrBus] jumpAddr;
-    //
+
+    //output of BranchRS
+    wire BranchWorkEn;
+    wire[`DataBus] BranchOperandO, BranchOperandT, BranchImm;
+    wire[`OpBus]  BranchOp;
+    wire[`InstAddrBus] BranchPC;
+    wire[`rsSize - 1 : 0] BranchFreeStatus;
+
+    //output of Branch 
+    wire BranchEn;
+    wire[`InstAddrBus]  BranchAddr;
+
+    //output of LSbuffer
+    wire LSworkEn;
+    wire[`DataBus] LSoperandO, LSoperandT, LSimm;
+    wire[`TagBus] LSwrtTag;
+    wire[`NameBus]  LSwrtName;
+    wire[`OpBus]  LSop;
+    wire[`rsSize - 1 : 0] LSfreeStatus;
+
+    //output of LS
+    wire LSunwork;
+    wire dataEn, LSRW;
+    wire [`DataAddrBus] dataAddr;
+    wire [1:0] LSlen;
+    wire [`DataBus] Sdata;
+
+    wire LSROBen;
+    wire [`DataBus] LSROBdata;
+    wire [`TagBus]  LSROBtag;
+    wire [`NameBus] LSROBname;
   mem mcu(
     .clk(clk_in), 
     .rst(rst_in), 
     //with PC
-    .instEn(instEn), 
-    .instAddr(instAddr), 
-      //output
-    .instOutEn(instOutEn), 
-    .inst(FetchInst), 
-    .instFree(mcuInstPortFree), 
+      .instEn(instEn), 
+      .instAddr(instAddr), 
+    //output
+      .instOutEn(instOutEn), 
+      .inst(FetchInst), 
+      .instFree(mcuInstPortFree), 
     //with LS
-    .dataEn(), 
-    .LSRW(), //always 0 for read and 1 for write
-    .dataAddr(),
-    .LSlen(), 
-    .Sdata(), 
-      //is DataFree when it is read
-      //output below
-    .LOutEn(LOutEn), 
-    .Ldata(mcuLdata), 
-    .LSfree(mcuLSportFree), 
+    .dataEn(dataEn), 
+    .LSRW(LSRW), //always 0 for read and 1 for write
+    .dataAddr(dataAddr),
+    .LSlen(LSlen), 
+    .Sdata(Sdata), //is DataFree when it is read
+    //output below
+      .LOutEn(LOutEn), 
+      .Ldata(mcuLdata), 
+      .LSfree(mcuLSportFree), 
     //with ram
-    .RWstate(mem_wr), 
-    .RWaddr(mem_a), 
-    .ReadData(mem_din), 
-    .WrtData(mem_dout)
+      .RWstate(mem_wr), 
+      .RWaddr(mem_a), 
+      .ReadData(mem_din), 
+      .WrtData(mem_dout)
   );
 
   assign stall = !(ALUfreeStatus && ROBfreeStatus && LSfreeStatus);
 
   fetch fetcher(
-    .clk(clk_in), 
-    .rst(rst_in), 
-    .stall(stall), 
+      .clk(clk_in), 
+      .rst(rst_in), 
+      .stall(stall), 
 
-    .enJump(), 
-    .JumpAddr(), 
+      .enJump(jumpEn), 
+      .JumpAddr(jumpAddr), 
 
-    .enBranch(), 
-    .BranchAddr(),
+      .enBranch(BranchEn), 
+      .BranchAddr(BranchAddr),
 
     //to decoder
-    .DecEn(DecEn), 
-    .PC(ToDecAddr), 
-    .inst(ToDecInst), 
+      .DecEn(DecEn), 
+      .PC(ToDecAddr), 
+      .inst(ToDecInst), 
     //with mem
-    .memInstFree(mcuInstPortFree), 
-    .memInstOutEn(instOutEn), 
-    .memInst(FetchInst), 
+      .memInstFree(mcuInstPortFree), 
+      .memInstOutEn(instOutEn), 
+      .memInst(FetchInst), 
 
-    .instEn(instEn), 
-    .instAddr(instAddr)
+      .instEn(instEn), 
+      .instAddr(instAddr)
   );
 
   decoder decoder(
@@ -173,12 +217,12 @@ module cpu(
   );
 
   Table Table(
-    .rst(rst_in), 
-    .freeStatusALU(), 
-    .freeStatusLS(),
+      .rst(rst_in), 
+      .freeStatusALU(ALUfreeStatus), 
+      .freeStatusLS(LSfreeStatus),
     //output
-    .freeTagALU(freeTagALUroot), 
-    .freeTagLS(freeTagLSroot)
+      .freeTagALU(freeTagALUroot), 
+      .freeTagLS(freeTagLSroot)
   );
 
   dispatcher dispatcher(
@@ -195,15 +239,13 @@ module cpu(
       .Simm(DecSimm), 
       .Bimm(DecBimm), 
     //from regfile
-      .regTagO(), 
-      .regDataO(), 
-      .regTagT(), 
-      .regDataT(), 
-    //from ALUrs(), which tag is avaliable
-      .ALUfreeStatus(),
-    //from LSbuffer(), which tag is avaliable
-      .LSfreeStatus(),
-
+      .regTagO(regTagO), 
+      .regDataO(regDataO), 
+      .regTagT(regTagT), 
+      .regDataT(regDataT), 
+    //from Table
+      .ALUfreeTag(freeTagALUroot), 
+      .LSfreeTag(freeTagLSroot),
     //to regfile(rename the rd)
       .enWrt(enRegWrt), 
       .wrtTag(RegWrtTag), 
@@ -242,191 +284,210 @@ module cpu(
   Regfile regf(
     .clk(clk_in), 
     .rst(rst_in), 
-    //from CDB
-    .enCDBWrt(), 
-    .CDBwrtName(), 
-    .CDBwrtData(), 
-    .CDBwrtTag(), 
+    // //from CDB
+    //   .enCDBWrt(), 
+    //   .CDBwrtName(), 
+    //   .CDBwrtData(), 
+    //   .CDBwrtTag(),
+    .ALUwrtEn(ALUROBen), 
+    .ALUwrtData(ALUROBdataW),
+    .ALUwrtName(ALUROBnameW), 
+    .ALUwrtTag(ALUROBtag),
+    .LSwrtEn(LSROBen), 
+    .LSwrtData(LSROBdata),
+    .LSwrtName(LSROBname), 
+    .LSwrtTag(LSROBtag), 
     //from decoder
-    .regNameO(DecNameO), 
-    .regNameT(DecNameT), 
+      .regNameO(DecNameO), 
+      .regNameT(DecNameT), 
     //from dispatcher
-    .enWrtDec(enRegWrt), 
-    .wrtTagDec(RegWrtTag), 
-    .wrtNameDec(RegWrtName), 
+      .enWrtDec(enRegWrt), 
+      .wrtTagDec(RegWrtTag), 
+      .wrtNameDec(RegWrtName), 
     //to dispatcher
-    .regDataO(regDataO), 
-    .regTagO(regTagO), 
-    .regDataT(regDataT), 
-    .regTagT(regTagT)
+      .regDataO(regDataO), 
+      .regTagO(regTagO), 
+      .regDataT(regDataT), 
+      .regTagT(regTagT)
   );
 
   ALUrs ALUrs(
     .rst(rst_in),
     .clk(clk_in),
-    //from CDB
-    .enCDBwrt(),
-    .CDBTag(),
-    .CDBData(),
-    
+    //from ALU and LS
+      .enALUwrt(ALUROBen),
+      .ALUtag(ALUROBtagW),
+      .ALUdata(ALUROBdataW),
+      .enLSwrt(LSROBen), 
+      .LStag(LSROBtag), 
+      .LSdata(LSROBdata), 
     //from dispatcher
-    .ALUen(ALUrsEn), 
-    .ALUoperandO(ALUrsOperandO), 
-    .ALUoperandT(ALUrsOperandT), 
-    .ALUtagO(ALUrsTagO), 
-    .ALUtagT(ALUrsTagT),
-    .ALUtagW(ALUrsTagW),
-    .ALUnameW(ALUrsNameW), 
-    .ALUop(ALUrsOp), 
-    .ALUaddr(ALUrsAddr), 
+      .ALUen(ALUrsEn), 
+      .ALUoperandO(ALUrsOperandO), 
+      .ALUoperandT(ALUrsOperandT), 
+      .ALUtagO(ALUrsTagO), 
+      .ALUtagT(ALUrsTagT),
+      .ALUtagW(ALUrsTagW),
+      .ALUnameW(ALUrsNameW), 
+      .ALUop(ALUrsOp), 
+      .ALUaddr(ALUrsAddr), 
 
     //to ALU
-    .ALUworkEn(ALUworkEn), 
-    .operandO(ALUoperandO), 
-    .operandT(ALUoperandT),
-    .wrtTag(ALUwrtTag), 
-    .wrtName(ALUwrtName), 
-    .opCode(ALUopCode), 
-    .instAddr(ALUaddr), 
+      .ALUworkEn(ALUworkEn), 
+      .operandO(ALUoperandO), 
+      .operandT(ALUoperandT),
+      .wrtTag(ALUwrtTag), 
+      .wrtName(ALUwrtName), 
+      .opCode(ALUopCode), 
+      .instAddr(ALUaddr), 
     //to dispatcher
-    .ALUfreeStatus(ALUfreeStatus)
+      .ALUfreeStatus(ALUfreeStatus)
   );
 
   ALU ALU(
     //from RS
-    .ALUworkEn(ALUworkEn), 
-    .operandO(ALUoperandO), 
-    .operandT(ALUoperandT), 
-    .wrtTag(ALUwrtTag), 
-    .wrtName(ALUwrtName), 
-    .opCode(ALUopCode), 
-    .instAddr(ALUaddr),
+      .ALUworkEn(ALUworkEn), 
+      .operandO(ALUoperandO), 
+      .operandT(ALUoperandT), 
+      .wrtTag(ALUwrtTag), 
+      .wrtName(ALUwrtName), 
+      .opCode(ALUopCode), 
+      .instAddr(ALUaddr),
     //to ROB
-    .ROBen(ALUROBen), 
-    .ROBtagW(ALUROBtagW), 
-    .ROBdataW(ALUROBdataW),
-    .ROBnameW(ALUROBnameW), 
+      .ROBen(ALUROBen), 
+      .ROBtagW(ALUROBtagW), 
+      .ROBdataW(ALUROBdataW),
+      .ROBnameW(ALUROBnameW), 
     //to PC
-    .jumpEn(jumpEn), 
-    .jumpAddr(jumpAddr)
+      .jumpEn(jumpEn), 
+      .jumpAddr(jumpAddr)
   );
 
-  module BranchRS(
+  BranchRS BranchRS(
     .rst(rst_in), 
     .clk(clk_in), 
-    //input from CDB
-    .enCDBwrt(), 
-    .CDBTag(), 
-    . CDBData(), 
+    //from ALU and LS
+      .enALUwrt(ALUROBen),
+      .ALUtag(ALUROBtagW),
+      .ALUdata(ALUROBdataW),
+      .enLSwrt(LSROBen), 
+      .LStag(LSROBtag), 
+      .LSdata(LSROBdata),
     //input from dispatcher
-    .BranchEn(BranchRsEn), 
-    .BranchOperandO(BranchOperandO), 
-    .BranchOperandT(BranchOperandT), 
-    .BranchTagO(BranchRsTagO), 
-    .BranchTagT(BranchRsTagT), 
-    .BranchOp(BranchRsOp), 
-    .BranchImm(BranchRsImm), 
-    .BranchPC(BranchRsAddr),
+      .BranchEn(BranchRsEn), 
+      .BranchOperandO(BranchRsOperandO), 
+      .BranchOperandT(BranchRsOperandT), 
+      .BranchTagO(BranchRsTagO), 
+      .BranchTagT(BranchRsTagT), 
+      .BranchOp(BranchRsOp), 
+      .BranchImm(BranchRsImm), 
+      .BranchPC(BranchRsAddr),
     //to branchEx
-    .BranchWorkEn(), 
-    .operandO(), 
-    .operandT(), 
-    .imm(), 
-    .opCode(), 
-    .PC(), 
+      .BranchWorkEn(BranchWorkEn), 
+      .operandO(BranchOperandO), 
+      .operandT(BranchOperandT), 
+      .imm(BranchImm), 
+      .opCode(BranchOp), 
+      .PC(BranchPC), 
     //to dispatcher
-    .BranchFreeStatus()
+      .BranchFreeStatus(BranchFreeStatus)
   );
 
-  module Branch(
+  Branch Branch(
     //from the RS
-    .BranchWorkEn(), 
-    .operandO(), 
-    .operandT(), 
-    .imm(), 
-    .opCode(), 
-    .PC(), 
+      .BranchWorkEn(BranchWorkEn), 
+      .operandO(BranchOperandO), 
+      .operandT(BranchOperandT), 
+      .imm(BranchImm), 
+      .opCode(BranchOp), 
+      .PC(BranchPC), 
     //to the PC
-    .BranchResultEn(), 
-    .BranchAddr()
+      .BranchResultEn(BranchEn), 
+      .BranchAddr(BranchAddr)
   );
 
-  module lsBuffer(
+  lsBuffer lsBuffer(
     .rst(rst_in), 
     .clk(clk_in), 
-    //input from CDB
-    .enCDBwrt(), 
-    .CDBTag(), 
-    . CDBData(), 
+    //from ALU and LS
+      .enALUwrt(ALUROBen),
+      .ALUtag(ALUROBtagW),
+      .ALUdata(ALUROBdataW),
+      .enLSwrt(LSROBen), 
+      .LStag(LSROBtag), 
+      .LSdata(LSROBdata),
     //input from dispatcher
-    .LSen(LSbufEn), 
-    .LSoperandO(LSbufOperandO), 
-    .LSoperandT(LSbufOperandT), 
-    .LStagO(LSbufTagO), 
-    .LStagT(LSbufTagT), 
-    .LStagW(LSbufTagW), 
-    .LSnameW(LSbufNameW), 
-    .LSop(LSbufOp), 
-    .LSimm(LSbufImm), 
+      .LSen(LSbufEn), 
+      .LSoperandO(LSbufOperandO), 
+      .LSoperandT(LSbufOperandT), 
+      .LStagO(LSbufTagO), 
+      .LStagT(LSbufTagT), 
+      .LStagW(LSbufTagW), 
+      .LSnameW(LSbufNameW), 
+      .LSop(LSbufOp), 
+      .LSimm(LSbufImm), 
     //from the LS
-    .LSreadEn(), 
+    .LSreadEn(LSunwork), 
     //to LS
-    .LSworkEn(), 
-    .operandO(), 
-    .operandT(),
-    .imm(), 
-    .wrtTag(), 
-    .wrtName(), 
-    .opCode(), 
+    .LSworkEn(LSworkEn), 
+    .operandO(LSoperandO), 
+    .operandT(LSoperandT),
+    .imm(LSimm), 
+    .wrtTag(LSwrtTag), 
+    .wrtName(LSwrtName), 
+    .opCode(LSop), 
     //to dispatcher
-    .LSfreeStatus()
+    .LSfreeStatus(LSfreeStatus)
   );
 
-  module LS(
+  LS LS(
     .clk(clk_in), 
     .rst(rst_in), 
 
     //from lsbuffer
-    .LSworkEn(), 
-    .operandO(), 
-    .operandT(),
-    .imm(), 
-    .wrtTag(), 
-    .wrtName(), 
-    .opCode(), 
+      .LSworkEn(LSworkEn), 
+      .operandO(LSoperandO), 
+      .operandT(LSoperandT),
+      .imm(LSimm), 
+      .wrtTag(LSwrtTag), 
+      .wrtName(LSwrtName), 
+      .opCode(LSop), 
 
     //to lsbuffer
-    .LSreadEn(), 
+     .LSunwork(LSunwork), 
 
     //with mem
-    .LOutEn(LOutEn), 
-    .Ldata(mcuLdata), 
-    .LSfree(mcuLSportFree), 
+      .LOutEn(LOutEn), 
+      .Ldata(mcuLdata), 
+      .LSfree(mcuLSportFree), 
 
-    .dataEn(), 
-    .LSRW(), 
-    .dataAddr(),
-    .LSlen(), 
-    .Sdata(),
-    //to ROB
-    .LS()
+      .dataEn(dataEn), 
+      .LSRW(LSRW), 
+      .dataAddr(dataAddr),
+      .LSlen(LSlen), 
+      .Sdata(Sdata),
+      //to ROB
+      .LSROBen(LSROBen), 
+      .LSROBdata(LSROBdata), 
+      .LSROBtag(LSROBtag), 
+      .LSROBname(LSROBname)
   );
 
-  module ROB(
-    .clk(clk_in), 
-    .rst(rst_in), 
-    //input from alu
-    .ROBenW(), 
-    .ROBtagW(), 
-    .ROBdataW(), 
-    .ROBnameW(), 
-    //input from LS
+  // ROB ROB(
+  //   .clk(clk_in), 
+  //   .rst(rst_in), 
+  //   //input from alu
+  //   .ROBenW(), 
+  //   .ROBtagW(), 
+  //   .ROBdataW(), 
+  //   .ROBnameW(), 
+  //   //input from LS
     
-    //output
-    .enCDBWrt(), 
-    .CDBwrtName(), 
-    .CDBwrtTag(), 
-    .CDBwrtData(), 
-    .ROBfreeStatus()
-  );
+  //   //output
+  //   .enCDBWrt(), 
+  //   .CDBwrtName(), 
+  //   .CDBwrtTag(), 
+  //   .CDBwrtData(), 
+  //   .ROBfreeStatus()
+  // );
 endmodule

@@ -3,11 +3,20 @@
 module Regfile(
     input wire clk, 
     input wire rst, 
-    //from CDB
-    input wire enCDBWrt, 
-    input wire [`NameBus]   CDBwrtName, 
-    input wire [`DataBus]   CDBwrtData, 
-    input wire [`TagBus]    CDBwrtTag, 
+    // //from CDB
+    // input wire enCDBWrt, 
+    // input wire [`NameBus]   CDBwrtName, 
+    // input wire [`DataBus]   CDBwrtData, 
+    // input wire [`TagBus]    CDBwrtTag, 
+    input wire ALUwrtEn, 
+    input wire [`NameBus] ALUwrtName, 
+    input wire [`TagBus] ALUwrtTag,
+    input wire [`DataBus] ALUwrtData, 
+
+    input wire LSwrtEn, 
+    input wire [`NameBus] LSwrtName,
+    input wire [`TagBus] LSwrtTag,
+    input wire [`DataBus] LSwrtData,
     //from decoder
     input wire [`NameBus]   regNameO, 
     input wire [`NameBus]   regNameT, 
@@ -29,19 +38,30 @@ module Regfile(
     always @ (posedge clk) begin
       if (rst == `Enable) begin
         for (i = 0;i < `regSize;i = i + 1) begin
-          tag[i] = `tagFree;
-          data[i] = `dataFree;
+          tag[i] <= `tagFree;
+          data[i] <= `dataFree;
         end
       end else begin
-        if (enCDBWrt == `Enable) begin
-          if (CDBwrtName) begin
-            data[CDBwrtName] <= CDBwrtData;
-            if (CDBwrtTag == tag[CDBwrtName] && CDBwrtTag != wrtTagDec) 
-              tag[CDBwrtName] <= `tagFree;
-          end
+        // if (enCDBWrt == `Enable) begin
+        //   if (CDBwrtName) begin
+        //     data[CDBwrtName] <= CDBwrtData;
+        //     if (CDBwrtTag == tag[CDBwrtName] && CDBwrtTag != wrtTagDec) 
+        //       tag[CDBwrtName] <= `tagFree;
+        //   end
+        // end
+        if (ALUwrtEn == `Enable) begin
+          data[ALUwrtName] <= ALUwrtData;
+          if (ALUwrtTag == tag[ALUwrtName] && ALUwrtTag != wrtTagDec)
+            tag[ALUwrtName] <= `tagFree;
         end
-
-        if (enWrtDec == `Enable) tag[wrtNameDec] <= wrtTagDec;
+        if (LSwrtEn == `Enable) begin
+          data[LSwrtName] <= LSwrtData;
+          if (LSwrtTag == tag[LSwrtName] && LSwrtTag != wrtTagDec)
+            tag[LSwrtName] <= `tagFree;
+        end
+        
+        if (enWrtDec == `Enable) 
+          tag[wrtNameDec] <= wrtTagDec;
       end
     end
 
@@ -50,12 +70,13 @@ module Regfile(
       if (rst == `Enable) begin
         regDataO = `dataFree;
         regTagO = `tagFree; 
-      end else if (enCDBWrt && CDBwrtName == regNameO) begin
-        regDataO = CDBwrtData;
-        regTagO = `tagFree;
       end else begin
-        regDataO = data[regNameO];
-        regTagO = tag[regNameO];
+        regDataO = (ALUwrtEn && ALUwrtName == regNameO) ? ALUwrtData : 
+                   (LSwrtEn && LSwrtName == regNameO) ? LSwrtData : 
+                   data[regNameO];
+        regTagO = (ALUwrtEn && ALUwrtName == regNameO) ? ALUwrtTag : 
+                  (LSwrtEn && LSwrtName == regNameO) ? LSwrtTag : 
+                  tag[regNameO];
       end
     end
 
@@ -64,12 +85,13 @@ module Regfile(
       if (rst == `Enable) begin
         regDataT = `dataFree;
         regTagT = `tagFree;
-      end else if (enCDBWrt && CDBwrtName == regNameT) begin
-        regDataT <= CDBwrtData;
-        regTagT <= `tagFree;
       end else begin
-        regDataT <= data[regNameT];
-        regTagT <= tag[regNameT];
+        regDataT = (ALUwrtEn && ALUwrtName == regNameT) ? ALUwrtData : 
+                   (LSwrtEn && LSwrtName == regNameT) ? LSwrtData : 
+                   data[regNameT];
+        regTagT = (ALUwrtEn && ALUwrtName == regNameT) ? ALUwrtTag : 
+                  (LSwrtEn && LSwrtName == regNameT) ? LSwrtTag : 
+                  tag[regNameT];
       end
     end
 endmodule 

@@ -19,6 +19,8 @@
 `define Write 1'b1
 `define instPort 1'b0
 `define LSport 1'b1
+`define SignEx 1'b1
+`define UnsignEx 1'b0
 
 //opcodes
 `define ClassNOP 7'b0000000

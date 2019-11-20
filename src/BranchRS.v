@@ -3,10 +3,13 @@
 module BranchRS(
     input rst, 
     input clk, 
-    //input from CDB
-    input wire             enCDBwrt, 
-    input wire[`TagBus]    CDBTag, 
-    input wire[`DataBus]   CDBData, 
+    //from ALU and LS
+    input wire enALUwrt, 
+    input wire[`TagBus] ALUtag, 
+    input wire[`DataBus]  ALUdata, 
+    input wire enLSwrt, 
+    input wire[`TagBus] LStag,
+    input wire[`DataBus] LSdata, 
     //input from dispatcher
     input wire BranchEn, 
     input wire[`DataBus]        BranchOperandO, 
@@ -61,17 +64,19 @@ module BranchRS(
     //receive boardcast from CDB and deal with rst of rs
     always @ (negedge clk or posedge rst) begin
         if (rst == `Disable) begin
-          if (CDBTag != `tagFree && enCDBwrt) begin
-            for (i = 0;i < `rsSize;i = i + 1) begin
-              if (!empty[i] && rsTagO[i] == CDBTag) begin
-                rsTagO[i] <= `tagFree;
-                rsDataO[i] <= CDBData;
-              end
-              if (!empty[i] && rsTagT[i] == CDBTag) begin
-                rsTagT[i] <= `tagFree;
-                rsDataT[i] <= CDBData;
-              end
-            end
+          for (i = 0;i < `rsSize;i = i + 1) begin
+            rsTagO[i] <= (empty[i]) ? `tagFree : 
+                          (rsTagO[i] == ALUtag && enALUwrt) ? `tagFree : 
+                          (rsTagO[i] == LStag && enLSwrt) ? `tagFree : rsTagO[i];
+            rsDataO[i] <= (empty[i]) ? `dataFree : 
+                          (rsTagO[i] == ALUtag && enALUwrt) ? ALUdata :
+                          (rsTagO[i] == LStag && enLSwrt) ? LSdata : rsDataO[i];
+            rsTagT[i] <= (empty[i]) ? `tagFree : 
+                          (rsTagT[i] == ALUtag && enALUwrt) ? `tagFree : 
+                          (rsTagT[i] == LStag && enLSwrt) ? `tagFree : rsTagT[i];
+            rsDataT[i] <= (empty[i]) ? `dataFree : 
+                          (rsTagT[i] == ALUtag && enALUwrt) ? ALUdata :
+                          (rsTagT[i] == LStag && enLSwrt) ? LSdata : rsDataT[i];
           end
         end else begin
           for (i = 0;i < `rsSize;i = i + 1) begin
@@ -103,7 +108,7 @@ module BranchRS(
     always @ (posedge clk) begin
       if (rst == `Disable) begin
         for (i = 0;i < `rsSize; i = i + 1) begin
-          if (issueRS == 1'b1 << (i - 1)) begin
+          if (issueRS == (1'b1 << (`rsSize - 1)) >> (`rsSize - i - 1)) begin
             BranchWorkEn <= `Enable;
             operandO <= rsDataO[i];
             operandT <= rsDataT[i];

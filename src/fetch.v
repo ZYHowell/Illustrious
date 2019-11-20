@@ -45,8 +45,8 @@ module fetch(
         case(status)
           StatusFree: begin
             DecEn <= `Disable;
-            instEn <= `Enable;
-            instAddr <= instAddr;
+            instEn <= `Disable;
+            //instAddr <= instAddr;
             status <= StatusWork;
           end
           StatusWork: begin
@@ -71,9 +71,9 @@ module fetch(
             end else begin
               DecEn <= `Disable;
               PC <= instAddr;
-              inst <= `dataFree;
+              //inst <= inst;
               instEn <= `Disable;
-              instAddr <= instAddr;
+              //instAddr <= instAddr;
               status <= StatusWork;
             end
           end
