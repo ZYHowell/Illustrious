@@ -1,21 +1,6 @@
 // RISCV32I CPU top module
 // port modification allowed for debugging purposes
-`include "defines.v"
-`include "ALU.v"
-`include "ALUrs.v"
-`include "Branch.v"
-`include "Branchrs.v"
-`include "decoder.v"
-`include "defines.v"
-`include "dispatch.v"
-`include "fetch.v"
-`include "LS.v"
-`include "lsbuffer.v"
-`include "mem.v"
-`include "ram.v"
-`include "regfile.v"
-`include "ROB.v"
-`include "table.v"
+//`include "defines.v"
 
 module cpu(
     input  wire                 clk_in,			// system clock signal
@@ -169,7 +154,7 @@ module cpu(
       .WrtData(mem_dout)
   );
 
-  assign stall = !(ALUfreeStatus && ROBfreeStatus && LSfreeStatus);
+  assign stall = !(ALUfreeStatus && LSfreeStatus);
 
   fetch fetcher(
       .clk(clk_in), 
@@ -199,8 +184,8 @@ module cpu(
     .clk(clk_in), 
     .rst(rst_in),
     .DecEn(DecEn), 
-    .instPC(DecPC),
-    .inst(DecInst),
+    .instPC(ToDecAddr),
+    .inst(ToDecInst),
 
     //simply output everything to the dispatcher
     .regNameO(DecNameO), 
@@ -276,7 +261,7 @@ module cpu(
       .LStagO(LSbufTagO), 
       .LStagT(LSbufTagT),
       .LStagW(LSbufTagW), 
-      .ALUnameW(LSbufNameW), 
+      .LSnameW(LSbufNameW), 
       .LSimm(LSbufImm), 
       .LSop(LSbufOp)
   );

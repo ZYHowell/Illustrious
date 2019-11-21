@@ -1,4 +1,4 @@
-`include "defines.v"
+//`includ "defines.v"
 
 module fetch(
     input wire clk, 
@@ -33,9 +33,9 @@ module fetch(
 
     assign isBJ = memInst[6];
 
-    always @(posedge clk or posedge clk) begin
+    always @(posedge clk or posedge rst) begin
       if (rst == `Enable) begin
-        status <= `IsFree;
+        status <= StatusFree;
         instEn <= `Disable;
         instAddr <= `addrFree;
         DecEn <= `Disable;
@@ -45,7 +45,7 @@ module fetch(
         case(status)
           StatusFree: begin
             DecEn <= `Disable;
-            instEn <= `Disable;
+            instEn <= `Enable;
             //instAddr <= instAddr;
             status <= StatusWork;
           end
@@ -60,9 +60,9 @@ module fetch(
                   instAddr <= instAddr;
                   status <= StatusWaitBJ;
                 end else begin
-                  instEn <= `Enable;
+                  //instEn <= `Enable;
                   instAddr <= instAddr + 4;
-                  status <= StatusWork;
+                  status <= StatusFree;
                 end
               end else begin
                 instEn <= `Disable;

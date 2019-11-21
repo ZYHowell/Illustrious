@@ -1,4 +1,4 @@
-`include "defines.v"
+//`include "defines.v"
 //maybe for all rs, i need to add a "next data" and "next tag" to prevent some problems waiting to improve.
 module BranchRS(
     input rst, 

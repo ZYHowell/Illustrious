@@ -1,4 +1,4 @@
-`include "defines.v"
+//`includ "defines.v"
 
 module LS(
     input wire clk, 

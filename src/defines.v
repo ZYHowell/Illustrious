@@ -89,7 +89,7 @@
 `define rsSize 6
 `define ROBsize 64
 
-`define tagFree 4'b0000
+`define tagFree 4'b0110
 `define nameFree 5'b00000
 `define dataFree 32'h00000000
 `define addrFree 32'h00000000

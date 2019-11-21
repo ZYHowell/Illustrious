@@ -1,4 +1,4 @@
-`include "defines.v"
+//`include "defines.v"
 //caution! not test if Status == 0
 //CAUTION! there is a mistake that the input tagW has a prefix(ALU prefix)
 module ALUrs(
@@ -59,9 +59,9 @@ module ALUrs(
         empty = {`rsSize{1'b1}};
         ready = {`rsSize{1'b0}};
       end else begin
-        for (i = 1; i < `rsSize;i = i + 1) begin
+        for (i = 0; i < `rsSize;i = i + 1) begin
           empty[i] = rsOp[i] == `NOP;
-          ready[i] = !empty[i] && rsTagO[i] == `tagFree && rsTagT[i] == `tagFree;
+          ready[i] = (!empty[i]) && (rsTagO[i] == `tagFree) && (rsTagT[i] == `tagFree);
         end
       end
     end
@@ -100,6 +100,7 @@ module ALUrs(
     always @ (posedge clk) begin
       if (rst == `Disable) begin
         if (ALUen) begin
+          empty[ALUtagW[`TagRootBus]]   <= 0;
           rsOp[ALUtagW[`TagRootBus]]    <= ALUop;
           rsDataO[ALUtagW[`TagRootBus]] <= ALUoperandO;
           rsDataT[ALUtagW[`TagRootBus]] <= ALUoperandT;
@@ -112,7 +113,7 @@ module ALUrs(
     end
 
     always @ (posedge clk) begin
-      if (rst == `Disable) begin
+      if (rst == `Disable && issueRS) begin
         for (i = 0;i < `rsSize;i = i + 1) begin
           if (issueRS == (1'b1 << (`rsSize - 1)) >> (`rsSize - i - 1)) begin
             ALUworkEn <= `Enable;
@@ -122,6 +123,7 @@ module ALUrs(
             wrtName <= rsNameW[i];
             wrtTag <= {`ALUtagPrefix,i};
             instAddr <= rsPC[i];
+            rsOp[i] <= `NOP;
           end
         end
       end else begin
