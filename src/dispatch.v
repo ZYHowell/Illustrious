@@ -1,4 +1,4 @@
-//`includ "defines.v"
+//`include "defines.v"
 //CAUTION! not test if Status == 0, WHICH SHOULD BE IN CPU
 //CAUTION! THE TABLE IS BETTER TO BE PUT IN CPU RANTHER THAN DISPATCHER
 
@@ -118,7 +118,7 @@ module dispatcher(
         `ClassJAL: begin
           ALUen = `Enable;
           ALUop = opCode;
-          ALUoperandO = regDataO;
+          ALUoperandO = instAddr;
           ALUoperandT = Jimm;
           ALUtagO = regTagO;
           ALUtagT = `tagFree;

@@ -30,8 +30,8 @@ module Regfile(
     output reg [`DataBus]   regDataT, 
     output reg [`TagBus]    regTagT
 );
-    reg [`regSize - 1 : 0] data[`DataBus];
-    reg [`regSize - 1 : 0] tag[`TagBus];
+    reg [`DataBus] data[`regSize - 1 : 0];
+    reg [`TagBus] tag[`regSize - 1 : 0];
 
     integer i;
     //change tags and datas

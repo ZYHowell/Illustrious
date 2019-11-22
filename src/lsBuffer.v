@@ -58,7 +58,7 @@ module lsBuffer(
       end else begin
         for (i = 0;i < `rsSize;i = i + 1) begin
           empty[i] = rsOp[i] == `NOP;
-          ready[i] = !empty[i] && rsTagO[i] == `tagFree && rsTagT[i] == `tagFree;
+          ready[i] = (!empty[i]) && (rsTagO[i] == `tagFree) && (rsTagT[i] == `tagFree);
         end
       end
     end 
@@ -97,6 +97,7 @@ module lsBuffer(
     always @ (posedge clk) begin
       if (rst == `Disable) begin
         if (LSen) begin
+          empty[LStagW[`TagRootBus]]   <= 0;
           rsOp[LStagW[`TagRootBus]]     <= LSop;
           rsDataO[LStagW[`TagRootBus]]  <= LSoperandO;
           rsDataT[LStagW[`TagRootBus]]  <= LSoperandT;
