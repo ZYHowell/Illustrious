@@ -60,9 +60,9 @@ module fetch(
                   instAddr <= instAddr;
                   status <= StatusWaitBJ;
                 end else begin
-                  //instEn <= `Enable;
+                  instEn <= `Enable;
                   instAddr <= instAddr + 4;
-                  status <= StatusFree;
+                  status <= StatusWork;
                 end
               end else begin
                 instEn <= `Disable;

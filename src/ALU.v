@@ -35,8 +35,8 @@ module ALU(
           `XOR: ROBdataW = $signed(operandO) ^ $signed(operandT);
           `SRL: ROBdataW = operandO >> operandT[4:0];
           `SRA: ROBdataW = $signed(operandO) >>> operandT[4:0];
-          `OR : ROBdataW = operandO || operandT;
-          `AND: ROBdataW = operandO && operandT;
+          `OR : ROBdataW = operandO | operandT;
+          `AND: ROBdataW = operandO & operandT;
           `LUI: ROBdataW = operandT;
           `JAL: begin
             jumpEn = `Enable;
