@@ -63,7 +63,7 @@ module dispatcher(
     wire                prefix;
     //get the avaliable tag. 
     //choose the correct and avaliable tag
-    assign prefix   = opClass == `ClassLD ? `LStagPrefix : `ALUtagPrefix;
+    assign prefix   = ((opClass == `ClassLD) || (opClass == `ClassST)) ? `LStagPrefix : `ALUtagPrefix;
     assign finalTag = {prefix, prefix == `ALUtagPrefix ? ALUfreeTag : LSfreeTag};
 
     //assign the tag and acquire required datas.
@@ -161,7 +161,7 @@ module dispatcher(
           LSoperandT = regDataT;
           LStagO = regTagO;
           LStagT = regTagT;
-          LStagW = `tagFree;
+          LStagW = finalTag;
           LSnameW = `nameFree;
           LSimm = Simm;
           LSop = opCode;

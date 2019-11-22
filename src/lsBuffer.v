@@ -118,7 +118,7 @@ module lsBuffer(
             operandT <= rsDataT[i];
             opCode <= rsOp[i];
             wrtName <= rsNameW[i];
-            wrtTag <= {`LStagPrefix, i};
+            wrtTag <= (wrtName == `nameFree) ? `tagFree : {`LStagPrefix, i};
             imm <= rsImm[i];
           end
         end
