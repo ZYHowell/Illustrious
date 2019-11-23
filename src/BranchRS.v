@@ -54,9 +54,9 @@ module BranchRS(
           empty <= {`rsSize{1'b1}};
           ready <= {`rsSize{1'b0}};
         end else begin
-          for (i = 1; i < `rsSize;i = i + 1) begin
+          for (i = 0; i < `rsSize;i = i + 1) begin
             empty[i] = rsOp[i] == `NOP;
-            ready[i] = !empty[i] && rsTagO[i] == `tagFree && rsTagT[i] == `tagFree;
+            ready[i] = (!empty[i]) && (rsTagO[i] == `tagFree) && (rsTagT[i] == `tagFree);
           end
         end
     end
@@ -106,7 +106,7 @@ module BranchRS(
     end
 
     always @ (posedge clk) begin
-      if (rst == `Disable) begin
+      if (rst == `Disable && issueRS) begin
         for (i = 0;i < `rsSize; i = i + 1) begin
           if (issueRS == (1'b1 << (`rsSize - 1)) >> (`rsSize - i - 1)) begin
             BranchWorkEn <= `Enable;
@@ -115,6 +115,7 @@ module BranchRS(
             imm <= rsImm[i];
             opCode <= rsOp[i];
             PC <= rsPC[i];
+            rsOp[i] <= `NOP;
           end
         end
       end else begin

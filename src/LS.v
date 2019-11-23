@@ -136,9 +136,9 @@ module LS(
           end
           `NotFree: begin
             dataEn <= `Disable;
-            LSRW <= `Read;
             if (LOutEn == `Enable) begin
-              LSROBen <= `Enable;
+              LSRW <= `Read;
+              LSROBen <= (LSRW == `Read) ? `Enable : `Disable;
               status <= `IsFree;
               LSlen <= 2'b00;
               Sdata <= `dataFree;

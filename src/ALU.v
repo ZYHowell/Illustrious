@@ -41,7 +41,7 @@ module ALU(
           `JAL: begin
             jumpEn = `Enable;
             jumpAddr = $signed(operandO) + $signed(operandT);
-            ROBdataW = $signed(operandT) + 4;
+            ROBdataW = $signed(operandO) + 4;
           end
           `JALR: begin
             jumpEn = `Enable;

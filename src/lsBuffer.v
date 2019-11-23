@@ -110,7 +110,7 @@ module lsBuffer(
     end
 
     always @ (posedge clk) begin
-      if (rst == `Disable && LSreadEn == `Enable) begin
+      if (rst == `Disable && LSreadEn == `Enable && issueRS) begin
         for (i = 0;i < `rsSize;i = i + 1) begin
           if (issueRS == (1'b1 << (`rsSize - 1)) >> (`rsSize - i - 1)) begin
             LSworkEn <= `Enable;
@@ -120,6 +120,7 @@ module lsBuffer(
             wrtName <= rsNameW[i];
             wrtTag <= (wrtName == `nameFree) ? `tagFree : {`LStagPrefix, i};
             imm <= rsImm[i];
+            rsOp[i] <= `NOP;
           end
         end
       end else begin

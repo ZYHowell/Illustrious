@@ -120,7 +120,7 @@ module dispatcher(
           ALUop = opCode;
           ALUoperandO = instAddr;
           ALUoperandT = Jimm;
-          ALUtagO = regTagO;
+          ALUtagO = `tagFree;
           ALUtagT = `tagFree;
           ALUtagW = finalTag;
           ALUnameW = rdName;
