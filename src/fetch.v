@@ -1,4 +1,4 @@
-//`includ "defines.v"
+//`include "defines.v"
 
 module fetch(
     input wire clk, 
@@ -50,7 +50,7 @@ module fetch(
             status <= StatusWork;
           end
           StatusWork: begin
-            if (memInstOutEn) begin
+            if (memInstOutEn == `Enable) begin
               if (!stall) begin
                 DecEn <= `Enable;
                 PC <= instAddr;
@@ -69,6 +69,8 @@ module fetch(
                 status <= StatusStall;
               end
             end else begin
+              //waiting for an value
+              //decoder cannot work
               DecEn <= `Disable;
               PC <= instAddr;
               //inst <= inst;
@@ -82,12 +84,12 @@ module fetch(
               DecEn <= `Disable;
             end
             if (enJump) begin
-              instAddr <= JumpAddr;
               instEn <= `Enable;
+              instAddr <= JumpAddr;
               status <= StatusWork;
             end else if (enBranch) begin
-              instAddr <= BranchAddr;
               instEn <= `Enable;
+              instAddr <= BranchAddr;
               status <= StatusWork;
             end else begin
               instEn <= `Disable;

@@ -45,7 +45,7 @@ module ALUrs(
     reg [`TagBus]   rsTagO[`rsSize - 1:0];
     reg [`TagBus]   rsTagT[`rsSize - 1:0];
     reg [`OpBus]    rsOp[`rsSize - 1:0];
-    reg [`TagBus]   rsNameW[`rsSize - 1:0];
+    reg [`NameBus]   rsNameW[`rsSize - 1:0];
     reg [`InstAddrBus] rsPC[`rsSize - 1:0];
 
     assign issueRS = ready & -ready;

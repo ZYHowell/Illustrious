@@ -277,7 +277,7 @@ module cpu(
     .ALUwrtEn(ALUROBen), 
     .ALUwrtData(ALUROBdataW),
     .ALUwrtName(ALUROBnameW), 
-    .ALUwrtTag(ALUROBtag),
+    .ALUwrtTag(ALUROBtagW),
     .LSwrtEn(LSROBen), 
     .LSwrtData(LSROBdata),
     .LSwrtName(LSROBname), 

@@ -2,7 +2,7 @@
 //file:     id.v
 //decode instructions in this module
 
-//`includ "defines.v"
+//`include "defines.v"
 
 module decoder(
     input wire                  clk, 

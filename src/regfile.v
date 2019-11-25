@@ -49,12 +49,12 @@ module Regfile(
         //       tag[CDBwrtName] <= `tagFree;
         //   end
         // end
-        if (ALUwrtEn == `Enable) begin
+        if ((ALUwrtEn == `Enable) && ALUwrtName) begin
           data[ALUwrtName] <= ALUwrtData;
           if (ALUwrtTag == tag[ALUwrtName] && ALUwrtTag != wrtTagDec)
             tag[ALUwrtName] <= `tagFree;
         end
-        if (LSwrtEn == `Enable) begin
+        if ((LSwrtEn == `Enable) && LSwrtName) begin
           data[LSwrtName] <= LSwrtData;
           if (LSwrtTag == tag[LSwrtName] && LSwrtTag != wrtTagDec)
             tag[LSwrtName] <= `tagFree;

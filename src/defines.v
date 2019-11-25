@@ -11,12 +11,18 @@
 `define MemWrite 1'b0
 `define Valid 1'b1
 `define Invalid 1'b0
+//should mem discard PC/LS in waiting
+`define Discard 1'b1
+`define Keep 1'b0
+
+`define MemReceive 1'b1
+`define MemNotReceive 1'b0
 `define NoFreeTag 3'b111
 `define ALUtagPrefix 1'b0
 `define LStagPrefix 1'b1
-`define JALRnum 32'h00000001;
+`define JALRnum 32'hfffffffe;
 //******************12345678901234567890123456789012
-`define PCnext  32'b00000000000000000000000000000100;
+`define PCnext  32'h00000004;
 `define Read 1'b0
 `define Write 1'b1
 `define instPort 1'b0

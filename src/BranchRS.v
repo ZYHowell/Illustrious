@@ -101,6 +101,7 @@ module BranchRS(
           rsTagO[0]  <= BranchTagO;
           rsTagT[0]  <= BranchTagT;
           rsPC[0]    <= BranchPC;
+          rsImm[0]   <= BranchImm;
         end
       end
     end

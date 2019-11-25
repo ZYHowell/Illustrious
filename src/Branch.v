@@ -20,6 +20,7 @@ module Branch(
 
     always @ (*) begin
       if (BranchWorkEn == `Enable) begin
+        BranchResultEn = `Enable;
         case (opCode)
           `BEQ: BranchAddr = operandO == operandT ? jmpAddr : nxtAddr;
           `BNE: BranchAddr = operandO != operandT ? jmpAddr : nxtAddr;

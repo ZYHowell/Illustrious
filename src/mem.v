@@ -56,12 +56,13 @@ module mem(
     output wire RWstate, 
     output wire[`AddrBus]        RWaddr, 
     input wire[`RAMBus]         ReadData, 
-    output wire[`RAMBus]         WrtData
+    output wire[`RAMBus]         WrtData,
+    //
+    output reg[1:0] Waiting
 );
     reg status;
     //0:free,1:working
     
-    reg             Waiting[1:0];
     reg             WaitingRW[1:0];
     //Waiting[0]:inst, Waiting[1]:LS
     reg [`AddrBus]  WaitingAddr[1:0];
@@ -80,15 +81,17 @@ module mem(
     assign RWaddr = AddrPlatform;
     assign WrtData = DataPlatformW[stage];
 
-    icache cache(
-      .clk(clk), .rst(rst), 
-      .Addr(instAddr), 
-      .addEn(), 
-      .addInst(), 
-      .addAddr(), 
-      .hit(), 
-      .foundInst()
-    );
+    // wire icacheHit;
+    // wire [`InstBus] foundInst;
+    // icache icache(
+    //   .clk(clk), .rst(rst), 
+    //   .Addr(instAddr), 
+    //   .addEn(), 
+    //   .addInst(), 
+    //   .addAddr(), 
+    //   .hit(icacheHit), 
+    //   .foundInst(foundInst)
+    // );
 
     integer i;
     always @ (negedge clk or posedge rst) begin
@@ -268,4 +271,19 @@ module mem(
         endcase
       end
     end
+
+
+    /*
+    if status == `IsFree
+      try to receive the address,data and RW from the LS
+      and told LS it receives but not out
+      then LS can try to get the next op?
+
+      try to receive the address from PC 
+      if hit, PC receives and continue
+      (so at every beginning of a status, check if hit or not and send)
+        ^
+        | seperate this one to another part? 
+        then in the main unit, when it trys to ask the ram from the 
+    */
 endmodule
