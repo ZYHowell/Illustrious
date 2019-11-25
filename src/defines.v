@@ -9,6 +9,8 @@
 `define IsUsing 1'b1
 `define MemRead 1'b1
 `define MemWrite 1'b0
+`define Valid 1'b1
+`define Invalid 1'b0
 `define NoFreeTag 3'b111
 `define ALUtagPrefix 1'b0
 `define LStagPrefix 1'b1
@@ -80,6 +82,9 @@
 `define RAMBus 7:0
 `define StageBus 1:0
 `define OpClassBus 6:0
+`define memTagBus  7:0
+`define memAddrTagBus 9:2
+`define memAddrIndexBus 16:10
 
 `define immFillLen 20
 `define UimmFillLen 12
@@ -88,13 +93,15 @@
 `define rsWidth 128
 `define rsSize 6
 `define ROBsize 64
+`define memCacheSize 128
 
 `define tagFree 4'b0110
 `define nameFree 5'b00000
 `define dataFree 32'h00000000
 `define addrFree 32'h00000000
 //*******************12345678
-`define RAMdataFree 8'b00000000
+`define RAMdataFree 8'h00
+`define memTagFree 8'h00
 
 `define NOP     5'b00000
 `define LUI     5'b00001

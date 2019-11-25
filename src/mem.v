@@ -1,4 +1,37 @@
-//`include "defines.v"
+`include "defines.v"
+//a 512B cache
+module icache(
+    input wire clk, 
+    input wire rst, 
+    input wire[`AddrBus]  Addr, 
+    input wire addEn, 
+    input wire[`DataBus]  addInst,
+    input wire[`AddrBus]  addAddr, 
+    output wire hit, 
+    output wire [`DataBus]  foundInst
+);
+    reg[`DataBus]   memInst[`memCacheSize - 1 : 0];
+    reg[`memTagBus] memTag[`memCacheSize - 1:0];
+    reg memValid[`memCacheSize - 1 : 0];
+
+    assign hit = (memTag[Addr[`memAddrIndexBus]] == Addr[`memAddrTagBus]) && memValid[Addr[`memAddrIndexBus]];
+    assign foundData = (memInst[Addr[`memAddrIndexBus]]) && memValid[Addr[`memAddrIndexBus]];
+    
+    integer i;
+    always @ (posedge clk or posedge rst) begin
+      if (rst == `Enable) begin
+        for (i = 0; i < `memCacheSize;i = i + 1) begin
+          memInst[i] <= `dataFree;
+          memTag[i] <= `memTagFree;
+          memValid[i] <= `Invalid;
+        end
+      end else if ((addEn == `Enable) && (addAddr[17:16] != 2'b11)) begin
+        memInst[addAddr[`memAddrIndexBus]] <= addInst;
+        memTag[addAddr[`memAddrIndexBus]] <= addAddr[`memAddrTagBus];
+        memValid[i] <= `Valid;
+      end
+    end
+endmodule
 
 module mem(
     input wire clk, 
@@ -46,6 +79,16 @@ module mem(
     assign RWstate = RW;
     assign RWaddr = AddrPlatform;
     assign WrtData = DataPlatformW[stage];
+
+    icache cache(
+      .clk(clk), .rst(rst), 
+      .Addr(instAddr), 
+      .addEn(), 
+      .addInst(), 
+      .addAddr(), 
+      .hit(), 
+      .foundInst()
+    );
 
     integer i;
     always @ (negedge clk or posedge rst) begin
