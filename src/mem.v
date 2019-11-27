@@ -94,6 +94,8 @@ module mem(
     // );
 
     integer i;
+
+    //negedge??
     always @ (negedge clk or posedge rst) begin
       instFree <= status == `IsFree || Waiting[`instPort] == `NotUsing;
       LSfree <= status == `IsFree || Waiting[`LSport] == `NotUsing;

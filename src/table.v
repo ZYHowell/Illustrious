@@ -3,14 +3,11 @@
 module Table(
     input wire rst, 
     input wire[`rsSize - 1:0] freeStatusALU, 
-    input wire[`rsSize - 1:0] freeStatusLS,
-    output wire[`TagRootBus] freeTagALU, 
-    output wire[`TagRootBus] freeTagLS
+    output wire[`TagRootBus] freeTagALU
 );
     reg[`TagRootBus] list[63:0];
 
     assign freeTagALU = list[freeStatusALU];
-    assign freeTagLS = list[freeStatusLS];
 
     always @ (posedge rst) begin
         list[6'b000000] = `NoFreeTag;

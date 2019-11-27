@@ -66,6 +66,11 @@ module dispatcher(
     assign prefix   = ((opClass == `ClassLD) || (opClass == `ClassST)) ? `LStagPrefix : `ALUtagPrefix;
     assign finalTag = {prefix, prefix == `ALUtagPrefix ? ALUfreeTag : LSfreeTag};
 
+    always @(*) begin
+      wrtTag = finalTag;
+      wrtName = rdName;
+    end
+
     //assign the tag and acquire required datas.
     always @ (*) begin
       ALUaddr = instAddr;
@@ -94,6 +99,7 @@ module dispatcher(
       LSnameW = `nameFree;
       LSimm = `dataFree;
       LSop = `NOP;
+      enWrt = `Disable;
       case(opClass)
         `ClassLUI: begin
           ALUen = `Enable;
@@ -104,6 +110,7 @@ module dispatcher(
           ALUtagT = `tagFree;
           ALUtagW = finalTag;
           ALUnameW = rdName;
+          enWrt = `Enable;
         end
         `ClassAUIPC: begin
           ALUen = `Enable;
@@ -114,6 +121,7 @@ module dispatcher(
           ALUtagT = `tagFree;
           ALUtagW = finalTag;
           ALUnameW = rdName;
+          enWrt = `Enable;
         end
         `ClassJAL: begin
           ALUen = `Enable;
@@ -124,6 +132,7 @@ module dispatcher(
           ALUtagT = `tagFree;
           ALUtagW = finalTag;
           ALUnameW = rdName;
+          enWrt = `Enable;
         end
         `ClassJALR: begin
           ALUen = `Enable;
@@ -134,6 +143,7 @@ module dispatcher(
           ALUtagT = `tagFree;
           ALUtagW = finalTag;
           ALUnameW = rdName;
+          enWrt = `Enable;
         end
         `ClassB:    begin
           BranchEn = `Enable;
@@ -154,6 +164,7 @@ module dispatcher(
           LSnameW = rdName;
           LSimm = imm;
           LSop = opCode;
+          enWrt = `Enable;
         end
         `ClassST:   begin
           LSen = `Enable;
@@ -175,6 +186,7 @@ module dispatcher(
           ALUtagT = `tagFree;
           ALUtagW = finalTag;
           ALUnameW = rdName;
+          enWrt = `Enable;
         end
         `ClassRR:   begin
           ALUen = `Enable;
@@ -185,6 +197,7 @@ module dispatcher(
           ALUtagT = regTagT;
           ALUtagW = finalTag;
           ALUnameW = rdName;
+          enWrt = `Enable;
         end
         default:;
       endcase

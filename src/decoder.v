@@ -134,9 +134,9 @@ module decoder(
             default:;
         endcase
       end else begin
-        regNameO <= `nameFree;
-        regNameT <= `nameFree;
-        rdName <= `nameFree;
+        // regNameO <= `nameFree;
+        // regNameT <= `nameFree;
+        // rdName <= `nameFree;
         opCode <= `NOP;
         opClass <= `ClassNOP;
       end

@@ -51,12 +51,12 @@ module Regfile(
         // end
         if ((ALUwrtEn == `Enable) && ALUwrtName) begin
           data[ALUwrtName] <= ALUwrtData;
-          if (ALUwrtTag == tag[ALUwrtName] && ALUwrtTag != wrtTagDec)
+          if (ALUwrtTag == tag[ALUwrtName] && ((ALUwrtName != wrtNameDec) | ~enWrtDec))
             tag[ALUwrtName] <= `tagFree;
         end
         if ((LSwrtEn == `Enable) && LSwrtName) begin
           data[LSwrtName] <= LSwrtData;
-          if (LSwrtTag == tag[LSwrtName] && LSwrtTag != wrtTagDec)
+          if (LSwrtTag == tag[LSwrtName] && ((LSwrtName != wrtNameDec) | ~enWrtDec))
             tag[LSwrtName] <= `tagFree;
         end
         
@@ -67,7 +67,7 @@ module Regfile(
 
     //reg1
     always @ (*) begin
-      if (rst == `Enable) begin
+      if ((rst == `Enable) | (!regNameO)) begin
         regDataO = `dataFree;
         regTagO = `tagFree; 
       end else begin
@@ -82,7 +82,7 @@ module Regfile(
 
     //reg2
     always @ (*) begin
-      if (rst == `Enable) begin
+      if ((rst == `Enable) | (!regNameT)) begin
         regDataT = `dataFree;
         regTagT = `tagFree;
       end else begin

@@ -1,6 +1,4 @@
 //`include "defines.v"
-//Here hides a big problem in this one, for load after a store can execute before it. 
-//When this load loads the address where store stores, it creates a problem. 
 module LS(
     input wire clk, 
     input wire rst, 

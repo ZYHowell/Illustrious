@@ -1,6 +1,6 @@
 // RISCV32I CPU top module
 // port modification allowed for debugging purposes
-//`include "defines.v"
+`include "defines.v"
 
 module cpu(
     input  wire                 clk_in,			// system clock signal
@@ -50,7 +50,7 @@ module cpu(
     wire [`DataBus] DecImm, DecUimm, DecJimm, DecSimm, DecBimm;
 
     //output of Table
-    wire [`TagRootBus]  freeTagALUroot, freeTagLSroot;
+    wire [`TagRootBus]  freeTagALUroot;
 
     //output of dispatcher
     wire enRegWrt;
@@ -115,6 +115,7 @@ module cpu(
     wire[`NameBus]  LSwrtName;
     wire[`OpBus]  LSop;
     wire[`rsSize - 1 : 0] LSfreeStatus;
+    wire [`TagRootBus]  freeTagLSroot;
 
     //output of LS
     wire LSunwork;
@@ -204,10 +205,8 @@ module cpu(
   Table Table(
       .rst(rst_in), 
       .freeStatusALU(ALUfreeStatus), 
-      .freeStatusLS(LSfreeStatus),
     //output
-      .freeTagALU(freeTagALUroot), 
-      .freeTagLS(freeTagLSroot)
+      .freeTagALU(freeTagALUroot)
   );
 
   dispatcher dispatcher(
@@ -230,6 +229,7 @@ module cpu(
       .regDataT(regDataT), 
     //from Table
       .ALUfreeTag(freeTagALUroot), 
+    //from LSbuffer
       .LSfreeTag(freeTagLSroot),
     //to regfile(rename the rd)
       .enWrt(enRegWrt), 
@@ -422,6 +422,7 @@ module cpu(
     .wrtName(LSwrtName), 
     .opCode(LSop), 
     //to dispatcher
+    .LSfreeTag(freeTagLSroot),
     .LSfreeStatus(LSfreeStatus)
   );
 

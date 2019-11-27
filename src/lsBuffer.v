@@ -1,4 +1,9 @@
-//`include "defines.v"
+`include "defines.v"
+//rewriting
+//Here hides a big problem in this one, for load after a store can execute before it. 
+//When this load loads the address where store stores, it creates a problem. 
+//rewriting... make it fifo
+//should superscalar supported?
 module lsBuffer(
     input rst, 
     input clk, 
@@ -30,12 +35,12 @@ module lsBuffer(
     output reg[`NameBus]        wrtName, 
     output reg[`OpBus]          opCode, 
     //to dispatcher
+    output wire[`TagRootBus] LSfreeTag, 
     output wire[`rsSize - 1 : 0] LSfreeStatus
 );
-    reg [`rsSize - 1 : 0] ready;
     reg [`rsSize - 1 : 0] empty;
 
-    wire [`rsSize - 1 : 0] issueRS;
+    wire canIssue;
 
     reg [`DataBus]      rsDataO[`rsSize - 1:0];
     reg [`DataBus]      rsDataT[`rsSize - 1:0];
@@ -44,21 +49,28 @@ module lsBuffer(
     reg [`OpBus]        rsOp[`rsSize - 1:0];
     reg [`DataBus]      rsImm[`rsSize - 1:0];
     reg [`NameBus]      rsNameW[`rsSize - 1:0];
+    reg [`TagBus]       rsTagW[`rsSize - 1:0];
+    reg [`TagRootBus]   head, tail, num;
+    //the head is the head while the tail is the next;
 
-    assign issueRS = ready & -ready;
+    assign canIssue = (~empty[head]) && (rsTagO[head] == `tagFree) && (rsTagT[head] == `tagFree);
     
+    assign LSfreeTag = (tail != head) ? tail : 
+                        num ? `NoFreeTag : tail;
+
     assign LSfreeStatus = empty;
 
     integer i;
     //deal with rst
     always @ (*) begin
       if (rst == `Enable) begin
+        head = 0;
+        tail = 0;
+        num = 0;
         empty = {`rsSize{1'b1}};
-        ready = {`rsSize{1'b0}};
       end else begin
         for (i = 0;i < `rsSize;i = i + 1) begin
           empty[i] = rsOp[i] == `NOP;
-          ready[i] = (!empty[i]) && (rsTagO[i] == `tagFree) && (rsTagT[i] == `tagFree);
         end
       end
     end 
@@ -86,6 +98,7 @@ module lsBuffer(
           rsDataO[i] <= `dataFree;
           rsTagT[i] <= `tagFree;
           rsDataT[i] <= `dataFree;
+          rsTagW[i] <= `tagFree;
           rsOp[i] <= `NOP;
           rsNameW[i] <= `nameFree;
           rsImm[i] <= `dataFree;
@@ -97,32 +110,33 @@ module lsBuffer(
     always @ (posedge clk) begin
       if (rst == `Disable) begin
         if (LSen) begin
-          empty[LStagW[`TagRootBus]]   <= 0;
-          rsOp[LStagW[`TagRootBus]]     <= LSop;
-          rsDataO[LStagW[`TagRootBus]]  <= LSoperandO;
-          rsDataT[LStagW[`TagRootBus]]  <= LSoperandT;
-          rsTagO[LStagW[`TagRootBus]]   <= LStagO;
-          rsTagT[LStagW[`TagRootBus]]   <= LStagT;
-          rsNameW[LStagW[`TagRootBus]]  <= LSnameW;
-          rsImm[LStagW[`TagRootBus]]    <= LSimm;
+          empty[tail]   <= 0;
+          rsOp[tail]     <= LSop;
+          rsDataO[tail]  <= LSoperandO;
+          rsDataT[tail]  <= LSoperandT;
+          rsTagO[tail]   <= LStagO;
+          rsTagT[tail]   <= LStagT;
+          rsTagW[tail]   <= LStagW;
+          rsNameW[tail]  <= LSnameW;
+          rsImm[tail]    <= LSimm;
+          tail <= (tail == `rsSize - 1) ? 0 : tail + 1;
+          num <= num + 1;
         end
       end
     end
 
     always @ (posedge clk) begin
-      if (rst == `Disable && LSreadEn == `Enable && issueRS) begin
-        for (i = 0;i < `rsSize;i = i + 1) begin
-          if (issueRS == (1'b1 << (`rsSize - 1)) >> (`rsSize - i - 1)) begin
-            LSworkEn <= `Enable;
-            operandO <= rsDataO[i];
-            operandT <= rsDataT[i];
-            opCode <= rsOp[i];
-            wrtName <= rsNameW[i];
-            wrtTag <= (wrtName == `nameFree) ? `tagFree : {`LStagPrefix, i};
-            imm <= rsImm[i];
-            rsOp[i] <= `NOP;
-          end
-        end
+      if (rst == `Disable && LSreadEn == `Enable && canIssue) begin
+        LSworkEn <= `Enable;
+        operandO <= rsDataO[head];
+        operandT <= rsDataT[head];
+        opCode <= rsOp[head];
+        wrtName <= rsNameW[head];
+        wrtTag <= rsTagW[head];
+        imm <= rsImm[head];
+        rsOp[head] <= `NOP;
+        head <= (head == `rsSize - 1) ? 0 : head + 1;
+        num <= num - 1;
       end else begin
         LSworkEn <= `Disable;
         operandO <= `dataFree;
