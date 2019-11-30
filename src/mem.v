@@ -3,20 +3,28 @@
 module icache(
     input wire clk, 
     input wire rst, 
+    input wire fetchEn, 
     input wire[`AddrBus]  Addr, 
     input wire addEn, 
     input wire[`DataBus]  addInst,
     input wire[`AddrBus]  addAddr, 
+
     output wire hit, 
-    output wire [`DataBus]  foundInst
+    output wire [`DataBus]  foundInst, 
+
+    output wire memfetchEn, 
+    output wire[`InstAddrBus] memfetchAddr
 );
     reg[`DataBus]   memInst[`memCacheSize - 1 : 0];
     reg[`memTagBus] memTag[`memCacheSize - 1:0];
     reg memValid[`memCacheSize - 1 : 0];
 
-    assign hit = (memTag[Addr[`memAddrIndexBus]] == Addr[`memAddrTagBus]) && memValid[Addr[`memAddrIndexBus]];
-    assign foundData = (memInst[Addr[`memAddrIndexBus]]) && memValid[Addr[`memAddrIndexBus]];
+    assign hit = fetchEn & (memTag[Addr[`memAddrIndexBus]] == Addr[`memAddrTagBus]) & (memValid[Addr[`memAddrIndexBus]]);
+    assign foundInst = memValid[Addr[`memAddrIndexBus]] ? (memInst[Addr[`memAddrIndexBus]]) : `dataFree;
     
+    assign memfetchEn = hit ? `Disable : fetchEn;
+    assign memfetchAddr = hit ? `addrFree : Addr;
+
     integer i;
     always @ (posedge clk or posedge rst) begin
       if (rst == `Enable) begin
@@ -28,7 +36,7 @@ module icache(
       end else if ((addEn == `Enable) && (addAddr[17:16] != 2'b11)) begin
         memInst[addAddr[`memAddrIndexBus]] <= addInst;
         memTag[addAddr[`memAddrIndexBus]] <= addAddr[`memAddrTagBus];
-        memValid[i] <= `Valid;
+        memValid[addAddr[`memAddrIndexBus]] <= `Valid;
       end
     end
 endmodule
@@ -36,11 +44,12 @@ endmodule
 module mem(
     input wire clk, 
     input wire rst, 
-    //with PC
+    //with icache and PC
     input wire fetchEn, 
     input wire[`InstAddrBus]    fetchAddr, 
     output reg instOutEn, 
     output reg[`InstBus]        inst, 
+    output reg[`InstAddrBus]    addAddr, 
     //with LS
     input wire LSen, 
     input wire LSRW, //always 0 for read and 1 for write
@@ -103,9 +112,11 @@ module mem(
         inst <= `dataFree;
         LSdone <= `Disable;
         LdData <= `dataFree;
+        addAddr <= `addrFree;
       end else begin
         instOutEn <= `Disable;
         LSdone <= `Disable;
+        addAddr <= addAddr;
         //input and fill in
         if (fetchEn) begin
           Waiting[`instPort] <= `IsUsing;
@@ -150,6 +161,7 @@ module mem(
               RW <= `Read;
               for (i = 0; i < 4;i = i + 1)
                 DataPlatformW[i] <= 8'h00;
+              addAddr <= fetchAddr;
               AddrPlatform <= fetchAddr;
               Lens <= 2'b11;
               stage <= 2'b00;
@@ -206,6 +218,7 @@ module mem(
                 for (i = 0; i < 4;i = i + 1)
                   DataPlatformW[i] <= 8'h00;
                 AddrPlatform <= WaitingAddr[`instPort];
+                addAddr <= WaitingAddr[`instPort];
                 Lens <= WaitingLen[`instPort];
                 stage <= 2'b00;
                 status <= `NotFree;
@@ -237,6 +250,7 @@ module mem(
                 for (i = 0; i < 4;i = i + 1)
                   DataPlatformW[i] <= 8'h00;
                 AddrPlatform <= fetchAddr;
+                addAddr <= fetchAddr;
                 Lens <= 2'b11;
                 stage <= 2'b00;
                 status <= `NotFree;

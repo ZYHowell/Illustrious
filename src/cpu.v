@@ -115,7 +115,7 @@ module cpu(
     wire[`TagBus] LSwrtTag;
     wire[`NameBus]  LSwrtName;
     wire[`OpBus]  LSop;
-    wire[`rsSize - 1 : 0] LSfreeStatus;
+    wire LSbufFree;
     wire [`TagRootBus]  freeTagLSroot;
 
     //output of LS
@@ -129,15 +129,36 @@ module cpu(
     wire [`DataBus] LSROBdata;
     wire [`TagBus]  LSROBtag;
     wire [`NameBus] LSROBname;
+
+  //about icache
+    wire hit, memfetchEn;
+    wire [`InstBus] cacheInst;
+    wire [`InstAddrBus] memfetchAddr;
+    wire [`InstAddrBus] addAddr;
+  icache icache(
+    .clk(clk_in),
+    .rst(rst_in),
+    .fetchEn(instEn), 
+    .Addr(instAddr), 
+    .addEn(instOutEn), 
+    .addInst(FetchInst), 
+    .addAddr(addAddr), 
+    .hit(hit), 
+    .foundInst(cacheInst), 
+    .memfetchEn(memfetchEn), 
+    .memfetchAddr(memfetchAddr)
+  );
+
   mem mcu(
     .clk(clk_in), 
     .rst(rst_in), 
     //with PC
-      .fetchEn(instEn), 
-      .fetchAddr(instAddr), 
+      .fetchEn(memfetchEn), 
+      .fetchAddr(memfetchAddr), 
     //output
       .instOutEn(instOutEn), 
       .inst(FetchInst), 
+      .addAddr(addAddr), 
     //with LS
     .LSen(dataEn), 
     .LSRW(LSRW), //always 0 for read and 1 for write
@@ -154,7 +175,7 @@ module cpu(
       .WrtData(mem_dout)
   );
 
-  assign stall = !(ALUfreeStatus && LSfreeStatus);
+  assign stall = !(ALUfreeStatus && LSbufFree);
 
   fetch fetcher(
       .clk(clk_in), 
@@ -170,13 +191,15 @@ module cpu(
     //to decoder
       .DecEn(DecEn), 
       .DecPC(ToDecAddr), 
-      .inst(ToDecInst), 
-    //with mem
+      .DecInst(ToDecInst), 
+    //with mem and cache
       .memInstOutEn(instOutEn), 
       .memInst(FetchInst), 
 
       .instEn(instEn), 
-      .instAddr(instAddr)
+      .instAddr(instAddr), 
+      .hit(hit), 
+      .cacheInst(cacheInst)
   );
 
   decoder decoder(
@@ -421,7 +444,7 @@ module cpu(
     .opCode(LSop), 
     //to dispatcher
     .LSfreeTag(freeTagLSroot),
-    .LSfreeStatus(LSfreeStatus)
+    .LSbufFree(LSbufFree)
   );
 
   LS LS(

@@ -89,8 +89,8 @@
 `define StageBus 1:0
 `define OpClassBus 6:0
 `define memTagBus  7:0
-`define memAddrTagBus 9:2
-`define memAddrIndexBus 16:10
+`define memAddrTagBus 16:9
+`define memAddrIndexBus 8:2
 
 `define immFillLen 20
 `define UimmFillLen 12

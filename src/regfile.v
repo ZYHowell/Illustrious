@@ -1,4 +1,4 @@
-//`include "defines.v"
+`include "defines.v"
 
 module Regfile(
     input wire clk, 
@@ -33,6 +33,14 @@ module Regfile(
     reg [`DataBus] data[`regSize - 1 : 0];
     reg [`TagBus] tag[`regSize - 1 : 0];
 
+    wire ALUtagClear, LStagClear;
+    assign ALUtagClear = ~ALUwrtEn ? 0 : 
+                        (ALUwrtTag != tag[ALUwrtName]) ? 0 :
+                        ((ALUwrtName == wrtNameDec) & enWrtDec) ? 0 : 1;
+    assign LStagClear = ~LSwrtEn ? 0 :
+                        (LSwrtTag != tag[LSwrtName]) ? 0 :
+                        ((LSwrtName == wrtNameDec) & enWrtDec) ? 0 : 1;
+
     integer i;
     //change tags and datas
     always @ (posedge clk) begin
@@ -49,18 +57,16 @@ module Regfile(
         //       tag[CDBwrtName] <= `tagFree;
         //   end
         // end
-        if ((ALUwrtEn == `Enable) && ALUwrtName) begin
+        if (ALUtagClear) begin
           data[ALUwrtName] <= ALUwrtData;
-          if (ALUwrtTag == tag[ALUwrtName] && ((ALUwrtName != wrtNameDec) | ~enWrtDec))
-            tag[ALUwrtName] <= `tagFree;
+          tag[ALUwrtName] <= `tagFree;
         end
-        if ((LSwrtEn == `Enable) && LSwrtName) begin
+        if (LStagClear) begin
           data[LSwrtName] <= LSwrtData;
-          if (LSwrtTag == tag[LSwrtName] && ((LSwrtName != wrtNameDec) | ~enWrtDec))
-            tag[LSwrtName] <= `tagFree;
+          tag[LSwrtName] <= `tagFree;
         end
         
-        if (enWrtDec == `Enable) 
+        if (enWrtDec && wrtNameDec) 
           tag[wrtNameDec] <= wrtTagDec;
       end
     end
@@ -71,12 +77,10 @@ module Regfile(
         regDataO = `dataFree;
         regTagO = `tagFree; 
       end else begin
-        regDataO = (ALUwrtEn && ALUwrtName == regNameO) ? ALUwrtData : 
-                   (LSwrtEn && LSwrtName == regNameO) ? LSwrtData : 
-                   data[regNameO];
-        regTagO = (ALUwrtEn && ALUwrtName == regNameO) ? ALUwrtTag : 
-                  (LSwrtEn && LSwrtName == regNameO) ? LSwrtTag : 
-                  tag[regNameO];
+        regDataO = ((ALUwrtName == regNameO) && ALUtagClear) ? ALUwrtData : 
+                    ((LSwrtName == regNameO) && LStagClear) ? LSwrtData : data[regNameO];
+        regTagO = ((ALUwrtName == regNameO) && ALUtagClear) ? `tagFree : 
+                  ((LSwrtName == regNameO) && LStagClear) ? `tagFree : tag[regNameO];
       end
     end
 
@@ -86,12 +90,10 @@ module Regfile(
         regDataT = `dataFree;
         regTagT = `tagFree;
       end else begin
-        regDataT = (ALUwrtEn && ALUwrtName == regNameT) ? ALUwrtData : 
-                   (LSwrtEn && LSwrtName == regNameT) ? LSwrtData : 
-                   data[regNameT];
-        regTagT = (ALUwrtEn && ALUwrtName == regNameT) ? ALUwrtTag : 
-                  (LSwrtEn && LSwrtName == regNameT) ? LSwrtTag : 
-                  tag[regNameT];
+        regDataT = ((ALUwrtName == regNameT) && ALUtagClear) ? ALUwrtData : 
+                    ((LSwrtName == regNameT) && LStagClear) ? LSwrtData : data[regNameT];
+        regTagT = ((ALUwrtName == regNameT) && ALUtagClear) ? `tagFree : 
+                  ((LSwrtName == regNameT) && LStagClear) ? `tagFree : tag[regNameT];
       end
     end
 endmodule 

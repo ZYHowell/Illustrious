@@ -36,7 +36,7 @@ module lsBuffer(
     output reg[`OpBus]          opCode, 
     //to dispatcher
     output wire[`TagRootBus] LSfreeTag, 
-    output wire[`rsSize - 1 : 0] LSfreeStatus
+    output wire LSbufFree
 );
     reg [`rsSize - 1 : 0] empty;
 
@@ -58,7 +58,7 @@ module lsBuffer(
     assign LSfreeTag = (tail != head) ? tail : 
                         num ? `NoFreeTag : tail;
 
-    assign LSfreeStatus = empty;
+    assign LSbufFree = (num + LSen + 1) < `rsSize ? 1 : 0;
 
     integer i;
     //deal with rst
@@ -120,13 +120,12 @@ module lsBuffer(
           rsNameW[tail]  <= LSnameW;
           rsImm[tail]    <= LSimm;
           tail <= (tail == `rsSize - 1) ? 0 : tail + 1;
-          num <= num + 1;
         end
       end
     end
 
     always @ (posedge clk) begin
-      if (rst == `Disable && LSreadEn == `Enable && canIssue) begin
+      if ((rst == `Disable) && (LSreadEn == `Enable) && canIssue) begin
         LSworkEn <= `Enable;
         operandO <= rsDataO[head];
         operandT <= rsDataT[head];
@@ -136,8 +135,9 @@ module lsBuffer(
         imm <= rsImm[head];
         rsOp[head] <= `NOP;
         head <= (head == `rsSize - 1) ? 0 : head + 1;
-        num <= num - 1;
+        num <= LSen ? num : (num - 1);
       end else begin
+        num <= LSen ? num + 1 : num;
         LSworkEn <= `Disable;
         operandO <= `dataFree;
         operandT <= `dataFree;

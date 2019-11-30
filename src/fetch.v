@@ -14,13 +14,16 @@ module fetch(
     //to decoder
     output reg DecEn, 
     output reg[`InstAddrBus] DecPC, 
-    output reg[`InstBus]   inst, 
+    output reg[`InstBus]   DecInst, 
     //with mem
     input wire memInstOutEn, 
     input wire[`InstBus] memInst, 
 
     output reg instEn, 
-    output reg[`InstAddrBus] instAddr
+    output reg[`InstAddrBus] instAddr,
+
+    input wire hit,
+    input wire[`InstBus] cacheInst
 );
     localparam StatusFree = 2'b00;
     localparam StatusWork = 2'b01;
@@ -28,9 +31,10 @@ module fetch(
     localparam StatusStall = 2'b11;
 
     reg[1:0] status;
-    wire isBJ;
+    wire isBJ, cacheIsBJ;
 
     assign isBJ = memInst[6];
+    assign cacheIsBJ = cacheInst[6];
 
     always @(posedge clk or posedge rst) begin
       if (rst == `Enable) begin
@@ -39,7 +43,7 @@ module fetch(
         instAddr <= `addrFree;
         DecEn <= `Disable;
         DecPC <= `addrFree;
-        inst <= `dataFree;
+        DecInst <= `dataFree;
       end else begin
         case(status)
           StatusFree: begin
@@ -49,11 +53,31 @@ module fetch(
             status <= StatusWork;
           end
           StatusWork: begin
-            if (memInstOutEn == `Enable) begin
+            if (hit) begin
+              DecInst <= cacheInst;
               if (!stall) begin
                 DecEn <= `Enable;
                 DecPC <= instAddr;
-                inst <= memInst;
+                DecInst <= cacheInst;
+                if (cacheIsBJ) begin
+                  instEn <= `Disable;
+                  instAddr <= instAddr;
+                  status <= StatusWaitBJ;
+                end else begin
+                  instEn <= `Enable;
+                  instAddr <= instAddr + 4;
+                  status <= StatusWork;
+                end
+              end else begin
+                DecEn <= `Disable;
+                instEn <= `Disable;
+                status <= StatusStall;
+              end
+            end else if (memInstOutEn == `Enable) begin
+              DecInst <= memInst;
+              if (!stall) begin
+                DecEn <= `Enable;
+                DecPC <= instAddr;
                 if (isBJ) begin
                   instEn <= `Disable;
                   instAddr <= instAddr;
@@ -64,6 +88,7 @@ module fetch(
                   status <= StatusWork;
                 end
               end else begin
+                DecEn <= `Disable;
                 instEn <= `Disable;
                 status <= StatusStall;
               end
@@ -72,7 +97,7 @@ module fetch(
               //decoder cannot work
               DecEn <= `Disable;
               DecPC <= instAddr;
-              //inst <= inst;
+              //DecInst <= DecInst;
               instEn <= `Disable;
               //instAddr <= instAddr;
               status <= StatusWork;
@@ -101,9 +126,11 @@ module fetch(
               status <= StatusStall;
               instEn <= `Disable;
             end else begin
+              status <= StatusWork;
               DecEn <= `Enable;
               DecPC <= instAddr;
-              inst <= memInst;
+              instEn <= `Enable;
+              instAddr <= instAddr + 4;
               //when stalls, the meminst won't change(because instEn is disable), 
               //so when the stall ends, it returns the correct answer. 
             end
