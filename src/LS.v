@@ -16,7 +16,7 @@ module LS(
     output wire LSunwork, 
 
     //with mem
-    input wire LOutEn, 
+    input wire LSoutEn, 
     input wire[`DataBus]  Ldata,  
     input wire LSfree, 
 
@@ -33,7 +33,7 @@ module LS(
   );
     reg status, sign; 
 
-    assign LSunwork = (status == `IsFree) ? ~LSworkEn : LOutEn;
+    assign LSunwork = (status == `IsFree) ? ~LSworkEn : LSoutEn;
 
     always @ (posedge clk or posedge rst) begin
       if (rst == `Enable) begin
@@ -135,7 +135,7 @@ module LS(
           end
           `NotFree: begin
             dataEn <= `Disable;
-            if (LOutEn == `Enable) begin
+            if (LSoutEn == `Enable) begin
               LSRW <= `Read;
               LSROBen <= (LSRW == `Read) ? `Enable : `Disable;
               status <= `IsFree;

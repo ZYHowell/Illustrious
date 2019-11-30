@@ -26,6 +26,7 @@ module ALU(
         ROBnameW = wrtName;
         jumpEn = `Disable;
         jumpAddr = `addrFree;
+        ROBdataW = `dataFree;
         case(opCode)
           `ADD: ROBdataW = $signed(operandO) + $signed(operandT);
           `SUB: ROBdataW = $signed(operandO) - $signed(operandT);
@@ -49,8 +50,7 @@ module ALU(
             ROBdataW = instAddr + 4;
           end
           `AUIPC:ROBdataW = $signed(operandO) + $signed(operandT);
-          default:;
-          //...
+          default:ROBdataW = ROBdataW;
         endcase
       end else begin
         ROBen = `Disable;

@@ -1,4 +1,4 @@
-//`include "defines.v"
+`include "defines.v"
 
 module fetch(
     input wire clk, 
@@ -13,10 +13,9 @@ module fetch(
 
     //to decoder
     output reg DecEn, 
-    output reg[`InstAddrBus] PC, 
+    output reg[`InstAddrBus] DecPC, 
     output reg[`InstBus]   inst, 
     //with mem
-    input wire memInstFree, 
     input wire memInstOutEn, 
     input wire[`InstBus] memInst, 
 
@@ -39,7 +38,7 @@ module fetch(
         instEn <= `Disable;
         instAddr <= `addrFree;
         DecEn <= `Disable;
-        PC <= `addrFree;
+        DecPC <= `addrFree;
         inst <= `dataFree;
       end else begin
         case(status)
@@ -53,7 +52,7 @@ module fetch(
             if (memInstOutEn == `Enable) begin
               if (!stall) begin
                 DecEn <= `Enable;
-                PC <= instAddr;
+                DecPC <= instAddr;
                 inst <= memInst;
                 if (isBJ) begin
                   instEn <= `Disable;
@@ -72,7 +71,7 @@ module fetch(
               //waiting for an value
               //decoder cannot work
               DecEn <= `Disable;
-              PC <= instAddr;
+              DecPC <= instAddr;
               //inst <= inst;
               instEn <= `Disable;
               //instAddr <= instAddr;
@@ -103,7 +102,7 @@ module fetch(
               instEn <= `Disable;
             end else begin
               DecEn <= `Enable;
-              PC <= instAddr;
+              DecPC <= instAddr;
               inst <= memInst;
               //when stalls, the meminst won't change(because instEn is disable), 
               //so when the stall ends, it returns the correct answer. 

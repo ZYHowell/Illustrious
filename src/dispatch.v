@@ -1,6 +1,5 @@
-//`include "defines.v"
+`include "defines.v"
 //CAUTION! not test if Status == 0, WHICH SHOULD BE IN CPU
-//CAUTION! THE TABLE IS BETTER TO BE PUT IN CPU RANTHER THAN DISPATCHER
 
 module dispatcher(
     //from decoder
@@ -52,7 +51,7 @@ module dispatcher(
     output reg[`DataBus]        LSoperandT, 
     output reg[`TagBus]         LStagO, 
     output reg[`TagBus]         LStagT,
-    output reg[`OpBus]          LStagW, 
+    output reg[`TagBus]          LStagW, 
     output reg[`NameBus]        LSnameW, 
     output reg[`DataBus]        LSimm, 
     output reg[`OpBus]          LSop

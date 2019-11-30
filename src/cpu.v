@@ -29,12 +29,13 @@ module cpu(
 
     wire stall;
     //output of mem
+    wire memInstWaiting, memLSwaiting;
     wire instEn;
     wire [`InstAddrBus] instAddr;
     wire instOutEn, mcuInstPortFree;
     wire [`InstBus] FetchInst;
 
-    wire LOutEn, mcuLSportFree;
+    wire LSoutEn, mcuLSportFree;
     wire [`DataBus] mcuLdata;
 
     //output of fetcher
@@ -132,22 +133,20 @@ module cpu(
     .clk(clk_in), 
     .rst(rst_in), 
     //with PC
-      .instEn(instEn), 
-      .instAddr(instAddr), 
+      .fetchEn(instEn), 
+      .fetchAddr(instAddr), 
     //output
       .instOutEn(instOutEn), 
       .inst(FetchInst), 
-      .instFree(mcuInstPortFree), 
     //with LS
-    .dataEn(dataEn), 
+    .LSen(dataEn), 
     .LSRW(LSRW), //always 0 for read and 1 for write
-    .dataAddr(dataAddr),
+    .LSaddr(dataAddr),
     .LSlen(LSlen), 
     .Sdata(Sdata), //is DataFree when it is read
     //output below
-      .LOutEn(LOutEn), 
-      .Ldata(mcuLdata), 
-      .LSfree(mcuLSportFree), 
+      .LSdone(LSoutEn), 
+      .LdData(mcuLdata), 
     //with ram
       .RWstate(mem_wr), 
       .RWaddr(mem_a), 
@@ -170,10 +169,9 @@ module cpu(
 
     //to decoder
       .DecEn(DecEn), 
-      .PC(ToDecAddr), 
+      .DecPC(ToDecAddr), 
       .inst(ToDecInst), 
     //with mem
-      .memInstFree(mcuInstPortFree), 
       .memInstOutEn(instOutEn), 
       .memInst(FetchInst), 
 
@@ -443,7 +441,7 @@ module cpu(
      .LSunwork(LSunwork), 
 
     //with mem
-      .LOutEn(LOutEn), 
+      .LSoutEn(LSoutEn), 
       .Ldata(mcuLdata), 
       .LSfree(mcuLSportFree), 
 
