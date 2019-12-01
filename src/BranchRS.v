@@ -50,15 +50,15 @@ module BranchRS(
 
     //check readyState and issue
     always @ (*) begin
-        if (rst == `Enable) begin
-          empty <= {`rsSize{1'b1}};
-          ready <= {`rsSize{1'b0}};
-        end else begin
-          for (i = 0; i < `rsSize;i = i + 1) begin
-            empty[i] = rsOp[i] == `NOP;
-            ready[i] = (!empty[i]) && (rsTagO[i] == `tagFree) && (rsTagT[i] == `tagFree);
-          end
+      if (rst == `Enable) begin
+        empty <= {`rsSize{1'b1}};
+        ready <= {`rsSize{1'b0}};
+      end else begin
+        for (i = 0; i < `rsSize;i = i + 1) begin
+          empty[i] = rsOp[i] == `NOP;
+          ready[i] = (!empty[i]) && (rsTagO[i] == `tagFree) && (rsTagT[i] == `tagFree);
         end
+      end
     end
 
     //receive boardcast from CDB and deal with rst of rs

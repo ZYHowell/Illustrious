@@ -21,6 +21,7 @@ module Branch(
     always @ (*) begin
       if (BranchWorkEn == `Enable) begin
         BranchResultEn = `Enable;
+        BranchAddr = 0;
         case (opCode)
           `BEQ: BranchAddr = operandO == operandT ? jmpAddr : nxtAddr;
           `BNE: BranchAddr = operandO != operandT ? jmpAddr : nxtAddr;
@@ -28,7 +29,6 @@ module Branch(
           `BGE: BranchAddr = $signed(operandO) >= $signed(operandT) ? jmpAddr : nxtAddr;
           `BLTU:BranchAddr = operandO <  operandT ? jmpAddr : nxtAddr;
           `BGEU:BranchAddr = operandO >= operandT ? jmpAddr : nxtAddr;
-          default:;
         endcase
       end
       else begin

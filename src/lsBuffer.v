@@ -76,7 +76,7 @@ module lsBuffer(
     end 
 
     //receive boardcast from CDB
-    always @ (negedge clk or posedge rst) begin
+    always @ (negedge clk) begin
       if (rst == `Disable) begin
         for (i = 0;i < `rsSize;i = i + 1) begin
           rsTagO[i] <= (empty[i]) ? `tagFree : 
@@ -92,7 +92,12 @@ module lsBuffer(
                         (rsTagT[i] == ALUtag && enALUwrt) ? ALUdata :
                         (rsTagT[i] == LStag && enLSwrt) ? LSdata : rsDataT[i];
         end
-      end else begin
+      end
+    end
+
+
+    always @ (posedge clk or posedge rst) begin
+      if (rst) begin
         for (i = 0;i < `rsSize;i = i + 1) begin
           rsTagO[i] <= `tagFree;
           rsDataO[i] <= `dataFree;
@@ -103,12 +108,7 @@ module lsBuffer(
           rsNameW[i] <= `nameFree;
           rsImm[i] <= `dataFree;
         end
-      end
-    end
-
-    //push inst to RS, each tag can be assigned to an RS
-    always @ (posedge clk) begin
-      if (rst == `Disable) begin
+      end else begin
         if (LSen) begin
           empty[tail]   <= 0;
           rsOp[tail]     <= LSop;
@@ -121,30 +121,27 @@ module lsBuffer(
           rsImm[tail]    <= LSimm;
           tail <= (tail == `rsSize - 1) ? 0 : tail + 1;
         end
-      end
-    end
-
-    always @ (posedge clk) begin
-      if ((rst == `Disable) && (LSreadEn == `Enable) && canIssue) begin
-        LSworkEn <= `Enable;
-        operandO <= rsDataO[head];
-        operandT <= rsDataT[head];
-        opCode <= rsOp[head];
-        wrtName <= rsNameW[head];
-        wrtTag <= rsTagW[head];
-        imm <= rsImm[head];
-        rsOp[head] <= `NOP;
-        head <= (head == `rsSize - 1) ? 0 : head + 1;
-        num <= LSen ? num : (num - 1);
-      end else begin
-        num <= LSen ? num + 1 : num;
-        LSworkEn <= `Disable;
-        operandO <= `dataFree;
-        operandT <= `dataFree;
-        opCode <= `NOP;
-        wrtName <= `nameFree;
-        wrtTag <= `tagFree;
-        imm <= `dataFree;
+        if ((LSreadEn == `Enable) && canIssue) begin
+          LSworkEn <= `Enable;
+          operandO <= rsDataO[head];
+          operandT <= rsDataT[head];
+          opCode <= rsOp[head];
+          wrtName <= rsNameW[head];
+          wrtTag <= rsTagW[head];
+          imm <= rsImm[head];
+          rsOp[head] <= `NOP;
+          head <= (head == `rsSize - 1) ? 0 : head + 1;
+          num <= LSen ? num : (num - 1);
+        end else begin
+          num <= LSen ? num + 1 : num;
+          LSworkEn <= `Disable;
+          operandO <= `dataFree;
+          operandT <= `dataFree;
+          opCode <= `NOP;
+          wrtName <= `nameFree;
+          wrtTag <= `tagFree;
+          imm <= `dataFree;
+        end
       end
     end
 endmodule
