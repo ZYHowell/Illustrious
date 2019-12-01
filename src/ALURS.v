@@ -40,7 +40,7 @@ module RsLine(
     input wire[`TagBus]     allocTagW,
     input wire[`NameBus]    allocNameW,  
     input wire[`OpBus]      allocOp, 
-    input wire[`InstAddrBus]allocAddr, 
+    input wire[`InstAddrBus]allocImm, 
     //
     input wire empty, 
     output wire ready, 
@@ -48,13 +48,15 @@ module RsLine(
     output wire[`DataBus] issueOperandT, 
     output wire[`OpBus]   issueOp,  
     output wire[`NameBus] issueNameW, 
-    output wire[`InstAddrBus] issuePC
-
+    output wire[`TagBus]  issueTagW,
+    output wire[`DataBus] issueImm
+    //the imm is pc in alu, is imm in ls; so bucket branchRS for it contains both
 );
     reg[`TagBus]  rsTagO, rsTagT;
     reg[`DataBus] rsDataO, rsDataT;
     reg[`NameBus] rsNameW;
-    reg[`InstAddrBus] rsPC;
+    reg[`TagBus]  rsTagW;
+    reg[`DataBus] rsImm;
     reg[`OpBus]   rsOp;
     wire[`TagBus] nxtPosTagO, nxtPosTagT;
     wire[`DataBus] nxtPosDataO, nxtPosDataT;
@@ -64,7 +66,8 @@ module RsLine(
     assign issueOperandT = (nxtPosTagT == `tagFree) ? nxtPosDataT : rsDataT;
     assign issueOp = rsOp;
     assign issueNameW = rsNameW;
-    assign issuePC = rsPC;
+    assign issueImm = rsImm;
+    assign issueTagW = rsTagW;
     nxtPosCal nxtPosCalO(
       .enWrtO(enWrtO), 
       .WrtTagO(WrtTagO), 
@@ -96,7 +99,8 @@ module RsLine(
         rsDataO <= `dataFree;
         rsDataT <= `dataFree;
         rsNameW <= `nameFree;
-        rsPC <= `addrFree;
+        rsTagW <= `tagFree;
+        rsImm <= `dataFree;
         rsOp <= `NOP;
       end else if (allocEn == `Enable) begin
         rsTagO <= allocTagO;
@@ -104,7 +108,8 @@ module RsLine(
         rsDataO <= allocOperandO;
         rsDataT <= allocOperandT;
         rsNameW <= allocNameW;
-        rsPC <= allocAddr;
+        rsTagW <= allocTagW;
+        rsImm <= allocImm;
         rsOp <= allocOp;
       end else begin
         rsTagO <= nxtPosTagO;
@@ -167,6 +172,7 @@ module ALUrs(
     wire[`DataBus] issueOperandT[`rsSize - 1 : 0];
     wire[`OpBus]   issueOp[`rsSize - 1 : 0]; 
     wire[`NameBus] issueNameW[`rsSize - 1 : 0];
+    wire[`TagBus]   issueTagW[`rsSize - 1 : 0];
     wire[`InstAddrBus] issuePC[`rsSize - 1 : 0];
 
     integer i;
@@ -176,7 +182,7 @@ module ALUrs(
 
     generate
       genvar j;
-      for (j = 0;j < `rsSize;j = j + 1) begin: rsLine
+      for (j = 0;j < `rsSize;j = j + 1) begin: ALUrsLine
         RsLine ALUrsLine(
           .clk(clk), 
           .rst(rst), 
@@ -196,7 +202,7 @@ module ALUrs(
           .allocTagW(AllocPostTagW),
           .allocNameW(AllocPostNameW),
           .allocOp(AllocPostOp), 
-          .allocAddr(AllocPostAddr), 
+          .allocImm(AllocPostAddr), 
           //
           .empty(empty[j]), 
           .ready(ready[j]), 
@@ -204,7 +210,8 @@ module ALUrs(
           .issueOperandT(issueOperandT[j]), 
           .issueOp(issueOp[j]), 
           .issueNameW(issueNameW[j]), 
-          .issuePC(issuePC[j])
+          .issueTagW(issueTagW[j]), 
+          .issueImm(issuePC[j])
         );
       end
     endgenerate

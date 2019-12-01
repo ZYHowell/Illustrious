@@ -1,8 +1,4 @@
 `include "defines.v"
-//rewriting
-//Here hides a big problem in this one, for load after a store can execute before it. 
-//When this load loads the address where store stores, it creates a problem. 
-//rewriting... make it fifo
 //should superscalar supported?
 module lsBuffer(
     input rst, 
@@ -39,97 +35,106 @@ module lsBuffer(
     output wire LSbufFree
 );
     reg [`rsSize - 1 : 0] empty;
+    wire[`rsSize - 1 : 0] ready;
 
-    wire canIssue;
+    reg allocEn[`rsSize - 1 : 0];
+    reg[`DataBus]     AllocPostOperandO; 
+    reg[`DataBus]     AllocPostOperandT; 
+    reg[`TagBus]      AllocPostTagO; 
+    reg[`TagBus]      AllocPostTagT;
+    reg[`TagBus]      AllocPostTagW;
+    reg[`NameBus]     AllocPostNameW;  
+    reg[`OpBus]       AllocPostOp; 
+    reg[`DataBus]     AllocPostImm; 
 
-    reg [`DataBus]      rsDataO[`rsSize - 1:0];
-    reg [`DataBus]      rsDataT[`rsSize - 1:0];
-    reg [`TagBus]       rsTagO[`rsSize - 1:0];
-    reg [`TagBus]       rsTagT[`rsSize - 1:0];
-    reg [`OpBus]        rsOp[`rsSize - 1:0];
-    reg [`DataBus]      rsImm[`rsSize - 1:0];
-    reg [`NameBus]      rsNameW[`rsSize - 1:0];
-    reg [`TagBus]       rsTagW[`rsSize - 1:0];
+    wire[`DataBus] issueOperandO[`rsSize - 1 : 0];
+    wire[`DataBus] issueOperandT[`rsSize - 1 : 0];
+    wire[`OpBus]   issueOp[`rsSize - 1 : 0]; 
+    wire[`NameBus] issueNameW[`rsSize - 1 : 0];
+    wire[`TagBus] issueTagW[`rsSize - 1 : 0];
+    wire[`DataBus] issueImm[`rsSize - 1 : 0];
+
     reg [`TagRootBus]   head, tail, num;
+    wire canIssue;
     //the head is the head while the tail is the next;
+    integer i;
 
-    assign canIssue = (~empty[head]) && (rsTagO[head] == `tagFree) && (rsTagT[head] == `tagFree);
-    
+    assign canIssue = ready[head];
     assign LSfreeTag = (tail != head) ? tail : 
                         num ? `NoFreeTag : tail;
-
     assign LSbufFree = (num + LSen + 1) < `rsSize ? 1 : 0;
 
-    integer i;
-    //deal with rst
-    always @ (*) begin
-      if (rst == `Enable) begin
-        head = 0;
-        tail = 0;
-        num = 0;
-        empty = {`rsSize{1'b1}};
-      end else begin
-        for (i = 0;i < `rsSize;i = i + 1) begin
-          empty[i] = rsOp[i] == `NOP;
-        end
+    generate
+      genvar j;
+      for (j = 0; j < `rsSize;j = j + 1) begin: LSbufLine
+        RsLine LSbufLine(
+          .clk(clk), 
+          .rst(rst), 
+          //
+          .enWrtO(enALUwrt), 
+          .WrtTagO(ALUtag), 
+          .WrtDataO(ALUdata), 
+          .enWrtT(enLSwrt), 
+          .WrtTagT(LStag),
+          .WrtDataT(LSdata), 
+          //
+          .allocEn(allocEn[j]), 
+          .allocOperandO(AllocPostOperandO), 
+          .allocOperandT(AllocPostOperandT), 
+          .allocTagO(AllocPostTagO), 
+          .allocTagT(AllocPostTagT),
+          .allocTagW(AllocPostTagW),
+          .allocNameW(AllocPostNameW),
+          .allocOp(AllocPostOp), 
+          .allocImm(AllocPostImm), 
+          //
+          .empty(empty[j]), 
+          .ready(ready[j]), 
+          .issueOperandO(issueOperandO[j]), 
+          .issueOperandT(issueOperandT[j]), 
+          .issueOp(issueOp[j]), 
+          .issueNameW(issueNameW[j]), 
+          .issueTagW(issueTagW[j]), 
+          .issueImm(issueImm[j])
+        );
       end
-    end 
+    endgenerate
 
-    //receive boardcast from CDB
-    always @ (negedge clk) begin
-      if (rst == `Disable) begin
-        for (i = 0;i < `rsSize;i = i + 1) begin
-          rsTagO[i] <= (empty[i]) ? `tagFree : 
-                        (rsTagO[i] == ALUtag && enALUwrt) ? `tagFree : 
-                        (rsTagO[i] == LStag && enLSwrt) ? `tagFree : rsTagO[i];
-          rsDataO[i] <= (empty[i]) ? `dataFree : 
-                        (rsTagO[i] == ALUtag && enALUwrt) ? ALUdata :
-                        (rsTagO[i] == LStag && enLSwrt) ? LSdata : rsDataO[i];
-          rsTagT[i] <= (empty[i]) ? `tagFree : 
-                        (rsTagT[i] == ALUtag && enALUwrt) ? `tagFree : 
-                        (rsTagT[i] == LStag && enLSwrt) ? `tagFree : rsTagT[i];
-          rsDataT[i] <= (empty[i]) ? `dataFree : 
-                        (rsTagT[i] == ALUtag && enALUwrt) ? ALUdata :
-                        (rsTagT[i] == LStag && enLSwrt) ? LSdata : rsDataT[i];
-        end
+    always @(*) begin
+      for (i = 0; i < `rsSize;i = i + 1) begin
+        allocEn[i] = `Disable;
       end
+      allocEn[tail] = LSen ? `Enable : `Disable;
+      AllocPostImm = LSimm;
+      AllocPostOp = LSop;
+      AllocPostOperandO = LSoperandO;
+      AllocPostOperandT = LSoperandT;
+      AllocPostTagO = LStagO;
+      AllocPostTagT = LStagT;
+      AllocPostTagW = LStagW;
+      AllocPostNameW = LSnameW;
     end
-
 
     always @ (posedge clk or posedge rst) begin
       if (rst) begin
-        for (i = 0;i < `rsSize;i = i + 1) begin
-          rsTagO[i] <= `tagFree;
-          rsDataO[i] <= `dataFree;
-          rsTagT[i] <= `tagFree;
-          rsDataT[i] <= `dataFree;
-          rsTagW[i] <= `tagFree;
-          rsOp[i] <= `NOP;
-          rsNameW[i] <= `nameFree;
-          rsImm[i] <= `dataFree;
-        end
+        head <= 0;
+        tail <= 0;
+        num <= 0;
+        empty <= {`rsSize{1'b1}};
       end else begin
         if (LSen) begin
           empty[tail]   <= 0;
-          rsOp[tail]     <= LSop;
-          rsDataO[tail]  <= LSoperandO;
-          rsDataT[tail]  <= LSoperandT;
-          rsTagO[tail]   <= LStagO;
-          rsTagT[tail]   <= LStagT;
-          rsTagW[tail]   <= LStagW;
-          rsNameW[tail]  <= LSnameW;
-          rsImm[tail]    <= LSimm;
           tail <= (tail == `rsSize - 1) ? 0 : tail + 1;
         end
         if ((LSreadEn == `Enable) && canIssue) begin
           LSworkEn <= `Enable;
-          operandO <= rsDataO[head];
-          operandT <= rsDataT[head];
-          opCode <= rsOp[head];
-          wrtName <= rsNameW[head];
-          wrtTag <= rsTagW[head];
-          imm <= rsImm[head];
-          rsOp[head] <= `NOP;
+          operandO <= issueOperandO[head];
+          operandT <= issueOperandT[head];
+          opCode <= issueOp[head];
+          wrtName <= issueNameW[head];
+          wrtTag <= issueTagW[head];
+          imm <= issueImm[head];
+          empty[head] <= 1;
           head <= (head == `rsSize - 1) ? 0 : head + 1;
           num <= LSen ? num : (num - 1);
         end else begin
