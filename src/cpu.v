@@ -82,7 +82,7 @@ module cpu(
     wire [`TagBus] regTagO, regTagT;
 
     //output of ALUrs
-    wire ALUworkEn;
+    wire ALUworkEn, ALUfree;
     wire [`DataBus] ALUoperandO, ALUoperandT;
     wire [`TagBus]  ALUwrtTag;
     wire [`NameBus] ALUwrtName;
@@ -175,7 +175,7 @@ module cpu(
       .WrtData(mem_dout)
   );
 
-  assign stall = !(ALUfreeStatus && LSbufFree);
+  assign stall = ~(ALUfree & LSbufFree);
 
   fetch fetcher(
       .clk(clk_in), 
@@ -347,6 +347,7 @@ module cpu(
       .opCode(ALUopCode), 
       .instAddr(ALUaddr), 
     //to dispatcher
+      .ALUfree(ALUfree), 
       .ALUfreeStatus(ALUfreeStatus)
   );
 

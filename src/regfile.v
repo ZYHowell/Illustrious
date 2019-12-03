@@ -33,13 +33,11 @@ module Regfile(
     reg [`DataBus] data[`regSize - 1 : 0];
     reg [`TagBus] tag[`regSize - 1 : 0];
 
-    wire ALUtagClear, LStagClear;
-    assign ALUtagClear = ~ALUwrtEn ? 0 : 
-                        (ALUwrtTag != tag[ALUwrtName]) ? 0 :
-                        ((ALUwrtName == wrtNameDec) & enWrtDec) ? 0 : 1;
-    assign LStagClear = ~LSwrtEn ? 0 :
-                        (LSwrtTag != tag[LSwrtName]) ? 0 :
-                        ((LSwrtName == wrtNameDec) & enWrtDec) ? 0 : 1;
+    wire ALUtagClear, LStagClear, ALUwrtCover, LSwrtCover;
+    assign ALUtagClear  = ALUwrtEn & (ALUwrtTag == tag[ALUwrtName]);
+    assign LStagClear   = LSwrtEn  & (LSwrtTag  == tag[LSwrtName]);
+    assign ALUwrtCover  = ((ALUwrtName == wrtNameDec) & enWrtDec);
+    assign LSwrtCover   = ((LSwrtName  == wrtNameDec) & enWrtDec);
 
     integer i;
     //change tags and datas
@@ -59,11 +57,11 @@ module Regfile(
         // end
         //data can also be changed only when clear. this is for debug use: to make it clear.
         if (ALUwrtEn) data[ALUwrtName] <= ALUwrtData;
-        if (ALUtagClear) begin
+        if (ALUtagClear & ~ALUwrtCover) begin
           tag[ALUwrtName] <= `tagFree;
         end
         if (LSwrtEn) data[LSwrtName] <= LSwrtData;
-        if (LStagClear) begin
+        if (LStagClear & ~LSwrtCover) begin
           tag[LSwrtName] <= `tagFree;
         end
         
@@ -79,7 +77,7 @@ module Regfile(
         regTagO = `tagFree; 
       end else begin
         regDataO = ((ALUwrtName == regNameO) && ALUtagClear) ? ALUwrtData : 
-                    ((LSwrtName == regNameO) && LStagClear) ? LSwrtData : data[regNameO];
+                   ((LSwrtName == regNameO) && LStagClear) ? LSwrtData : data[regNameO];
         regTagO = ((ALUwrtName == regNameO) && ALUtagClear) ? `tagFree : 
                   ((LSwrtName == regNameO) && LStagClear) ? `tagFree : tag[regNameO];
       end

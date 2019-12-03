@@ -150,11 +150,13 @@ module ALUrs(
     output reg[`OpBus]      opCode, 
     output reg[`InstAddrBus]instAddr,
     //to dispatcher
+    output wire ALUfree, 
     output wire[`rsSize - 1 : 0] ALUfreeStatus
 );
 
     wire [`rsSize - 1 : 0] ready;
     reg [`rsSize - 1 : 0] empty;
+    reg[3:0] num;
 
     wire [`rsSize - 1 : 0] issueRS;
 
@@ -179,6 +181,7 @@ module ALUrs(
 
     assign issueRS = ready & -ready;
     assign ALUfreeStatus = empty;
+    assign ALUfree = num + ALUen + 1 < `rsSize;
 
     generate
       genvar j;
@@ -232,6 +235,7 @@ module ALUrs(
 
     always @ (posedge clk) begin
       if (rst) begin
+        num <= 0;
         empty <= {`rsSize{1'b1}};
       end else begin
         if (ALUen) empty[ALUtagW[`TagRootBus]] <= 0;
@@ -248,7 +252,9 @@ module ALUrs(
               empty[i] <= 1;
             end
           end
+          num <= ALUen ? num : (num - 1);
         end else begin
+          num <= ALUen ? num + 1 : num;
           ALUworkEn <= `Disable;
           operandO <= `dataFree;
           operandT <= `dataFree;

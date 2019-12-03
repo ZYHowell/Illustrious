@@ -1,12 +1,12 @@
-stage 1:(this week or about)
+stage 1:(week 12 or about)
 
 add an icache(done)
 
-make use of stall and rdy
+make use of stall and rdy(done)
 
-confirm the safety of the use of negedge(almost no negedge, except one in mem)
+confirm the safety of the use of negedge(done)
 
-stage 2:(next week)
+stage 2:(week 13)
 
 add dcache with write through
 
