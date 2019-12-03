@@ -20,7 +20,7 @@ module icache(
     reg memValid[`memCacheSize - 1 : 0];
 
     assign hit = fetchEn & (memTag[Addr[`memAddrIndexBus]] == Addr[`memAddrTagBus]) & (memValid[Addr[`memAddrIndexBus]]);
-    assign foundInst = memValid[Addr[`memAddrIndexBus]] ? (memInst[Addr[`memAddrIndexBus]]) : `dataFree;
+    assign foundInst = (hit & memValid[Addr[`memAddrIndexBus]]) ? (memInst[Addr[`memAddrIndexBus]]) : `dataFree;
     
     assign memfetchEn = hit ? `Disable : fetchEn;
     assign memfetchAddr = hit ? `addrFree : Addr;
@@ -54,7 +54,7 @@ module mem(
     input wire LSen, 
     input wire LSRW, //always 0 for read and 1 for write
     input wire[`DataAddrBus]    LSaddr,
-    input wire[1:0]             LSlen, 
+    input wire[2:0]             LSlen, 
     input wire[`DataBus]        Sdata, 
       //is DataFree when it is read
     output reg LSdone, 
@@ -74,16 +74,16 @@ module mem(
     reg[1:0]        WaitingRW;
     //Waiting[0]:inst, Waiting[1]:LS
     reg [`AddrBus]  WaitingAddr[1:0];
-    reg [1:0]       WaitingLen[1:0];
+    reg [`LenBus]   WaitingLen[1:0];
     reg [`DataBus]  WaitingData;
     //only Save can put something here
     
     reg             RW;
     reg             Port;//0 for inst and 1 for LS
-    reg [`StageBus] stage;
+    reg [`LenBus]   stage;
     reg [`AddrBus]  AddrPlatform;
     reg [`RAMBus]   DataPlatformW[3:0];
-    reg [1:0]       Lens;
+    reg [`LenBus]   Lens;
 
     assign RWstate = RW;
     assign RWaddr = AddrPlatform;
@@ -91,18 +91,18 @@ module mem(
 
     integer i;
 
-    always @ (negedge clk or posedge rst) begin
+    always @ (posedge clk or posedge rst) begin
       if (rst == `Enable) begin
         status <= `IsFree;
         for (i = 0;i < 2;i = i + 1) begin
           Waiting[i] <= `NotUsing;
           WaitingRW[i] <= `Read;
           WaitingAddr[i] <= `addrFree;
-          WaitingLen[i] <= 2'b00;
+          WaitingLen[i] <= `ZeroLen;
         end
         WaitingData <= `dataFree;
         RW <= `Read;
-        stage <= 2'b00;
+        stage <= `ZeroLen;
         AddrPlatform <= `addrFree;
         for (i = 0;i < 4;i = i + 1)
           DataPlatformW[i] <= 8'h00;
@@ -122,7 +122,7 @@ module mem(
           Waiting[`instPort] <= `IsUsing;
           WaitingAddr[`instPort] <= fetchAddr;
           WaitingRW[`instPort] <= `Read;
-          WaitingLen[`instPort] <= 2'b11;
+          WaitingLen[`instPort] <= `WordLen;
         end
         //input and fill in
         if (LSen) begin
@@ -148,7 +148,7 @@ module mem(
               DataPlatformW[3] <= Sdata[31:24];
               AddrPlatform <= LSaddr;
               Lens <= LSlen;
-              stage <= 2'b00;
+              stage <= `ZeroLen;
               status <= `NotFree;
               Port <= `LSport;
 
@@ -156,40 +156,41 @@ module mem(
               WaitingRW[`LSport] <= `Read;
               WaitingAddr[`LSport] <= `addrFree;
               WaitingData <= `dataFree;
-              WaitingLen[`LSport] <= 2'b00;
+              WaitingLen[`LSport] <= `ZeroLen;
             end else if (fetchEn == `Enable)begin
               RW <= `Read;
               for (i = 0; i < 4;i = i + 1)
                 DataPlatformW[i] <= 8'h00;
               addAddr <= fetchAddr;
               AddrPlatform <= fetchAddr;
-              Lens <= 2'b11;
-              stage <= 2'b00;
+              Lens <= `WordLen;
+              stage <= `ZeroLen;
               status <= `NotFree;
               Port <= `instPort;
 
               Waiting[`instPort] <= `NotUsing;
               WaitingRW[`instPort] <= `Read;
               WaitingAddr[`instPort] <= `addrFree;
-              WaitingLen[`instPort] <= 2'b00;
+              WaitingLen[`instPort] <= `ZeroLen;
             end else begin
               status <= `IsFree;
+              RW <= `Read;
             end
           end
           `NotFree: begin
             if (Port == `instPort) begin
               case (stage)
-                2'b00: inst[7:0] <= ReadData;
-                2'b01: inst[15:8] <= ReadData;
-                2'b10: inst[23:16] <= ReadData;
-                2'b11: inst[31:24] <= ReadData;
+                3'b001: inst[7:0] <= ReadData;
+                3'b010: inst[15:8] <= ReadData;
+                3'b011: inst[23:16] <= ReadData;
+                3'b100: inst[31:24] <= ReadData;
               endcase
             end else begin
               case (stage)
-                2'b00: LdData[7:0] <= ReadData;
-                2'b01: LdData[15:8] <= ReadData;
-                2'b10: LdData[23:16] <= ReadData;
-                2'b11: LdData[31:24] <= ReadData;
+                3'b001: LdData[7:0] <= ReadData;
+                3'b010: LdData[15:8] <= ReadData;
+                3'b011: LdData[23:16] <= ReadData;
+                3'b100: LdData[31:24] <= ReadData;
               endcase
             end
             if (stage == Lens) begin
@@ -204,7 +205,7 @@ module mem(
                 DataPlatformW[3] <= WaitingData[31:24];
                 AddrPlatform <= WaitingAddr[`LSport];
                 Lens <= WaitingLen[`LSport];
-                stage <= 2'b00;
+                stage <= `ZeroLen;
                 status <= `NotFree;
                 Port <= `LSport;
 
@@ -212,7 +213,7 @@ module mem(
                 WaitingRW[`LSport] <= `Read;
                 WaitingAddr[`LSport] <= `addrFree;
                 WaitingData <= `dataFree;
-                WaitingLen[`LSport] <= 2'b00;
+                WaitingLen[`LSport] <= `ZeroLen;
               end else if (Waiting[`instPort] == `Enable) begin
                 RW <= WaitingRW[`instPort];
                 for (i = 0; i < 4;i = i + 1)
@@ -220,14 +221,14 @@ module mem(
                 AddrPlatform <= WaitingAddr[`instPort];
                 addAddr <= WaitingAddr[`instPort];
                 Lens <= WaitingLen[`instPort];
-                stage <= 2'b00;
+                stage <= `ZeroLen;
                 status <= `NotFree;
                 Port <= `instPort;
 
                 Waiting[`instPort] <= `NotUsing;
                 WaitingRW[`instPort] <= `Read;
                 WaitingAddr[`instPort] <= `addrFree;
-                WaitingLen[`instPort] <= 2'b00;
+                WaitingLen[`instPort] <= `ZeroLen;
               end else if (LSen == `Enable) begin
                 RW <= LSRW;
                 DataPlatformW[0] <= Sdata[7:0];
@@ -236,7 +237,7 @@ module mem(
                 DataPlatformW[3] <= Sdata[31:24];
                 AddrPlatform <= LSaddr;
                 Lens <= LSlen;
-                stage <= 2'b00;
+                stage <= `ZeroLen;
                 status <= `NotFree;
                 Port <= `LSport;
 
@@ -244,25 +245,26 @@ module mem(
                 WaitingRW[`LSport] <= `Read;
                 WaitingAddr[`LSport] <= `addrFree;
                 WaitingData <= `dataFree;
-                WaitingLen[`LSport] <= 2'b00;
+                WaitingLen[`LSport] <= `ZeroLen;
               end else if (fetchEn == `Enable) begin
                 RW <= `Read;
                 for (i = 0; i < 4;i = i + 1)
                   DataPlatformW[i] <= 8'h00;
                 AddrPlatform <= fetchAddr;
                 addAddr <= fetchAddr;
-                Lens <= 2'b11;
-                stage <= 2'b00;
+                Lens <= `WordLen;
+                stage <= `ZeroLen;
                 status <= `NotFree;
                 Port <= `instPort;
 
                 Waiting[`instPort] <= `NotUsing;
                 WaitingRW[`instPort] <= `Read;
                 WaitingAddr[`instPort] <= `addrFree;
-                WaitingLen[`instPort] <= 2'b00;
+                WaitingLen[`instPort] <= `ZeroLen;
               end else begin
-                stage <= 2'b00;
+                stage <= `ZeroLen;
                 status <= `IsFree;
+                RW <= `Read;
               end
             end else begin
               stage <= stage + 1;

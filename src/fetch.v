@@ -36,77 +36,72 @@ module fetch(
     assign isBJ = memInst[6];
     assign cacheIsBJ = cacheInst[6];
 
-    always @(posedge clk or posedge rst) begin
+    always @(*) begin
+      DecEn = `Disable;
+      DecPC = instAddr;
+      DecInst = (~(hit | memInstOutEn)) ? DecInst : 
+                (hit ? cacheInst : memInst);
+      if (rst == `Disable) begin
+        case(status)
+          StatusFree: begin
+            DecInst = `dataFree;
+          end
+          StatusWork: begin
+            DecEn = (~stall & (hit | memInstOutEn)) ? `Enable : `Disable;
+          end
+          StatusWaitBJ: begin
+            DecEn = `Disable;
+          end
+          StatusStall: begin
+            DecEn = stall ? `Disable : `Enable;
+          end
+        endcase
+      end
+    end
+
+    always @(posedge clk) begin
       if (rst == `Enable) begin
         status <= StatusFree;
         instEn <= `Disable;
         instAddr <= `addrFree;
-        DecEn <= `Disable;
-        DecPC <= `addrFree;
-        DecInst <= `dataFree;
       end else begin
         case(status)
           StatusFree: begin
-            DecEn <= `Disable;
             instEn <= `Enable;
-            //instAddr <= instAddr;
             status <= StatusWork;
           end
           StatusWork: begin
             if (hit) begin
-              DecInst <= cacheInst;
-              if (!stall) begin
-                DecEn <= `Enable;
-                DecPC <= instAddr;
-                DecInst <= cacheInst;
+              if (~stall) begin
                 if (cacheIsBJ) begin
                   instEn <= `Disable;
-                  instAddr <= instAddr;
                   status <= StatusWaitBJ;
                 end else begin
                   instEn <= `Enable;
-                  instAddr <= instAddr + 4;
-                  status <= StatusWork;
+                  instAddr <= instAddr + `PCnext;
                 end
               end else begin
-                DecEn <= `Disable;
                 instEn <= `Disable;
                 status <= StatusStall;
               end
-            end else if (memInstOutEn == `Enable) begin
-              DecInst <= memInst;
-              if (!stall) begin
-                DecEn <= `Enable;
-                DecPC <= instAddr;
+            end else if (memInstOutEn) begin
+              if (~stall) begin
                 if (isBJ) begin
                   instEn <= `Disable;
-                  instAddr <= instAddr;
                   status <= StatusWaitBJ;
                 end else begin
                   instEn <= `Enable;
-                  instAddr <= instAddr + 4;
-                  status <= StatusWork;
+                  instAddr <= instAddr + `PCnext;
                 end
               end else begin
-                DecEn <= `Disable;
                 instEn <= `Disable;
                 status <= StatusStall;
               end
             end else begin
-              //waiting for an value
-              //decoder cannot work
-              DecEn <= `Disable;
-              DecPC <= instAddr;
-              //DecInst <= DecInst;
               instEn <= `Disable;
-              //instAddr <= instAddr;
-              status <= StatusWork;
             end
           end
           StatusWaitBJ: begin
-            if (!stall) begin
-              DecEn <= `Disable;
-            end
             if (enJump) begin
               instEn <= `Enable;
               instAddr <= JumpAddr;
@@ -117,22 +112,15 @@ module fetch(
               status <= StatusWork;
             end else begin
               instEn <= `Disable;
-              instAddr <= instAddr;
-              status <= StatusWaitBJ;
             end
           end
           StatusStall: begin
             if (stall) begin
-              status <= StatusStall;
               instEn <= `Disable;
             end else begin
               status <= StatusWork;
-              DecEn <= `Enable;
-              DecPC <= instAddr;
               instEn <= `Enable;
               instAddr <= instAddr + 4;
-              //when stalls, the meminst won't change(because instEn is disable), 
-              //so when the stall ends, it returns the correct answer. 
             end
           end
         endcase

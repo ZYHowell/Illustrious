@@ -57,12 +57,13 @@ module Regfile(
         //       tag[CDBwrtName] <= `tagFree;
         //   end
         // end
+        //data can also be changed only when clear. this is for debug use: to make it clear.
+        if (ALUwrtEn) data[ALUwrtName] <= ALUwrtData;
         if (ALUtagClear) begin
-          data[ALUwrtName] <= ALUwrtData;
           tag[ALUwrtName] <= `tagFree;
         end
+        if (LSwrtEn) data[LSwrtName] <= LSwrtData;
         if (LStagClear) begin
-          data[LSwrtName] <= LSwrtData;
           tag[LSwrtName] <= `tagFree;
         end
         

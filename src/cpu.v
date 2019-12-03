@@ -122,7 +122,7 @@ module cpu(
     wire LSunwork;
     wire dataEn, LSRW;
     wire [`DataAddrBus] dataAddr;
-    wire [1:0] LSlen;
+    wire [`LenBus] LSlen;
     wire [`DataBus] Sdata;
 
     wire LSROBen;

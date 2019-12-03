@@ -1,4 +1,4 @@
-//`include "defines.v"
+`include "defines.v"
 module LS(
     input wire clk, 
     input wire rst, 
@@ -23,7 +23,7 @@ module LS(
     output reg dataEn, 
     output reg LSRW, 
     output reg[`DataAddrBus]  dataAddr,
-    output reg[1:0] LSlen, 
+    output reg[`LenBus] LSlen, 
     output reg[`DataBus] Sdata,
     //to ROB
     output reg LSROBen, 
@@ -41,7 +41,7 @@ module LS(
         dataEn <= `Disable;
         LSRW <= `Read;
         dataAddr <= `addrFree;
-        LSlen <= 0;
+        LSlen <= `ZeroLen;
         Sdata <= `dataFree;
         LSROBen <= `Disable;
         LSROBdata <= `dataFree;
@@ -58,7 +58,7 @@ module LS(
               case (opCode) 
                 `LB: begin
                   LSRW <= `Read;
-                  LSlen <= 2'b00;
+                  LSlen <= `ByteLen;
                   Sdata <= `dataFree;
                   LSROBname <= wrtName;
                   LSROBtag <= wrtTag;
@@ -66,7 +66,7 @@ module LS(
                 end
                 `LH: begin
                   LSRW <= `Read;
-                  LSlen <= 2'b01;
+                  LSlen <= `HexLen;
                   Sdata <= `dataFree;
                   LSROBname <= wrtName;
                   LSROBtag <= wrtTag;
@@ -74,7 +74,7 @@ module LS(
                 end
                 `LW: begin
                   LSRW <= `Read;
-                  LSlen <= 2'b11;
+                  LSlen <= `WordLen;
                   Sdata <= `dataFree;
                   LSROBname <= wrtName;
                   LSROBtag <= wrtTag;
@@ -82,7 +82,7 @@ module LS(
                 end
                 `LBU: begin
                   LSRW <= `Read;
-                  LSlen <= 2'b00;
+                  LSlen <= `ByteLen;
                   Sdata <= `dataFree;
                   LSROBname <= wrtName;
                   LSROBtag <= wrtTag;
@@ -90,7 +90,7 @@ module LS(
                 end
                 `LHU: begin
                   LSRW <= `Read;
-                  LSlen <= 2'b01;
+                  LSlen <= `HexLen;
                   Sdata <= `dataFree;
                   LSROBname <= wrtName;
                   LSROBtag <= wrtTag;
@@ -98,7 +98,7 @@ module LS(
                 end
                 `SB: begin
                   LSRW <= `Write;
-                  LSlen <= 2'b00;
+                  LSlen <= 3'b000;
                   Sdata <= operandT;
                   LSROBname <= `nameFree;
                   LSROBtag <= `tagFree;
@@ -106,7 +106,7 @@ module LS(
                 end
                 `SH: begin
                   LSRW <= `Write;
-                  LSlen <= 2'b01;
+                  LSlen <= 3'b001;
                   Sdata <= operandT;
                   LSROBname <= `nameFree;
                   LSROBtag <= `tagFree;
@@ -114,7 +114,7 @@ module LS(
                 end
                 `SW: begin
                   LSRW <= `Write;
-                  LSlen <= 2'b11;
+                  LSlen <= 3'b011;
                   Sdata <= operandT;
                   LSROBname <= `nameFree;
                   LSROBtag <= `tagFree;
@@ -125,7 +125,7 @@ module LS(
               dataEn <= `Disable;
               LSRW <= `Read;
               dataAddr <= `addrFree;
-              LSlen <= 2'b00;
+              LSlen <= `ZeroLen;
               Sdata <= `dataFree;
               LSROBen <= `Disable;
               LSROBdata <= `dataFree;
@@ -139,20 +139,20 @@ module LS(
               LSRW <= `Read;
               LSROBen <= (LSRW == `Read) ? `Enable : `Disable;
               status <= `IsFree;
-              LSlen <= 2'b00;
+              LSlen <= `ZeroLen;
               Sdata <= `dataFree;
               dataAddr <= `addrFree;
               if (sign == `SignEx) begin
                 case (LSlen)
-                  2'b00: LSROBdata <= {{24{Ldata[7]}}, Ldata[7:0]};
-                  2'b01: LSROBdata <= {{16{Ldata[15]}}, Ldata[15:0]};
-                  2'b11: LSROBdata <= Ldata;
+                  `ByteLen: LSROBdata <= {{24{Ldata[7]}}, Ldata[7:0]};
+                  `HexLen:  LSROBdata <= {{16{Ldata[15]}}, Ldata[15:0]};
+                  `WordLen: LSROBdata <= Ldata;
                 endcase
               end else begin
                 case (LSlen)
-                  2'b00: LSROBdata <= {{24{1'b0}}, Ldata[7:0]};
-                  2'b01: LSROBdata <= {{16{1'b0}}, Ldata[7:0]};
-                  2'b11: LSROBdata <= Ldata;
+                  `ByteLen: LSROBdata <= {{24{1'b0}}, Ldata[7:0]};
+                  `HexLen:  LSROBdata <= {{16{1'b0}}, Ldata[7:0]};
+                  `WordLen: LSROBdata <= Ldata;
                 endcase
               end
             end

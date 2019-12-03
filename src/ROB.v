@@ -1,4 +1,4 @@
-//`include "defines.v"
+`include "defines.v"
 //caution! not test if Status == 0
 module ROB(
     input wire clk, 
@@ -30,6 +30,7 @@ module ROB(
     assign freeROB  = freeStatus & (-freeStatus);
     assign readyROB = readyStatus & (-readyStatus);
 
+    integer i;
     always @ (*) begin
       if (rst == `Disable) begin
         if (ROBenW) begin
