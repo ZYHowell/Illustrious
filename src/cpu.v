@@ -125,7 +125,7 @@ module cpu(
     wire [`LenBus] LSlen;
     wire [`DataBus] Sdata;
 
-    wire LSROBen;
+    wire LSROBen, LSdone;
     wire [`DataBus] LSROBdata;
     wire [`TagBus]  LSROBtag;
     wire [`NameBus] LSROBname;
@@ -435,6 +435,7 @@ module cpu(
       .LSimm(LSbufImm), 
     //from the LS
     .LSreadEn(LSunwork), 
+    .LSdone(LSoutEn),
     //to LS
     .LSworkEn(LSworkEn), 
     .operandO(LSoperandO), 
@@ -478,7 +479,8 @@ module cpu(
       .LSROBen(LSROBen), 
       .LSROBdata(LSROBdata), 
       .LSROBtag(LSROBtag), 
-      .LSROBname(LSROBname)
+      .LSROBname(LSROBname), 
+      .LSdone(LSdone)
   );
 
   // ROB ROB(

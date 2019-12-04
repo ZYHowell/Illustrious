@@ -22,6 +22,7 @@ module lsBuffer(
     input wire[`DataBus]        LSimm, 
     //from the LS
     input wire LSreadEn, 
+    input wire LSdone,
     //to LS
     output reg LSworkEn, 
     output reg[`DataBus]        operandO, 
@@ -54,12 +55,12 @@ module lsBuffer(
     wire[`TagBus] issueTagW[`rsSize - 1 : 0];
     wire[`DataBus] issueImm[`rsSize - 1 : 0];
 
-    reg [`TagRootBus]   head, tail, num;
+    reg [`TagRootBus]   head, tail, num, judgeIssue;
     wire canIssue;
     //the head is the head while the tail is the next;
     integer i;
 
-    assign canIssue = ready[head];
+    assign canIssue = ready[judgeIssue];
     assign LSfreeTag = (tail != head) ? tail : 
                         num ? `NoFreeTag : tail;
     assign LSbufFree = (num + LSen + 1) < `rsSize ? 1 : 0;
@@ -117,6 +118,7 @@ module lsBuffer(
 
     always @ (posedge clk or posedge rst) begin
       if (rst) begin
+        judgeIssue <= 0;
         head <= 0;
         tail <= 0;
         num <= 0;
@@ -126,19 +128,23 @@ module lsBuffer(
           empty[tail]   <= 0;
           tail <= (tail == `rsSize - 1) ? 0 : tail + 1;
         end
-        if ((LSreadEn == `Enable) && canIssue) begin
-          LSworkEn <= `Enable;
-          operandO <= issueOperandO[head];
-          operandT <= issueOperandT[head];
-          opCode <= issueOp[head];
-          wrtName <= issueNameW[head];
-          wrtTag <= issueTagW[head];
-          imm <= issueImm[head];
+        if (LSdone) begin
+          head <= judgeIssue;
           empty[head] <= 1;
-          head <= (head == `rsSize - 1) ? 0 : head + 1;
           num <= LSen ? num : (num - 1);
         end else begin
           num <= LSen ? num + 1 : num;
+        end
+        if ((LSreadEn == `Enable) && canIssue) begin
+          LSworkEn <= `Enable;
+          operandO <= issueOperandO[judgeIssue];
+          operandT <= issueOperandT[judgeIssue];
+          opCode <= issueOp[judgeIssue];
+          wrtName <= issueNameW[judgeIssue];
+          wrtTag <= issueTagW[judgeIssue];
+          imm <= issueImm[judgeIssue];
+          judgeIssue <= (judgeIssue == `rsSize - 1) ? 0 : judgeIssue + 1;
+        end else begin
           LSworkEn <= `Disable;
           operandO <= `dataFree;
           operandT <= `dataFree;

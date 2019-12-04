@@ -51,7 +51,7 @@ module dispatcher(
     output reg[`DataBus]        LSoperandT, 
     output reg[`TagBus]         LStagO, 
     output reg[`TagBus]         LStagT,
-    output reg[`TagBus]          LStagW, 
+    output reg[`TagBus]         LStagW, 
     output reg[`NameBus]        LSnameW, 
     output reg[`DataBus]        LSimm, 
     output reg[`OpBus]          LSop

@@ -29,7 +29,8 @@ module LS(
     output reg LSROBen, 
     output reg[`DataBus] LSROBdata, 
     output reg[`TagBus] LSROBtag, 
-    output reg[`NameBus]  LSROBname
+    output reg[`NameBus]  LSROBname, 
+    output reg LSdone
   );
     reg status, sign; 
 
@@ -47,7 +48,9 @@ module LS(
         LSROBdata <= `dataFree;
         LSROBtag <= `tagFree;
         LSROBname <= `nameFree;
+        LSdone <= 0;
       end else begin
+        LSdone <= 0;
         case(status)
           `IsFree: begin
             LSROBen <= `Disable;
@@ -136,6 +139,7 @@ module LS(
           `NotFree: begin
             dataEn <= `Disable;
             if (LSoutEn == `Enable) begin
+              LSdone <= 1;
               LSRW <= `Read;
               LSROBen <= (LSRW == `Read) ? `Enable : `Disable;
               status <= `IsFree;

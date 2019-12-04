@@ -31,6 +31,7 @@ module fetch(
     localparam StatusStall = 2'b11;
 
     reg[1:0] status;
+    reg StallToWaitBJ;
     wire isBJ, cacheIsBJ;
 
     assign isBJ = memInst[6];
@@ -61,6 +62,7 @@ module fetch(
 
     always @(posedge clk) begin
       if (rst == `Enable) begin
+        StallToWaitBJ <= 0;
         status <= StatusFree;
         instEn <= `Disable;
         instAddr <= `addrFree;
@@ -82,6 +84,7 @@ module fetch(
                 end
               end else begin
                 instEn <= `Disable;
+                StallToWaitBJ <= cacheIsBJ;
                 status <= StatusStall;
               end
             end else if (memInstOutEn) begin
@@ -95,6 +98,7 @@ module fetch(
                 end
               end else begin
                 instEn <= `Disable;
+                StallToWaitBJ <= isBJ;
                 status <= StatusStall;
               end
             end else begin
@@ -118,9 +122,9 @@ module fetch(
             if (stall) begin
               instEn <= `Disable;
             end else begin
-              status <= StatusWork;
-              instEn <= `Enable;
-              instAddr <= instAddr + 4;
+              status <= StallToWaitBJ ? StatusWaitBJ : StatusWork;
+              instEn <= StallToWaitBJ ? `Disable : `Enable;
+              instAddr <= StallToWaitBJ ? instAddr : instAddr + 4;
             end
           end
         endcase
