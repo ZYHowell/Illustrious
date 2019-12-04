@@ -32,10 +32,10 @@ module cpu(
     wire memInstWaiting, memLSwaiting;
     wire instEn;
     wire [`InstAddrBus] instAddr;
-    wire instOutEn, mcuInstPortFree;
+    wire instOutEn;
     wire [`InstBus] FetchInst;
 
-    wire LSoutEn, mcuLSportFree;
+    wire LSoutEn;
     wire [`DataBus] mcuLdata;
 
     //output of fetcher
@@ -224,6 +224,7 @@ module cpu(
   );
 
   Table Table(
+      .clk(clk_in),
       .rst(rst_in), 
       .freeStatusALU(ALUfreeStatus), 
     //output
@@ -232,8 +233,8 @@ module cpu(
 
   dispatcher dispatcher(
     //from decoder
-      .regNameO(DecNameO), 
-      .regNameT(DecNameT), 
+      // .regNameO(DecNameO), 
+      // .regNameT(DecNameT), 
       .rdName(DecRdName),
       .opCode(DecOp),
       .opClass(DecOpClass),
@@ -468,7 +469,6 @@ module cpu(
     //with mem
       .LSoutEn(LSoutEn), 
       .Ldata(mcuLdata), 
-      .LSfree(mcuLSportFree), 
 
       .dataEn(dataEn), 
       .LSRW(LSRW), 

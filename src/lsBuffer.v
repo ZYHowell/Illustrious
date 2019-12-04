@@ -38,7 +38,7 @@ module lsBuffer(
     reg [`rsSize - 1 : 0] empty;
     wire[`rsSize - 1 : 0] ready;
 
-    reg allocEn[`rsSize - 1 : 0];
+    reg[`rsSize - 1 : 0] allocEn;
     reg[`DataBus]     AllocPostOperandO; 
     reg[`DataBus]     AllocPostOperandT; 
     reg[`TagBus]      AllocPostTagO; 
@@ -102,9 +102,7 @@ module lsBuffer(
     endgenerate
 
     always @(*) begin
-      for (i = 0; i < `rsSize;i = i + 1) begin
-        allocEn[i] = `Disable;
-      end
+      allocEn = 0;
       allocEn[tail] = LSen ? `Enable : `Disable;
       AllocPostImm = LSimm;
       AllocPostOp = LSop;
@@ -123,6 +121,13 @@ module lsBuffer(
         tail <= 0;
         num <= 0;
         empty <= {`rsSize{1'b1}};
+        LSworkEn <= `Disable; 
+        operandO <= `dataFree; 
+        operandT <= `dataFree;
+        imm <= `dataFree;
+        wrtTag <= `tagFree; 
+        wrtName <= `nameFree; 
+        opCode <= `NOP; 
       end else begin
         if (LSen) begin
           empty[tail]   <= 0;

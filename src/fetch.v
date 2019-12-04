@@ -32,6 +32,7 @@ module fetch(
 
     reg[1:0] status;
     reg StallToWaitBJ;
+    reg[`InstBus] _decInst;
     wire isBJ, cacheIsBJ;
 
     assign isBJ = memInst[6];

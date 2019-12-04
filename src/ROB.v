@@ -44,7 +44,6 @@ module ROB(
       end else;
     end
 
-    integer i;
     always @(*) begin
       if (rst == `Disable) begin
         for (i = 0;i < `ROBsize;i = i + 1) begin

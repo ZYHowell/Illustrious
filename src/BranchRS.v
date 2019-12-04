@@ -204,6 +204,12 @@ module BranchRS(
         tail <= 0;
         num <= 0;
         empty <= {`rsSize{1'b1}};
+        BranchWorkEn <= `Disable; 
+        operandO <= `dataFree; 
+        operandT <= `dataFree;
+        imm <= `dataFree;
+        opCode <= `NOP; 
+        PC <= `addrFree;
       end else begin
         if (BranchEn) begin
           empty[tail]   <= 0;

@@ -17,7 +17,7 @@ module icache(
 );
     reg[`DataBus]   memInst[`memCacheSize - 1 : 0];
     reg[`memTagBus] memTag[`memCacheSize - 1:0];
-    reg memValid[`memCacheSize - 1 : 0];
+    reg[`memCacheSize - 1 : 0] memValid;
 
     assign hit = fetchEn & (memTag[Addr[`memAddrIndexBus]] == Addr[`memAddrTagBus]) & (memValid[Addr[`memAddrIndexBus]]);
     assign foundInst = (hit & memValid[Addr[`memAddrIndexBus]]) ? (memInst[Addr[`memAddrIndexBus]]) : `dataFree;
@@ -91,7 +91,7 @@ module mem(
 
     integer i;
 
-    always @ (posedge clk or posedge rst) begin
+    always @ (posedge clk) begin
       if (rst == `Enable) begin
         status <= `IsFree;
         for (i = 0;i < 2;i = i + 1) begin

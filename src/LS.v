@@ -17,8 +17,7 @@ module LS(
 
     //with mem
     input wire LSoutEn, 
-    input wire[`DataBus]  Ldata,  
-    input wire LSfree, 
+    input wire[`DataBus]  Ldata, 
 
     output reg dataEn, 
     output reg LSRW, 
@@ -39,6 +38,7 @@ module LS(
     always @ (posedge clk or posedge rst) begin
       if (rst == `Enable) begin
         status <= `IsFree;
+        sign <= `SignEx;
         dataEn <= `Disable;
         LSRW <= `Read;
         dataAddr <= `addrFree;

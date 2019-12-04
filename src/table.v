@@ -1,6 +1,7 @@
 `include "defines.v"
 
 module Table(
+    input wire clk, 
     input wire rst, 
     input wire[`rsSize - 1:0] freeStatusALU, 
     output wire[`TagRootBus] freeTagALU
@@ -9,7 +10,8 @@ module Table(
 
     assign freeTagALU = list[freeStatusALU];
 
-    always @ (posedge rst) begin
+    always @ (posedge clk) begin
+      if (rst) begin
         list[6'b000000] = `NoFreeTag;
         list[6'b000001] = 3'b000;
         list[6'b000010] = 3'b001;
@@ -74,6 +76,7 @@ module Table(
         list[6'b111101] = 3'b000;
         list[6'b111110] = 3'b001;
         list[6'b111111] = 3'b000;
+      end
     end
 
 endmodule
