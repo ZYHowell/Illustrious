@@ -60,7 +60,7 @@
 
 `define rsWidth 128
 `define rsSize 6
-`define ROBsize 64
+`define ROBsize 6
 `define memCacheSize 128
 
 `define tagFree     4'b0110
