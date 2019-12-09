@@ -150,8 +150,8 @@ module ALUrs(
     output reg[`OpBus]      opCode, 
     output reg[`InstAddrBus]instAddr,
     //to dispatcher
-    output wire ALUfree, 
-    output wire[`rsSize - 1 : 0] ALUfreeStatus
+    output wire ALUfree//, 
+    //output wire[`rsSize - 1 : 0] ALUfreeStatus
 );
 
     wire [`rsSize - 1 : 0] ready;
@@ -180,7 +180,7 @@ module ALUrs(
     integer i;
 
     assign issueRS = ready & -ready;
-    assign ALUfreeStatus = empty;
+    //assign ALUfreeStatus = empty;
     assign ALUfree = num + ALUen + 1 < `rsSize;
 
     generate

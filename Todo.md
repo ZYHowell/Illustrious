@@ -12,7 +12,7 @@ add dcache with write through
 
 stage 3:(week 14 and week 17~18)
 
-add an 2-issue FIFO ROB and make it 4 stages
+add an 2-issue FIFO ROB and make it 4 stages(debugging)
 
 add branch prediction
 

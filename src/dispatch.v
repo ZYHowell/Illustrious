@@ -54,12 +54,19 @@ module dispatcher(
     output reg[`TagBus]         LStagW, 
     output reg[`NameBus]        LSnameW, 
     output reg[`DataBus]        LSimm, 
-    output reg[`OpBus]          LSop
-
+    output reg[`OpBus]          LSop, 
+    //from ROB
+    input wire ROBtagOen, 
+    input wire[`DataBus] ROBdataO, 
+    input wire ROBtagTen, 
+    input wire[`DataBus] ROBdataT, 
+    output wire dispatchEn
 );
 
     wire [`TagBus]      finalTag;
     wire                prefix;
+    wire[`TagBus] rdFinalTagO, rdFinalTagT;
+    wire[`DataBus]rdFinalDataO, rdFinalDataT;
     //get the avaliable tag. 
     //choose the correct and avaliable tag
     assign prefix   = ((opClass == `ClassLD) || (opClass == `ClassST)) ? `LStagPrefix : `ALUtagPrefix;
@@ -70,6 +77,17 @@ module dispatcher(
       wrtName = rdName;
     end
 
+    assign rdFinalTagO = (regTagO == `tagFree) ? `tagFree : 
+                         (ROBtagOen) ? `tagFree : regTagO;
+    assign rdFinalDataO = (regTagO == `tagFree) ? regDataO : 
+                      (ROBtagOen) ? ROBdataO : regDataO;
+    assign rdFinalTagT = (regTagT == `tagFree) ? `tagFree : 
+                         (ROBtagTen) ? `tagFree : regTagT;
+    assign rdFinalDataT = (regTagT == `tagFree) ? regDataT : 
+                      (ROBtagTen) ? ROBdataT : regDataT;
+
+    assign dispatchEn = ALUen;
+    
     //assign the tag and acquire required datas.
     always @ (*) begin
       ALUaddr = instAddr;
@@ -103,9 +121,9 @@ module dispatcher(
         `ClassLUI: begin
           ALUen = `Enable;
           ALUop = opCode;
-          ALUoperandO = regDataO;
+          ALUoperandO = rdFinalDataO;
           ALUoperandT = Uimm;
-          ALUtagO = regTagO;
+          ALUtagO = rdFinalTagO;
           ALUtagT = `tagFree;
           ALUtagW = finalTag;
           ALUnameW = rdName;
@@ -114,9 +132,9 @@ module dispatcher(
         `ClassAUIPC: begin
           ALUen = `Enable;
           ALUop = opCode;
-          ALUoperandO = regDataO;
+          ALUoperandO = rdFinalDataO;
           ALUoperandT = Uimm;
-          ALUtagO = regTagO;
+          ALUtagO = rdFinalTagO;
           ALUtagT = `tagFree;
           ALUtagW = finalTag;
           ALUnameW = rdName;
@@ -136,9 +154,9 @@ module dispatcher(
         `ClassJALR: begin
           ALUen = `Enable;
           ALUop = opCode;
-          ALUoperandO = regDataO;
+          ALUoperandO = rdFinalDataO;
           ALUoperandT = imm;
-          ALUtagO = regTagO;
+          ALUtagO = rdFinalTagO;
           ALUtagT = `tagFree;
           ALUtagW = finalTag;
           ALUnameW = rdName;
@@ -146,18 +164,18 @@ module dispatcher(
         end
         `ClassB:    begin
           BranchEn = `Enable;
-          BranchOperandO = regDataO;
-          BranchOperandT = regDataT;
-          BranchTagO = regTagO;
-          BranchTagT = regTagT;
+          BranchOperandO = rdFinalDataO;
+          BranchOperandT = rdFinalDataT;
+          BranchTagO = rdFinalTagO;
+          BranchTagT = rdFinalTagT;
           BranchOp = opCode;
           BranchImm = Bimm;
         end
         `ClassLD:   begin
           LSen = `Enable;
-          LSoperandO = regDataO;
+          LSoperandO = rdFinalDataO;
           LSoperandT = `dataFree;
-          LStagO = regTagO;
+          LStagO = rdFinalTagO;
           LStagT = `tagFree;
           LStagW = finalTag;
           LSnameW = rdName;
@@ -167,10 +185,10 @@ module dispatcher(
         end
         `ClassST:   begin
           LSen = `Enable;
-          LSoperandO = regDataO;
-          LSoperandT = regDataT;
-          LStagO = regTagO;
-          LStagT = regTagT;
+          LSoperandO = rdFinalDataO;
+          LSoperandT = rdFinalDataT;
+          LStagO = rdFinalTagO;
+          LStagT = rdFinalTagT;
           LStagW = finalTag;
           LSnameW = `nameFree;
           LSimm = Simm;
@@ -179,9 +197,9 @@ module dispatcher(
         `ClassRI:   begin
           ALUen = `Enable;
           ALUop = opCode;
-          ALUoperandO = regDataO;
+          ALUoperandO = rdFinalDataO;
           ALUoperandT = imm;
-          ALUtagO = regTagO;
+          ALUtagO = rdFinalTagO;
           ALUtagT = `tagFree;
           ALUtagW = finalTag;
           ALUnameW = rdName;
@@ -190,10 +208,10 @@ module dispatcher(
         `ClassRR:   begin
           ALUen = `Enable;
           ALUop = opCode;
-          ALUoperandO = regDataO;
-          ALUoperandT = regDataT;
-          ALUtagO = regTagO;
-          ALUtagT = regTagT;
+          ALUoperandO = rdFinalDataO;
+          ALUoperandT = rdFinalDataT;
+          ALUtagO = rdFinalTagO;
+          ALUtagT = rdFinalTagT;
           ALUtagW = finalTag;
           ALUnameW = rdName;
           enWrt = `Enable;

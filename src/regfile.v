@@ -3,11 +3,7 @@
 module Regfile(
     input wire clk, 
     input wire rst, 
-    // //from CDB
-    // input wire enCDBWrt, 
-    // input wire [`NameBus]   CDBwrtName, 
-    // input wire [`DataBus]   CDBwrtData, 
-    // input wire [`TagBus]    CDBwrtTag, 
+    //ALU is actually from the ROB. 
     input wire ALUwrtEn, 
     input wire [`NameBus] ALUwrtName, 
     input wire [`TagBus] ALUwrtTag,
@@ -55,13 +51,12 @@ module Regfile(
         //       tag[CDBwrtName] <= `tagFree;
         //   end
         // end
-        //data can also be changed only when clear. this is for debug use: to make it clear.
-        if (ALUwrtEn) data[ALUwrtName] <= ALUwrtData;
         if (ALUtagClear & ~ALUwrtCover) begin
+          data[ALUwrtName] <= ALUwrtData;
           tag[ALUwrtName] <= `tagFree;
         end
-        if (LSwrtEn) data[LSwrtName] <= LSwrtData;
         if (LStagClear & ~LSwrtCover) begin
+          data[LSwrtName] <=LSwrtData;
           tag[LSwrtName] <= `tagFree;
         end
         

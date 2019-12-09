@@ -135,6 +135,16 @@ module cpu(
     wire [`InstBus] cacheInst;
     wire [`InstAddrBus] memfetchAddr;
     wire [`InstAddrBus] addAddr;
+  //about ROB
+    wire ROBrdO, ROBrdT;
+    wire[`DataBus]  ROBrdDataO, ROBrdDataT;
+    wire dispatchEn;
+    wire ROBfree;
+    wire enROBComO;
+    wire[`TagBus] ROBComTagO;
+    wire[`DataBus]  ROBComDataO;
+    wire[`NameBus]  ROBComNameO;
+
   icache icache(
     .clk(clk_in),
     .rst(rst_in),
@@ -175,11 +185,12 @@ module cpu(
       .WrtData(mem_dout)
   );
 
-  assign stall = ~(ALUfree & LSbufFree);
+  assign stall = ~(ALUfree & LSbufFree & ROBfree);
 
   fetch fetcher(
       .clk(clk_in), 
       .rst(rst_in), 
+      .rdy(rdy_in),
       .stall(stall), 
 
       .enJump(jumpEn), 
@@ -223,13 +234,13 @@ module cpu(
     .Bimm(DecBimm)
   );
 
-  Table Table(
-      .clk(clk_in),
-      .rst(rst_in), 
-      .freeStatusALU(ALUfreeStatus), 
-    //output
-      .freeTagALU(freeTagALUroot)
-  );
+  // Table Table(
+  //     .clk(clk_in),
+  //     .rst(rst_in), 
+  //     .freeStatusALU(ALUfreeStatus), 
+  //   //output
+  //     .freeTagALU(freeTagALUroot)
+  // );
 
   dispatcher dispatcher(
     //from decoder
@@ -285,21 +296,22 @@ module cpu(
       .LStagW(LSbufTagW), 
       .LSnameW(LSbufNameW), 
       .LSimm(LSbufImm), 
-      .LSop(LSbufOp)
+      .LSop(LSbufOp), 
+    //from ROB
+      .ROBtagOen(ROBrdO), 
+      .ROBdataO(ROBrdDataO), 
+      .ROBtagTen(ROBrdT), 
+      .ROBdataT(ROBrdDataT), 
+      .dispatchEn(dispatchEn)
   );
 
   Regfile regf(
     .clk(clk_in), 
     .rst(rst_in), 
-    // //from CDB
-    //   .enCDBWrt(), 
-    //   .CDBwrtName(), 
-    //   .CDBwrtData(), 
-    //   .CDBwrtTag(),
-    .ALUwrtEn(ALUROBen), 
-    .ALUwrtData(ALUROBdataW),
-    .ALUwrtName(ALUROBnameW), 
-    .ALUwrtTag(ALUROBtagW),
+    .ALUwrtEn(enROBComO), 
+    .ALUwrtData(ROBComDataO),
+    .ALUwrtName(ROBComNameO), 
+    .ALUwrtTag(ROBComTagO),
     .LSwrtEn(LSROBen), 
     .LSwrtData(LSROBdata),
     .LSwrtName(LSROBname), 
@@ -348,8 +360,8 @@ module cpu(
       .opCode(ALUopCode), 
       .instAddr(ALUaddr), 
     //to dispatcher
-      .ALUfree(ALUfree), 
-      .ALUfreeStatus(ALUfreeStatus)
+      .ALUfree(ALUfree)//, 
+      //.ALUfreeStatus(ALUfreeStatus)
   );
 
   ALU ALU(
@@ -483,21 +495,38 @@ module cpu(
       .LSdone(LSdone)
   );
 
-  // ROB ROB(
-  //   .clk(clk_in), 
-  //   .rst(rst_in), 
-  //   //input from alu
-  //   .ROBenW(), 
-  //   .ROBtagW(), 
-  //   .ROBdataW(), 
-  //   .ROBnameW(), 
-  //   //input from LS
-    
-  //   //output
-  //   .enCDBWrt(), 
-  //   .CDBwrtName(), 
-  //   .CDBwrtTag(), 
-  //   .CDBwrtData(), 
-  //   .ROBfreeStatus()
-  // );
+  ROB rob(
+    .clk(clk_in), 
+    .rst(rst_in), 
+    //input from alu
+    .enWrtO(ALUROBen), 
+    .WrtTagO(ALUROBtagW), 
+    .WrtDataO(ALUROBdataW), 
+    .WrtNameO(ALUROBnameW), 
+    //input from LS for precise exception, but not now
+    // input wire enWrtT, 
+    // input wire[`TagBus] WrtTagT,
+    // input wire[`DataBus] WrtDataT,
+    // input wire[`NameBus] WrtNameT, 
+    //communicate with dispatcher: about write out
+    .ReadTagO(regTagO), 
+    .ReadTagT(regTagT), 
+    .enReadO(ROBrdO), 
+    .enReadT(ROBrdT), 
+    .ReadDataO(ROBrdDataO), 
+    .ReadDataT(ROBrdDataT), 
+    //output: commit to regfile
+    .ROBfree(ROBfree), 
+    .enComO(enROBComO), 
+    .ComTagO(ROBComTagO), 
+    .ComDataO(ROBComDataO), 
+    .ComNameO(ROBComNameO), 
+    // output reg enComT, 
+    // output reg[`TagBus]     ComTagT, 
+    // output reg[`DataBus]    ComDataT, 
+    // output reg[`NameBus]    ComNameT, 
+    //communicate with Dispatcher: about tagW
+    .dispatchEn(dispatchEn), 
+    .freeTag(freeTagALUroot)
+  );
 endmodule

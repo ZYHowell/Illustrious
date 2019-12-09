@@ -3,6 +3,7 @@
 module fetch(
     input wire clk, 
     input wire rst, 
+    input wire rdy, 
     input wire stall, 
 
     input wire enJump, 
@@ -62,7 +63,7 @@ module fetch(
     end
 
     always @(posedge clk) begin
-      if (rst == `Enable) begin
+      if (rst | ~rdy) begin
         StallToWaitBJ <= 0;
         status <= StatusFree;
         instEn <= `Disable;
