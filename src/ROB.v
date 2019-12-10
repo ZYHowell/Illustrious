@@ -1,5 +1,4 @@
 `include "defines.v"
-//this version implements an ROB that only commit one each clk
 //I notice that the ROB does not need to receive those from LS, 
 //since my LS executes in order. 
 //The only problem is that precise exception is not supported in such version, 
@@ -12,6 +11,7 @@ module ROB(
     input wire[`TagBus]     WrtTagO, 
     input wire[`DataBus]    WrtDataO, 
     input wire[`NameBus]    WrtNameO, 
+    input wire[`BranchTagBus] WrtBranchTagO, 
     //input from LS for precise exception, but not now
     // input wire enWrtT, 
     // input wire[`TagBus] WrtTagT,
@@ -36,7 +36,10 @@ module ROB(
     // output reg[`NameBus]    ComNameT, 
     //communicate with Dispatcher: about tagW
     input wire dispatchEn, 
-    output wire[`TagRootBus] freeTag
+    output wire[`TagRootBus] freeTag, 
+    //
+    input wire                  bFreeEn, 
+    input wire[1:0]             bFreeNum
 );
     reg [`ROBsize - 1 : 0] empty;
     wire[`ROBsize - 1 : 0] ready;
@@ -44,11 +47,14 @@ module ROB(
     reg[`DataBus] rsData[`ROBsize - 1 : 0];
     reg[`NameBus] rsNameW[`ROBsize - 1 : 0];
     reg[`TagBus]  rsTagW[`ROBsize - 1 : 0];
+    reg[`BranchTagBus] rsBranchTag[`ROBsize - 1 : 0];
+    wire[`BranchTagBus] nxtBranchTag[`ROBsize - 1 : 0];
 
     reg[`rsSize - 1 : 0] allocEnO;//, allocEnT;
     reg[`DataBus]     AllocPostDataO;//,AllocPostDataT; 
     reg[`TagBus]      AllocPostTagO;//,AllocPostTagT; 
     reg[`NameBus]     AllocPostNameO;//,AllocPostNameT; 
+    reg[`BranchTagBus] AllocPostBranchTagO;
 
     reg [`TagRootBus]   head, tail, num;
     wire canIssue;
@@ -78,17 +84,21 @@ module ROB(
     generate
       genvar j;
       for (j = 0; j < `rsSize;j = j + 1) begin: ROBline
-        assign ready[j] = ~empty[j];//& branchTag=tagfree;
+        assign ready[j] = (~empty[j]) && (!nxtBranchTag[j]);
+        assign nxtBranchTag[j] = (bFreeEn & rsBranchTag[j][bFreeNum]) ? (rsBranchTag[j] ^ (1 << bFreeNum)) : rsBranchTag[j];
         always @(posedge clk or posedge rst) begin
           if (rst) begin
             rsData[j] <= `dataFree;
             rsNameW[j] <= `nameFree;
             rsTagW[j] <= `tagFree;
+            rsBranchTag[j] <= 0;
           end else if (allocEnO[j] == `Enable) begin
             rsData[j] <= AllocPostDataO;
             rsNameW[j] <= AllocPostNameO;
             rsTagW[j] <= AllocPostTagO;
-          end
+            rsBranchTag[j] <= AllocPostBranchTagO;
+          end else
+            rsBranchTag[bFreeNum] <= nxtBranchTag[j];
           // end else if (allocEnT[j] == `Enable) begin
           //   rsData[j] <= AllocPostDataT;
           //   rsNameW[j] <= AllocPostNameT;
@@ -101,7 +111,7 @@ module ROB(
     always @(*) begin
       allocEnO = 0;
       //allocEnT = 0;
-      allocEnO[WrtTagO[`TagRootBus]] = 1;
+      allocEnO[WrtTagO[`TagRootBus]] = enWrtO;
       //allocEnT[WrtTagT[`TagRootBus]] = 1;
       AllocPostDataO = WrtDataO;
       //AllocPostDataT = WrtDataT;
@@ -109,9 +119,10 @@ module ROB(
       //AllocPostTagT = WrtTagT;
       AllocPostNameO = WrtNameO;
       //AllocPostNameT = WrtNameT;
+      AllocPostBranchTagO = WrtBranchTagO;
     end
 
-    always @ (posedge clk or posedge rst) begin
+    always @ (posedge clk) begin
       if (rst) begin
         head <= 0;
         tail <= 0;

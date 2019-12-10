@@ -1,4 +1,4 @@
-`include "defines.v"
+//`include "defines.v"
 
 module Branch(
     //from the RS
@@ -8,19 +8,15 @@ module Branch(
     input wire[`OpBus]      opCode, 
     input wire[`DataBus]    imm, 
     input wire[`InstAddrBus]PC, 
-    input wire[1:0]         bNum, 
     //to the PC
-    //the bResultEn is also bFreeEn
     output reg BranchResultEn, 
-    output reg[`InstAddrBus]    BranchAddr, 
-    output wire[1:0]        bFreeNum
+    output reg[`InstAddrBus]    BranchAddr
 );
     wire [`InstAddrBus] jmpAddr;
     wire [`InstAddrBus] nxtAddr;
 
     assign jmpAddr = PC + imm;
     assign nxtAddr = PC + 4;
-    assign bFreeNum = bNum;
 
     always @ (*) begin
       if (BranchWorkEn == `Enable) begin

@@ -9,38 +9,32 @@ module ALU(
     input wire[`NameBus]    wrtName, 
     input wire[`OpBus]      opCode, 
     input wire[`InstAddrBus]instAddr, 
-    input wire[`BranchTagBus] instBranchTag, 
     //to ROB
     output reg ROBen, 
     output reg[`TagBus]     ROBtagW, 
     output reg[`DataBus]    ROBdataW,
     output reg[`NameBus]    ROBnameW,
-    output reg[`BranchTagBus] ROBbranchW, 
-    //to PC
+    //todo: to PC
     output reg jumpEn, 
-    output reg[`InstAddrBus]  jumpAddr,
-    //
-    input wire                  bFreeEn, 
-    input wire[1:0]             bFreeNum
+    output reg[`InstAddrBus]  jumpAddr
 );
 
     always @ (*) begin
       if (ALUworkEn == `Enable) begin
-        ROBen = `Enable;
-        ROBtagW = wrtTag;
-        ROBnameW = wrtName;
-        jumpEn = `Disable;
-        jumpAddr = `addrFree;
-        ROBdataW = `dataFree;
-        ROBbranchW = (bFreeEn & instBranchTag[bFreeNum]) ? (instBranchTag ^ (1 << bFreeNum)) : instBranchTag;
+        ROBen     = `Enable;
+        ROBtagW   = wrtTag;
+        ROBnameW  = wrtName;
+        jumpEn    = `Disable;
+        jumpAddr  = `addrFree;
+        ROBdataW  = `dataFree;
         case(opCode)
-          `ADD: ROBdataW = $signed(operandO) + $signed(operandT);
-          `SUB: ROBdataW = $signed(operandO) - $signed(operandT);
-          `SLL: ROBdataW = operandO << operandT[4:0];
-          `SLT: ROBdataW = $signed(operandO) < $signed(operandT) ? 1 : 0;
-          `SLTU:ROBdataW = operandO < operandT ? 1 : 0;
-          `XOR: ROBdataW = $signed(operandO) ^ $signed(operandT);
-          `SRL: ROBdataW = operandO >> operandT[4:0];
+          `ADD: ROBdataW = $signed(operandO) +  $signed(operandT);
+          `SUB: ROBdataW = $signed(operandO) -  $signed(operandT);
+          `SLL: ROBdataW = operandO          << operandT[4:0];
+          `SLT: ROBdataW = $signed(operandO) <  $signed(operandT) ? 1 : 0;
+          `SLTU:ROBdataW = operandO          <  operandT ? 1 : 0;
+          `XOR: ROBdataW = $signed(operandO) ^  $signed(operandT);
+          `SRL: ROBdataW = operandO          >> operandT[4:0];
           `SRA: ROBdataW = $signed(operandO) >>> operandT[4:0];
           `OR : ROBdataW = operandO | operandT;
           `AND: ROBdataW = operandO & operandT;
@@ -56,16 +50,14 @@ module ALU(
             ROBdataW = instAddr + 4;
           end
           `AUIPC:ROBdataW = $signed(operandO) + $signed(operandT);
-          default:ROBdataW = ROBdataW;
         endcase
       end else begin
-        ROBen = `Disable;
-        ROBtagW = `tagFree;
-        ROBnameW = `nameFree;
-        ROBdataW = `dataFree;
-        ROBbranchW = 0;
-        jumpEn = `Disable;
-        jumpAddr = `addrFree;
+        ROBen     = `Disable;
+        ROBtagW   = `tagFree;
+        ROBnameW  = `nameFree;
+        ROBdataW  = `dataFree;
+        jumpEn    = `Disable;
+        jumpAddr  = `addrFree;
       end
     end
 endmodule

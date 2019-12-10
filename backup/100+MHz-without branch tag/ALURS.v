@@ -41,7 +41,6 @@ module RsLine(
     input wire[`NameBus]    allocNameW,  
     input wire[`OpBus]      allocOp, 
     input wire[`InstAddrBus]allocImm, 
-    input wire[`BranchTagBus] allocBranchTag, 
     //
     input wire empty, 
     output wire ready, 
@@ -50,11 +49,8 @@ module RsLine(
     output wire[`OpBus]   issueOp,  
     output wire[`NameBus] issueNameW, 
     output wire[`TagBus]  issueTagW,
-    output wire[`DataBus] issueImm, 
-    output wire[`BranchTagBus]  issueBranchTag, 
+    output wire[`DataBus] issueImm
     //the imm is pc in alu, is imm in ls; so bucket branchRS for it contains both
-    input wire                  bFreeEn, 
-    input wire[1:0]             bFreeNum
 );
     reg[`TagBus]  rsTagO, rsTagT;
     reg[`DataBus] rsDataO, rsDataT;
@@ -62,10 +58,8 @@ module RsLine(
     reg[`TagBus]  rsTagW;
     reg[`DataBus] rsImm;
     reg[`OpBus]   rsOp;
-    reg[`BranchTagBus] BranchTag;
     wire[`TagBus] nxtPosTagO, nxtPosTagT;
     wire[`DataBus] nxtPosDataO, nxtPosDataT;
-    wire[`BranchTagBus] nxtPosBranchTag;
 
     assign ready = ~empty & (nxtPosTagO == `tagFree) & (nxtPosTagT == `tagFree);
     assign issueOperandO = (nxtPosTagO == `tagFree) ? nxtPosDataO : rsDataO;
@@ -74,9 +68,6 @@ module RsLine(
     assign issueNameW = rsNameW;
     assign issueImm = rsImm;
     assign issueTagW = rsTagW;
-    assign nxtPosBranchTag = (bFreeEn & BranchTag[bFreeNum]) ? (BranchTag ^ (1 << bFreeNum)) : BranchTag;
-    assign issueBranchTag = nxtPosBranchTag;
-
     nxtPosCal nxtPosCalO(
       .enWrtO(enWrtO), 
       .WrtTagO(WrtTagO), 
@@ -111,7 +102,6 @@ module RsLine(
         rsTagW <= `tagFree;
         rsImm <= `dataFree;
         rsOp <= `NOP;
-        BranchTag <= 0;
       end else if (allocEn == `Enable) begin
         rsTagO <= allocTagO;
         rsTagT <= allocTagT;
@@ -121,13 +111,11 @@ module RsLine(
         rsTagW <= allocTagW;
         rsImm <= allocImm;
         rsOp <= allocOp;
-        BranchTag <= allocBranchTag;
       end else begin
         rsTagO <= nxtPosTagO;
         rsTagT <= nxtPosTagT;
         rsDataO <= nxtPosDataO;
         rsDataT <= nxtPosDataT;
-        BranchTag <= nxtPosBranchTag;
       end
     end
 endmodule
@@ -152,7 +140,6 @@ module ALUrs(
     input wire[`NameBus]    ALUnameW,  
     input wire[`OpBus]      ALUop, 
     input wire[`InstAddrBus]ALUaddr, 
-    input wire[`BranchTagBus]   BranchTag, 
 
     //to ALU
     output reg ALUworkEn, 
@@ -162,13 +149,9 @@ module ALUrs(
     output reg[`NameBus]    wrtName, 
     output reg[`OpBus]      opCode, 
     output reg[`InstAddrBus]instAddr,
-    output reg[`BranchTagBus] instBranchTag, 
     //to dispatcher
     output wire ALUfree, 
-    //from branch
-    input wire                  bFreeEn, 
-    input wire[1:0]             bFreeNum
-
+    output wire[`rsSize - 1 : 0] ALUfreeStatus
 );
 
     wire [`rsSize - 1 : 0] ready;
@@ -177,7 +160,7 @@ module ALUrs(
 
     wire [`rsSize - 1 : 0] issueRS;
 
-    reg[`rsSize - 1 : 0] allocEn;
+    reg allocEn[`rsSize - 1 : 0];
     reg[`DataBus]    AllocPostOperandO; 
     reg[`DataBus]    AllocPostOperandT; 
     reg[`TagBus]     AllocPostTagO; 
@@ -186,7 +169,6 @@ module ALUrs(
     reg[`NameBus]    AllocPostNameW;  
     reg[`OpBus]      AllocPostOp; 
     reg[`InstAddrBus]AllocPostAddr; 
-    reg[`BranchTagBus] AllocBranchTag;
 
     wire[`DataBus] issueOperandO[`rsSize - 1 : 0];
     wire[`DataBus] issueOperandT[`rsSize - 1 : 0];
@@ -194,12 +176,11 @@ module ALUrs(
     wire[`NameBus] issueNameW[`rsSize - 1 : 0];
     wire[`TagBus]   issueTagW[`rsSize - 1 : 0];
     wire[`InstAddrBus] issuePC[`rsSize - 1 : 0];
-    wire[`BranchTagBus]issueBranchTag[`rsSize - 1 : 0];
 
     integer i;
 
     assign issueRS = ready & -ready;
-    //assign ALUfreeStatus = empty;
+    assign ALUfreeStatus = empty;
     assign ALUfree = num + ALUen + 1 < `rsSize;
 
     generate
@@ -225,7 +206,6 @@ module ALUrs(
           .allocNameW(AllocPostNameW),
           .allocOp(AllocPostOp), 
           .allocImm(AllocPostAddr), 
-          .allocBranchTag(AllocBranchTag), 
           //
           .empty(empty[j]), 
           .ready(ready[j]), 
@@ -234,18 +214,15 @@ module ALUrs(
           .issueOp(issueOp[j]), 
           .issueNameW(issueNameW[j]), 
           .issueTagW(issueTagW[j]), 
-          .issueImm(issuePC[j]),
-          .issueBranchTag(issueBranchTag[j]),
-          //
-          .bFreeEn(bFreeEn), 
-          .bFreeNum(bFreeNum) 
+          .issueImm(issuePC[j])
         );
       end
     endgenerate
 
     always @(*) begin
-      allocEn = 0;
-      allocEn[ALUtagW[`TagRootBus]] = ALUen;
+      for (i = 0; i < `rsSize;i = i + 1) begin
+        allocEn[i] = (ALUen && (ALUtagW[`TagRootBus] == i)) ? `Enable : `Disable;
+      end
       AllocPostAddr = ALUaddr;
       AllocPostOp = ALUop;
       AllocPostOperandO = ALUoperandO;
@@ -254,14 +231,12 @@ module ALUrs(
       AllocPostTagT = ALUtagT;
       AllocPostTagW = ALUtagW;
       AllocPostNameW = ALUnameW;
-      AllocBranchTag = BranchTag;
     end
 
     always @ (posedge clk) begin
       if (rst) begin
         num <= 0;
         empty <= {`rsSize{1'b1}};
-        instBranchTag <= 0;
       end else begin
         if (ALUen) empty[ALUtagW[`TagRootBus]] <= 0;
         if (issueRS) begin
@@ -274,7 +249,6 @@ module ALUrs(
               wrtName <= issueNameW[i];
               wrtTag <= {`ALUtagPrefix,i};
               instAddr <= issuePC[i];
-              instBranchTag <= issueBranchTag[i];
               empty[i] <= 1;
             end
           end
@@ -287,7 +261,6 @@ module ALUrs(
           opCode <= `NOP;
           wrtName <= `nameFree;
           wrtTag <= `tagFree;
-          instBranchTag <= 0;
         end
       end
     end

@@ -8,6 +8,7 @@ Architecture(1st semester) homework in ACM class
 * Branch Prediction(todo)
 * Precise Interruption unsupported(to fix in another branch)
 * Pass Implementation(to improve)
+* 100MHz for the version without ROB
 
 The out-of-order execution can be easily observed at gcd test(-O), the 199~219th instructions, where store instructions runs when ALU works simultaneously. 
 
