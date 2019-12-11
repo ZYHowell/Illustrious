@@ -49,7 +49,8 @@ module RsLine(
     output wire[`OpBus]   issueOp,  
     output wire[`NameBus] issueNameW, 
     output wire[`TagBus]  issueTagW,
-    output wire[`DataBus] issueImm
+    output wire[`DataBus] issueImm, 
+    output wire nxtPosEmpty
     //the imm is pc in alu, is imm in ls; so bucket branchRS for it contains both
 );
     reg[`TagBus]  rsTagO, rsTagT;
@@ -68,6 +69,8 @@ module RsLine(
     assign issueNameW = rsNameW;
     assign issueImm = rsImm;
     assign issueTagW = rsTagW;
+    assign nxtPosEmpty = empty & ~allocEn;
+
     nxtPosCal nxtPosCalO(
       .enWrtO(enWrtO), 
       .WrtTagO(WrtTagO), 

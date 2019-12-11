@@ -9,9 +9,6 @@ module fetch(
     input wire enJump, 
     input wire[`InstAddrBus] JumpAddr, 
 
-    input wire enBranch, 
-    input wire[`InstAddrBus] BranchAddr,
-
     //to decoder
     output reg DecEn, 
     output reg[`InstAddrBus] DecPC, 
@@ -24,25 +21,30 @@ module fetch(
     output reg[`InstAddrBus] instAddr,
 
     input wire hit,
-    input wire[`InstBus] cacheInst
+    input wire[`InstBus] cacheInst, 
+    //branch
+    input wire misTaken, 
+    input wire enBranch, 
+    input wire[`InstAddrBus] BranchAddr, 
+    output reg instDiscard
 );
     localparam StatusFree = 2'b00;
     localparam StatusWork = 2'b01;
-    localparam StatusWaitBJ = 2'b10;
+    localparam StatusWaitJ = 2'b10;
     localparam StatusStall = 2'b11;
 
     reg[1:0] status;
-    reg StallToWaitBJ;
-    reg[`InstBus] _decInst;
-    wire isBJ, cacheIsBJ;
+    reg StallToWaitJ;
+    reg[`InstBus] _DecInst;
+    reg[`InstAddrBus] _DecPC;
+    wire isJ, cacheIsJ;
 
-    assign isBJ = memInst[6];
-    assign cacheIsBJ = cacheInst[6];
+    assign isJ = memInst[6] & memInst[2];
+    assign cacheIsJ = cacheInst[6] & memInst[6];
 
     always @(*) begin
       DecEn = `Disable;
-      DecPC = instAddr;
-      DecInst = (~(hit | memInstOutEn)) ? DecInst : 
+      DecInst = (~(hit | memInstOutEn)) ? _DecInst : 
                 (hit ? cacheInst : memInst);
       if (rst == `Disable) begin
         case(status)
@@ -50,86 +52,95 @@ module fetch(
             DecInst = `dataFree;
           end
           StatusWork: begin
-            DecEn = (~stall & (hit | memInstOutEn)) ? `Enable : `Disable;
+            DecEn = ~stall & (hit | memInstOutEn) & ~misTaken;
           end
-          StatusWaitBJ: begin
+          StatusWaitJ: begin
             DecEn = `Disable;
           end
           StatusStall: begin
-            DecEn = stall ? `Disable : `Enable;
+            DecEn = ~stall;
           end
         endcase
       end
+      DecPC = DecEn ? instAddr : _DecPC;
     end
 
     always @(posedge clk) begin
+      _DecPC <= DecPC;
+      _DecInst <= DecInst;
       if (rst) begin //| ~rdy) begin
-        StallToWaitBJ <= 0;
+        StallToWaitJ <= 0;
         status <= StatusFree;
         instEn <= `Disable;
         instAddr <= `addrFree;
+        instDiscard <= 0;
       end else begin
-        case(status)
-          StatusFree: begin
-            instEn <= `Enable;
-            status <= StatusWork;
-          end
-          StatusWork: begin
-            if (hit) begin
-              if (~stall) begin
-                if (cacheIsBJ) begin
-                  instEn <= `Disable;
-                  status <= StatusWaitBJ;
+        if (misTaken) begin
+          instDiscard <= ~hit;
+          //only when not hit, the mem receives and needs to discard
+          instEn <= `Enable;
+          instAddr <= BranchAddr;
+          status <= StatusWork;
+        end else begin
+          instDiscard <= 0;
+          case(status)
+            StatusFree: begin
+              instEn <= `Enable;
+              status <= StatusWork;
+            end
+            StatusWork: begin
+              if (hit) begin
+                if (~stall) begin
+                  if (cacheIsJ) begin
+                    instEn <= `Disable;
+                    status <= StatusWaitJ;
+                  end else begin
+                    instEn <= `Enable;
+                    instAddr <= instAddr + `PCnext;
+                  end
                 end else begin
-                  instEn <= `Enable;
-                  instAddr <= instAddr + `PCnext;
+                  instEn <= `Disable;
+                  StallToWaitJ <= cacheIsJ;
+                  status <= StatusStall;
+                end
+              end else if (memInstOutEn) begin
+                if (~stall) begin
+                  if (isJ) begin
+                    instEn <= `Disable;
+                    status <= StatusWaitJ;
+                  end else begin
+                    instEn <= `Enable;
+                    instAddr <= instAddr + `PCnext;
+                  end
+                end else begin
+                  instEn <= `Disable;
+                  StallToWaitJ <= isJ;
+                  status <= StatusStall;
                 end
               end else begin
                 instEn <= `Disable;
-                StallToWaitBJ <= cacheIsBJ;
-                status <= StatusStall;
               end
-            end else if (memInstOutEn) begin
-              if (~stall) begin
-                if (isBJ) begin
-                  instEn <= `Disable;
-                  status <= StatusWaitBJ;
-                end else begin
-                  instEn <= `Enable;
-                  instAddr <= instAddr + `PCnext;
-                end
+            end
+            StatusWaitJ: begin
+              if (enJump) begin
+                instEn <= `Enable;
+                instAddr <= JumpAddr;
+                status <= StatusWork;
               end else begin
                 instEn <= `Disable;
-                StallToWaitBJ <= isBJ;
-                status <= StatusStall;
               end
-            end else begin
-              instEn <= `Disable;
             end
-          end
-          StatusWaitBJ: begin
-            if (enJump) begin
-              instEn <= `Enable;
-              instAddr <= JumpAddr;
-              status <= StatusWork;
-            end else if (enBranch) begin
-              instEn <= `Enable;
-              instAddr <= BranchAddr;
-              status <= StatusWork;
-            end else begin
-              instEn <= `Disable;
+            StatusStall: begin
+              if (stall) begin
+                instEn <= `Disable;
+              end else begin
+                status <= StallToWaitJ ? StatusWaitJ : StatusWork;
+                instEn <= StallToWaitJ ? `Disable : `Enable;
+                instAddr <= StallToWaitJ ? instAddr : instAddr + 4;
+              end
             end
-          end
-          StatusStall: begin
-            if (stall) begin
-              instEn <= `Disable;
-            end else begin
-              status <= StallToWaitBJ ? StatusWaitBJ : StatusWork;
-              instEn <= StallToWaitBJ ? `Disable : `Enable;
-              instAddr <= StallToWaitBJ ? instAddr : instAddr + 4;
-            end
-          end
-        endcase
+          endcase
+        end
       end
     end
 

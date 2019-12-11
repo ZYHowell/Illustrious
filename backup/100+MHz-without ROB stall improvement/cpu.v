@@ -205,6 +205,7 @@ module cpu(
   decoder decoder(
     .clk(clk_in), 
     .rst(rst_in),
+    .stall(stall), 
     .DecEn(DecEn), 
     .instPC(ToDecAddr),
     .inst(ToDecInst),

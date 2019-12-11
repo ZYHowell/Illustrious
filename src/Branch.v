@@ -13,7 +13,8 @@ module Branch(
     //the bResultEn is also bFreeEn
     output reg BranchResultEn, 
     output reg[`InstAddrBus]    BranchAddr, 
-    output wire[1:0]        bFreeNum
+    output wire[1:0]        bFreeNum, 
+    output wire misTaken
 );
     wire [`InstAddrBus] jmpAddr;
     wire [`InstAddrBus] nxtAddr;
@@ -21,11 +22,12 @@ module Branch(
     assign jmpAddr = PC + imm;
     assign nxtAddr = PC + 4;
     assign bFreeNum = bNum;
+    assign misTaken = BranchAddr == jmpAddr;
 
     always @ (*) begin
       if (BranchWorkEn == `Enable) begin
         BranchResultEn = `Enable;
-        BranchAddr = 0;
+        BranchAddr = `addrFree;
         case (opCode)
           `BEQ: BranchAddr = operandO == operandT ? jmpAddr : nxtAddr;
           `BNE: BranchAddr = operandO != operandT ? jmpAddr : nxtAddr;

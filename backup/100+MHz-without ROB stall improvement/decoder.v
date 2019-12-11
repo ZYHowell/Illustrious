@@ -22,8 +22,9 @@ module decoder(
     output reg[`DataBus]        Uimm, 
     output reg[`DataBus]        Jimm, 
     output reg[`DataBus]        Simm, 
-    output reg[`DataBus]        Bimm
+    output reg[`DataBus]        Bimm, 
     //Imm
+    input wire stall
 );
 
     wire[6:0] opType; 
@@ -47,7 +48,7 @@ module decoder(
         rdName <= `nameFree;
         opCode <= `NOP;
         opClass <= `ClassNOP;
-      end else if (DecEn) begin
+      end else if (DecEn & ~stall) begin
         opClass <= opType;
         regNameO = inst[19:15];
         regNameT <= inst[24:20];

@@ -54,7 +54,9 @@ module RsLine(
     output wire[`BranchTagBus]  issueBranchTag, 
     //the imm is pc in alu, is imm in ls; so bucket branchRS for it contains both
     input wire                  bFreeEn, 
-    input wire[1:0]             bFreeNum
+    input wire[1:0]             bFreeNum, 
+    input wire misTaken, 
+    output wire nxtPosEmpty
 );
     reg[`TagBus]  rsTagO, rsTagT;
     reg[`DataBus] rsDataO, rsDataT;
@@ -66,8 +68,11 @@ module RsLine(
     wire[`TagBus] nxtPosTagO, nxtPosTagT;
     wire[`DataBus] nxtPosDataO, nxtPosDataT;
     wire[`BranchTagBus] nxtPosBranchTag;
+    wire discard;
 
-    assign ready = ~empty & (nxtPosTagO == `tagFree) & (nxtPosTagT == `tagFree);
+    assign discard = ~empty & misTaken & BranchTag[bFreeNum];
+    assign nxtPosEmpty = (~allocEn & empty) | discard;
+    assign ready = ~empty & (nxtPosTagO == `tagFree) & (nxtPosTagT == `tagFree) & ~discard;
     assign issueOperandO = (nxtPosTagO == `tagFree) ? nxtPosDataO : rsDataO;
     assign issueOperandT = (nxtPosTagT == `tagFree) ? nxtPosDataT : rsDataT;
     assign issueOp = rsOp;
@@ -101,8 +106,8 @@ module RsLine(
       .dataNxtPos(nxtPosDataT),
       .tagNxtPos(nxtPosTagT)
     );
-    always @(posedge clk or posedge rst) begin
-      if (rst) begin
+    always @(posedge clk) begin
+      if (rst | discard) begin
         rsTagO <= `tagFree;
         rsTagT <= `tagFree;
         rsDataO <= `dataFree;
@@ -112,7 +117,7 @@ module RsLine(
         rsImm <= `dataFree;
         rsOp <= `NOP;
         BranchTag <= 0;
-      end else if (allocEn == `Enable) begin
+      end else if (allocEn) begin
         rsTagO <= allocTagO;
         rsTagT <= allocTagT;
         rsDataO <= allocOperandO;
@@ -167,13 +172,12 @@ module ALUrs(
     output wire ALUfree, 
     //from branch
     input wire                  bFreeEn, 
-    input wire[1:0]             bFreeNum
-
+    input wire[1:0]             bFreeNum, 
+    input wire misTaken
 );
 
     wire [`rsSize - 1 : 0] ready;
     reg [`rsSize - 1 : 0] empty;
-    reg[3:0] num;
 
     wire [`rsSize - 1 : 0] issueRS;
 
@@ -195,12 +199,13 @@ module ALUrs(
     wire[`TagBus]   issueTagW[`rsSize - 1 : 0];
     wire[`InstAddrBus] issuePC[`rsSize - 1 : 0];
     wire[`BranchTagBus]issueBranchTag[`rsSize - 1 : 0];
+    wire[`rsSize - 1 : 0] nxtPosEmpty;
 
     integer i;
 
     assign issueRS = ready & -ready;
     //assign ALUfreeStatus = empty;
-    assign ALUfree = num + ALUen + 1 < `rsSize;
+    assign ALUfree = (!nxtPosEmpty);
 
     generate
       genvar j;
@@ -238,7 +243,9 @@ module ALUrs(
           .issueBranchTag(issueBranchTag[j]),
           //
           .bFreeEn(bFreeEn), 
-          .bFreeNum(bFreeNum) 
+          .bFreeNum(bFreeNum), 
+          .misTaken(misTaken), 
+          .nxtPosEmpty(nxtPosEmpty[j])
         );
       end
     endgenerate
@@ -259,7 +266,6 @@ module ALUrs(
 
     always @ (posedge clk) begin
       if (rst) begin
-        num <= 0;
         empty <= {`rsSize{1'b1}};
         instBranchTag <= 0;
       end else begin
@@ -276,11 +282,11 @@ module ALUrs(
               instAddr <= issuePC[i];
               instBranchTag <= issueBranchTag[i];
               empty[i] <= 1;
+            end else begin
+              empty[i] <= nxtPosEmpty[i];
             end
           end
-          num <= ALUen ? num : (num - 1);
         end else begin
-          num <= ALUen ? num + 1 : num;
           ALUworkEn <= `Disable;
           operandO <= `dataFree;
           operandT <= `dataFree;
@@ -288,6 +294,7 @@ module ALUrs(
           wrtName <= `nameFree;
           wrtTag <= `tagFree;
           instBranchTag <= 0;
+          empty <= nxtPosEmpty;
         end
       end
     end

@@ -7,6 +7,7 @@
 module decoder(
     input wire                  clk, 
     input wire                  rst,
+    input wire                  stall, 
     input wire                  DecEn, 
     input wire[`InstAddrBus]    instPC,
     input wire[`InstBus]        inst,
@@ -31,12 +32,14 @@ module decoder(
     //notice that the BranchTag of output here does not consider the result of the Branch FU
     //which works at this cycle, and it cannot judge this: is supposed to be solved by dispathcer
     output reg[`BranchTagBus]   BranchTag, 
-    output wire                 BranchFree
+    output wire                 BranchFree, 
+    input wire misTaken
 );
 
     wire[6:0] opType; 
     wire[2:0] func3;
     wire[6:0] func7;
+    wire isBranch;
 
     reg[`BranchTagBus] bTag;
     reg[1:0] BranchNum, BranchTail;
@@ -46,6 +49,7 @@ module decoder(
     assign opType = inst[6:0];
     assign func3 = inst[14:12];
     assign func7 = inst[31:25];
+    assign isBranch = (opType == `ClassB) & DecEn;
 
     always @ (posedge clk) begin
       instAddr <= instPC;
@@ -55,7 +59,7 @@ module decoder(
       Simm <= {{`immFillLen{inst[31]}}, inst[31:25], inst[11:7]};
       Bimm <= {{`immFillLen{inst[31]}}, inst[7], inst[30:25], inst[11:8], 1'b0};
       BranchTag <= bTag;
-      if (rst == `Enable) begin
+      if (rst) begin
         regNameO <= `nameFree;
         regNameT <= `nameFree;
         rdName <= `nameFree;
@@ -65,12 +69,18 @@ module decoder(
         BranchNum <= 0;
         BranchTail <= 0;
       end else begin
-        if (bFreeEn) bTag[bFreeNum] <= 0;
-        if ((opType == `ClassB) & DecEn)
-            BranchNum <= bFreeEn ? BranchNum : BranchNum + 1;
-        else
-            BranchNum <= bFreeEn ? BranchNum - 1 : BranchNum;
-        if (DecEn) begin
+        //if mistaken, clear all. (branch is executed in order, ovo)
+        if (misTaken) begin
+            bTag <= 0;
+            BranchNum <= 0;
+        end else if (bFreeEn) begin
+            bTag[bFreeNum] <= 0;
+            BranchNum <= isBranch ? BranchNum : BranchNum - 1;
+        end else begin
+            BranchNum <= isBranch ? BranchNum + 1 : BranchNum;
+        end
+
+        if (DecEn & ~stall) begin
             opClass <= opType;
             regNameO = inst[19:15];
             regNameT <= inst[24:20];

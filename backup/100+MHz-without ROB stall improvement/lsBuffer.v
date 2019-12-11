@@ -54,6 +54,7 @@ module lsBuffer(
     wire[`NameBus] issueNameW[`rsSize - 1 : 0];
     wire[`TagBus] issueTagW[`rsSize - 1 : 0];
     wire[`DataBus] issueImm[`rsSize - 1 : 0];
+    wire[`rsSize - 1 : 0] nxtPosEmpty;
 
     reg [`TagRootBus]   head, tail, num, judgeIssue;
     wire canIssue;
@@ -63,7 +64,7 @@ module lsBuffer(
     assign canIssue = ready[judgeIssue];
     assign LSfreeTag = (tail != head) ? tail : 
                         num ? `NoFreeTag : tail;
-    assign LSbufFree = (num + LSen + 1) < `rsSize ? 1 : 0;
+    assign LSbufFree = (nxtPosEmpty != 0);
 
     generate
       genvar j;
@@ -96,7 +97,8 @@ module lsBuffer(
           .issueOp(issueOp[j]), 
           .issueNameW(issueNameW[j]), 
           .issueTagW(issueTagW[j]), 
-          .issueImm(issueImm[j])
+          .issueImm(issueImm[j]),
+          .nxtPosEmpty(nxtPosEmpty[j])
         );
       end
     endgenerate

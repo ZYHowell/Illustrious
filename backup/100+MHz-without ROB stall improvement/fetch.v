@@ -34,15 +34,16 @@ module fetch(
     reg StallToWaitBJ;
     reg[`InstBus] _decInst;
     wire isBJ, cacheIsBJ;
+    reg[`InstAddrBus] _DecPC;
 
     assign isBJ = memInst[6];
     assign cacheIsBJ = cacheInst[6];
 
     always @(*) begin
       DecEn = `Disable;
-      DecPC = instAddr;
       DecInst = (~(hit | memInstOutEn)) ? DecInst : 
                 (hit ? cacheInst : memInst);
+      DecPC = _DecPC;
       if (rst == `Disable) begin
         case(status)
           StatusFree: begin
@@ -50,18 +51,21 @@ module fetch(
           end
           StatusWork: begin
             DecEn = (~stall & (hit | memInstOutEn)) ? `Enable : `Disable;
+            DecPC = instAddr;
           end
           StatusWaitBJ: begin
             DecEn = `Disable;
           end
           StatusStall: begin
             DecEn = stall ? `Disable : `Enable;
+            DecPC = instAddr;
           end
         endcase
       end
     end
 
     always @(posedge clk) begin
+      _DecPC <= DecPC;
       if (rst == `Enable) begin
         StallToWaitBJ <= 0;
         status <= StatusFree;

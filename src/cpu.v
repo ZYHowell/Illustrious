@@ -42,6 +42,7 @@ module cpu(
     wire DecEn;
     wire [`InstAddrBus] ToDecAddr;
     wire [`InstBus] ToDecInst;
+    wire instDiscard;
 
     //output of decoder
     wire [`NameBus] DecNameO, DecNameT, DecRdName;
@@ -113,6 +114,7 @@ module cpu(
     wire BranchEn;
     wire[`InstAddrBus]  BranchAddr;
     wire[`BranchTagBus] bFreeNum;
+    wire misTaken;
     //output of LSbuffer
     wire LSworkEn;
     wire[`DataBus] LSoperandO, LSoperandT, LSimm;
@@ -186,7 +188,9 @@ module cpu(
       .RWstate(mem_wr), 
       .RWaddr(mem_a), 
       .ReadData(mem_din), 
-      .WrtData(mem_dout)
+      .WrtData(mem_dout), 
+    //branch
+      .Discard({LSdiscard, instDiscard})
   );
 
   assign stall = ~(ALUfree & LSbufFree & ROBfree & BranchFree);
@@ -214,12 +218,19 @@ module cpu(
       .instEn(instEn), 
       .instAddr(instAddr), 
       .hit(hit), 
-      .cacheInst(cacheInst)
+      .cacheInst(cacheInst), 
+    //branch
+      .misTaken(misTaken), 
+      .instDiscard(instDiscard)
   );
-
+  /*
+   * decoder does not need to check if the current inst is mistaken, 
+   * since this is finished by IF
+   */
   decoder decoder(
     .clk(clk_in), 
     .rst(rst_in),
+    .stall(stall),
     .DecEn(DecEn), 
     .instPC(ToDecAddr),
     .inst(ToDecInst),
@@ -239,21 +250,12 @@ module cpu(
     .bFreeEn(BranchEn), 
     .bFreeNum(bFreeNum), 
     .BranchTag(DecBranchTag), 
-    .BranchFree(BranchFree)
+    .BranchFree(BranchFree), 
+    .misTaken(misTaken)
   );
-
-  // Table Table(
-  //     .clk(clk_in),
-  //     .rst(rst_in), 
-  //     .freeStatusALU(ALUfreeStatus), 
-  //   //output
-  //     .freeTagALU(freeTagALUroot)
-  // );
-
+  
   dispatcher dispatcher(
     //from decoder
-      // .regNameO(DecNameO), 
-      // .regNameT(DecNameT), 
       .rdName(DecRdName),
       .opCode(DecOp),
       .opClass(DecOpClass),
@@ -315,7 +317,8 @@ module cpu(
       .bFreeEn(BranchEn), 
       .bFreeNum(bFreeNum), 
       .DecBranchTag(DecBranchTag), 
-      .FinalBranchTag(DispBranchTag)
+      .FinalBranchTag(DispBranchTag), 
+      .misTaken(misTaken)
   );
 
   Regfile regf(
@@ -343,6 +346,10 @@ module cpu(
       .regTagT(regTagT)
   );
 
+  /*
+   * all RS has no need to check if the assigned one should be discarded, 
+   * since it is done in dispatcher: alloc is always safe
+   */
   ALUrs ALUrs(
     .rst(rst_in),
     .clk(clk_in),
@@ -376,9 +383,12 @@ module cpu(
       .instBranchTag(ALUbranchTag),
     //to dispatcher
       .ALUfree(ALUfree), 
+    //branch
+      .misTaken(misTaken), 
       .bFreeEn(BranchEn),
       .bFreeNum(bFreeNum)
   );
+  //branchnisation done
 
   ALU ALU(
     //from RS
@@ -447,7 +457,8 @@ module cpu(
     //to the PC
       .BranchResultEn(BranchEn), 
       .BranchAddr(BranchAddr),
-      .bFreeNum(bFreeNum)
+      .bFreeNum(bFreeNum), 
+      .misTaken(misTaken)
   );
 
   lsBuffer lsBuffer(
