@@ -31,7 +31,10 @@ module LSbufLine(
     output wire[`DataBus] issueImm,
     //the imm is pc in alu, is imm in ls; but ls needs to clear branchTag before issuing
     input wire        bFreeEn, 
-    input wire[1:0]   bFreeNum
+    input wire[1:0]   bFreeNum, 
+    input wire misTaken, 
+    output wire nxtPosEmpty, 
+    input wire freeEn
 );
     reg[`TagBus]  rsTagO, rsTagT;
     reg[`DataBus] rsDataO, rsDataT;
@@ -43,8 +46,11 @@ module LSbufLine(
     wire[`TagBus] nxtPosTagO, nxtPosTagT;
     wire[`DataBus] nxtPosDataO, nxtPosDataT;
     wire[`BranchTagBus] nxtPosBranchTag;
+    wire discard;
 
-    assign ready = (~empty & (nxtPosTagO == `tagFree) & (nxtPosTagT == `tagFree)) && (!nxtPosBranchTag);
+    assign discard = ~empty & misTaken & BranchTag[bFreeNum];
+    assign nxtPosEmpty = (~allocEn & empty) | discard | freeEn;
+    assign ready = (~empty & (nxtPosTagO == `tagFree) & (nxtPosTagT == `tagFree) & ~discard) && (!nxtPosBranchTag);
     assign issueOperandO = (nxtPosTagO == `tagFree) ? nxtPosDataO : rsDataO;
     assign issueOperandT = (nxtPosTagT == `tagFree) ? nxtPosDataT : rsDataT;
     assign issueOp = rsOp;
@@ -144,7 +150,8 @@ module lsBuffer(
     output wire LSbufFree, 
     //
     input wire                  bFreeEn, 
-    input wire[1:0]             bFreeNum
+    input wire[1:0]             bFreeNum, 
+    input wire misTaken
 );
     reg [`rsSize - 1 : 0] empty;
     wire[`rsSize - 1 : 0] ready;
@@ -159,6 +166,7 @@ module lsBuffer(
     reg[`OpBus]       AllocPostOp; 
     reg[`DataBus]     AllocPostImm; 
     reg[`BranchTagBus] AllocBranchTag;
+    reg[`rsSize - 1 : 0] freeEn;
 
     wire[`DataBus] issueOperandO[`rsSize - 1 : 0];
     wire[`DataBus] issueOperandT[`rsSize - 1 : 0];
@@ -166,6 +174,7 @@ module lsBuffer(
     wire[`NameBus] issueNameW[`rsSize - 1 : 0];
     wire[`TagBus] issueTagW[`rsSize - 1 : 0];
     wire[`DataBus] issueImm[`rsSize - 1 : 0];
+    wire[`rsSize - 1 : 0] nxtPosEmpty;
 
     reg [`TagRootBus]   head, tail, num, judgeIssue;
     wire canIssue;
@@ -180,6 +189,10 @@ module lsBuffer(
     generate
       genvar j;
       for (j = 0; j < `rsSize;j = j + 1) begin: LSbufLine
+        always @(posedge clk) begin
+          if (rst) empty[j] <= 1;
+          else empty[j] <= nxtPosEmpty[j];
+        end
         LSbufLine LSbufLine(
           .clk(clk), 
           .rst(rst), 
@@ -211,7 +224,10 @@ module lsBuffer(
           .issueTagW(issueTagW[j]), 
           .issueImm(issueImm[j]),
           .bFreeEn(bFreeEn), 
-          .bFreeNum(bFreeNum) 
+          .bFreeNum(bFreeNum), 
+          .misTaken(misTaken), 
+          .nxtPosEmpty(nxtPosEmpty[j]), 
+          .freeEn(freeEn[j])
         );
       end
     endgenerate
@@ -219,6 +235,8 @@ module lsBuffer(
     always @(*) begin
       allocEn = 0;
       allocEn[tail] = LSen;
+      freeEn = 0;
+      freeEn[head] = LSdone;
       AllocPostImm = LSimm;
       AllocPostOp = LSop;
       AllocPostOperandO = LSoperandO;
@@ -230,13 +248,12 @@ module lsBuffer(
       AllocBranchTag = BranchTag;
     end
 
-    always @ (posedge clk or posedge rst) begin
+    always @ (posedge clk) begin
       if (rst) begin
         judgeIssue <= 0;
         head <= 0;
         tail <= 0;
         num <= 0;
-        empty <= {`rsSize{1'b1}};
         LSworkEn <= `Disable; 
         operandO <= `dataFree; 
         operandT <= `dataFree;
@@ -246,17 +263,13 @@ module lsBuffer(
         opCode <= `NOP; 
       end else begin
         if (LSen) begin
-          empty[tail]   <= 0;
           tail <= (tail == `rsSize - 1) ? 0 : tail + 1;
         end
+        //needs to improve
         if (LSdone) begin
           head <= judgeIssue;
-          empty[head] <= 1;
-          num <= LSen ? num : (num - 1);
-        end else begin
-          num <= LSen ? num + 1 : num;
-        end
-        if ((LSreadEn == `Enable) && canIssue) begin
+        end 
+        if ((LSreadEn) && canIssue) begin
           LSworkEn <= `Enable;
           operandO <= issueOperandO[judgeIssue];
           operandT <= issueOperandT[judgeIssue];
@@ -266,6 +279,8 @@ module lsBuffer(
           imm <= issueImm[judgeIssue];
           judgeIssue <= (judgeIssue == `rsSize - 1) ? 0 : judgeIssue + 1;
         end else begin
+          if (empty[judgeIssue] && judgeIssue != tail)
+            judgeIssue <= (judgeIssue == `rsSize - 1) ? 0 : judgeIssue + 1;
           LSworkEn <= `Disable;
           operandO <= `dataFree;
           operandT <= `dataFree;

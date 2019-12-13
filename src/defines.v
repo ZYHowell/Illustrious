@@ -52,7 +52,7 @@
 `define memTagBus   7:0
 `define memAddrTagBus   16:9
 `define memAddrIndexBus 8:2
-`define BranchTagBus 1:0
+`define BranchTagBus 2:0
 
 `define immFillLen 20
 `define UimmFillLen 12

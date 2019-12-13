@@ -39,7 +39,8 @@ module ROB(
     output wire[`TagRootBus] freeTag, 
     //
     input wire                  bFreeEn, 
-    input wire[1:0]             bFreeNum
+    input wire[1:0]             bFreeNum, 
+    input wire misTaken
 );
     reg [`ROBsize - 1 : 0] empty;
     wire[`ROBsize - 1 : 0] ready;
@@ -49,6 +50,8 @@ module ROB(
     reg[`TagBus]  rsTagW[`ROBsize - 1 : 0];
     reg[`BranchTagBus] rsBranchTag[`ROBsize - 1 : 0];
     wire[`BranchTagBus] nxtBranchTag[`ROBsize - 1 : 0];
+    wire[`ROBsize - 1 : 0] nxtPosEmpty;
+    wire[`ROBsize - 1 : 0] discard;
 
     reg[`rsSize - 1 : 0] allocEnO;//, allocEnT;
     reg[`DataBus]     AllocPostDataO;//,AllocPostDataT; 
@@ -56,11 +59,11 @@ module ROB(
     reg[`NameBus]     AllocPostNameO;//,AllocPostNameT; 
     reg[`BranchTagBus] AllocPostBranchTagO;
 
-    reg [`TagRootBus]   head, tail, num;
+    reg [`TagRootBus]   head, tail;
     wire canIssue;
     //the head is the head while the tail is the next;
 
-    assign ROBfree = num + dispatchEn < `ROBsize ? 1 : 0;
+    assign ROBfree = (nxtPosEmpty != 0);
     assign freeTag = tail;//0 is the prefix
 
     assign enReadO = (ReadTagO == `tagFree) ? `Disable : 
@@ -83,9 +86,20 @@ module ROB(
 
     generate
       genvar j;
-      for (j = 0; j < `rsSize;j = j + 1) begin: ROBline
-        assign ready[j] = (~empty[j]) && (!nxtBranchTag[j]);
+      for (j = 0; j < `ROBsize;j = j + 1) begin: ROBline
+        assign discard[j] = ~empty[j] & misTaken & rsBranchTag[j][bFreeNum];
+        assign ready[j] = (~empty[j]) & (!nxtBranchTag[j]) & ~discard[j];
         assign nxtBranchTag[j] = (bFreeEn & rsBranchTag[j][bFreeNum]) ? (rsBranchTag[j] ^ (1 << bFreeNum)) : rsBranchTag[j];
+        assign nxtPosEmpty[j] = (empty[j] & ~allocEnO[j]) | discard[j];
+
+        always @(posedge clk) begin
+          if (rst) begin
+            empty[j] = 1'b1;
+          end else begin
+            if (ready[j] & (j == head)) empty[j] = 1;
+            else empty[j] = nxtPosEmpty[j];
+          end
+        end
         always @(posedge clk or posedge rst) begin
           if (rst) begin
             rsData[j] <= `dataFree;
@@ -126,8 +140,6 @@ module ROB(
       if (rst) begin
         head <= 0;
         tail <= 0;
-        num <= 0;
-        empty <= {`ROBsize{1'b1}};
       end else begin
         //change the empty status, commited
         if (enWrtO) empty[WrtTagO[`TagRootBus]] <= 0;
@@ -136,20 +148,17 @@ module ROB(
         if (dispatchEn)
           tail <= (tail + 1 < `ROBsize) ? tail + 1 : 0;
         //commit below
-        if (ready[head] && num) begin
+        if (ready[head]) begin
           enComO <= `Enable;
           ComDataO <= rsData[head];
           ComTagO <= rsTagW[head];
           ComNameO <= rsNameW[head];
-          num <= dispatchEn ? num : num - 1; 
           head <= (head + 1 < `ROBsize) ? head + 1 : 0;
-          empty[head] <= 1;
         end else begin
           enComO <= `Disable;
           ComDataO <= `dataFree;
           ComTagO <= `tagFree;
           ComNameO <= `nameFree;
-          num <= dispatchEn ? num + 1 : num;
         end
       end
     end

@@ -42,7 +42,6 @@ module cpu(
     wire DecEn;
     wire [`InstAddrBus] ToDecAddr;
     wire [`InstBus] ToDecInst;
-    wire instDiscard;
 
     //output of decoder
     wire [`NameBus] DecNameO, DecNameT, DecRdName;
@@ -190,7 +189,7 @@ module cpu(
       .ReadData(mem_din), 
       .WrtData(mem_dout), 
     //branch
-      .Discard({LSdiscard, instDiscard})
+      .misTaken(misTaken)
   );
 
   assign stall = ~(ALUfree & LSbufFree & ROBfree & BranchFree);
@@ -220,8 +219,7 @@ module cpu(
       .hit(hit), 
       .cacheInst(cacheInst), 
     //branch
-      .misTaken(misTaken), 
-      .instDiscard(instDiscard)
+      .misTaken(misTaken)
   );
   /*
    * decoder does not need to check if the current inst is mistaken, 
@@ -388,7 +386,6 @@ module cpu(
       .bFreeEn(BranchEn),
       .bFreeNum(bFreeNum)
   );
-  //branchnisation done
 
   ALU ALU(
     //from RS
@@ -409,6 +406,7 @@ module cpu(
     //to PC
       .jumpEn(jumpEn), 
       .jumpAddr(jumpAddr), 
+      .misTaken(misTaken), 
       .bFreeEn(BranchEn),
       .bFreeNum(bFreeNum)
   );
@@ -442,7 +440,8 @@ module cpu(
       .PC(BranchPC), 
       .bNum(BranchTagExNum), 
       .bFreeEn(BranchEn), 
-      .bFreeNum(bFreeNum)
+      .bFreeNum(bFreeNum), 
+      .misTaken(misTaken)
   );
 
   Branch Branch(
@@ -498,7 +497,8 @@ module cpu(
     .LSbufFree(LSbufFree), 
     //
     .bFreeEn(BranchEn), 
-    .bFreeNum(bFreeNum)
+    .bFreeNum(bFreeNum), 
+    .misTaken(misTaken)
   );
 
   LS LS(
@@ -526,14 +526,16 @@ module cpu(
       .dataAddr(dataAddr),
       .LSlen(LSlen), 
       .Sdata(Sdata),
-      //to ROB
+    //to ROB(fake)
       .LSROBen(LSROBen), 
       .LSROBdata(LSROBdata), 
       .LSROBtag(LSROBtag), 
       .LSROBname(LSROBname), 
       .LSdone(LSdone)
+    //
+      //.misTaken(misTaken), 
   );
-
+//branchnisation done
   ROB rob(
     .clk(clk_in), 
     .rst(rst_in), 
@@ -569,6 +571,7 @@ module cpu(
     .dispatchEn(dispatchEn), 
     .freeTag(freeTagALUroot), 
     .bFreeEn(BranchEn),
-    .bFreeNum(bFreeNum)
+    .bFreeNum(bFreeNum), 
+    .misTaken(misTaken)
   );
 endmodule

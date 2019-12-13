@@ -22,7 +22,7 @@ module Branch(
     assign jmpAddr = PC + imm;
     assign nxtAddr = PC + 4;
     assign bFreeNum = bNum;
-    assign misTaken = BranchAddr == jmpAddr;
+    assign misTaken = BranchWorkEn & (BranchAddr == jmpAddr);
 
     always @ (*) begin
       if (BranchWorkEn == `Enable) begin

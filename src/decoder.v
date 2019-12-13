@@ -73,6 +73,7 @@ module decoder(
         if (misTaken) begin
             bTag <= 0;
             BranchNum <= 0;
+            BranchTail <= 0;
         end else if (bFreeEn) begin
             bTag[bFreeNum] <= 0;
             BranchNum <= isBranch ? BranchNum : BranchNum - 1;

@@ -20,12 +20,13 @@ module ALU(
     output reg jumpEn, 
     output reg[`InstAddrBus]  jumpAddr,
     //
+    input wire                  misTaken, 
     input wire                  bFreeEn, 
     input wire[1:0]             bFreeNum
 );
 
     always @ (*) begin
-      if (ALUworkEn == `Enable) begin
+      if (ALUworkEn & ~misTaken) begin
         ROBen = `Enable;
         ROBtagW = wrtTag;
         ROBnameW = wrtName;

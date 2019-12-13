@@ -205,7 +205,7 @@ module ALUrs(
 
     assign issueRS = ready & -ready;
     //assign ALUfreeStatus = empty;
-    assign ALUfree = (!nxtPosEmpty);
+    assign ALUfree = (nxtPosEmpty != 0);
 
     generate
       genvar j;

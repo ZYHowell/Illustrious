@@ -29,14 +29,15 @@ module LS(
     output reg[`DataBus] LSROBdata, 
     output reg[`TagBus] LSROBtag, 
     output reg[`NameBus]  LSROBname, 
-    output reg LSdone
+    output reg LSdone, 
+    output wire LSdiscard
   );
     reg status, sign; 
 
     assign LSunwork = (status == `IsFree) ? ~LSworkEn : LSoutEn;
-
+    assign LSdiscard = 0;
     always @ (posedge clk or posedge rst) begin
-      if (rst == `Enable) begin
+      if (rst) begin
         status <= `IsFree;
         sign <= `SignEx;
         dataEn <= `Disable;
@@ -54,7 +55,7 @@ module LS(
         case(status)
           `IsFree: begin
             LSROBen <= `Disable;
-            if (LSworkEn == `Enable) begin
+            if (LSworkEn) begin
               dataAddr <= operandO + imm;
               status <= `NotFree;
               dataEn <= `Enable;
@@ -138,7 +139,7 @@ module LS(
           end
           `NotFree: begin
             dataEn <= `Disable;
-            if (LSoutEn == `Enable) begin
+            if (LSoutEn) begin
               LSdone <= 1;
               LSRW <= `Read;
               LSROBen <= (LSRW == `Read) ? `Enable : `Disable;

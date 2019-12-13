@@ -133,7 +133,8 @@ module BranchRS(
     output reg[1:0]             bNum, 
     //from branch
     input wire                  bFreeEn, 
-    input wire[1:0]             bFreeNum
+    input wire[1:0]             bFreeNum, 
+    input wire misTaken
 );
     wire [`branchRsSize - 1 : 0] ready;
     reg [`branchRsSize - 1 : 0] empty;
@@ -155,7 +156,7 @@ module BranchRS(
     wire[`DataBus] issueImm[`branchRsSize - 1 : 0];
     wire[`InstAddrBus] issuePC[`branchRsSize - 1 : 0];
 
-    reg [1:0]   head, tail, num;
+    reg [1:0]   head, tail;
     wire canIssue;
     //the head is the head while the tail is the next;
     integer i;
@@ -214,11 +215,10 @@ module BranchRS(
       AllocBranchTag = BranchTag;
     end
 
-    always @ (posedge clk or posedge rst) begin
-      if (rst) begin
+    always @ (posedge clk) begin
+      if (rst | misTaken) begin
         head <= 0;
         tail <= 0;
-        num <= 0;
         empty <= {`branchRsSize{1'b1}};
         BranchWorkEn <= `Disable; 
         operandO <= `dataFree; 
@@ -242,9 +242,7 @@ module BranchRS(
           PC <= issuePC[head];
           empty[head] <= 1;
           head <= (head == `branchRsSize - 1) ? 0 : head + 1;
-          num <= BranchEn ? num : (num - 1);
         end else begin
-          num <= BranchEn ? num + 1 : num;
           BranchWorkEn <= `Disable;
           operandO <= `dataFree;
           operandT <= `dataFree;

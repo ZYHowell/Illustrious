@@ -25,8 +25,7 @@ module fetch(
     //branch
     input wire misTaken, 
     input wire enBranch, 
-    input wire[`InstAddrBus] BranchAddr, 
-    output reg instDiscard
+    input wire[`InstAddrBus] BranchAddr
 );
     localparam StatusFree = 2'b00;
     localparam StatusWork = 2'b01;
@@ -40,7 +39,7 @@ module fetch(
     wire isJ, cacheIsJ;
 
     assign isJ = memInst[6] & memInst[2];
-    assign cacheIsJ = cacheInst[6] & memInst[6];
+    assign cacheIsJ = cacheInst[6] & cacheInst[2];
 
     always @(*) begin
       DecEn = `Disable;
@@ -73,16 +72,13 @@ module fetch(
         status <= StatusFree;
         instEn <= `Disable;
         instAddr <= `addrFree;
-        instDiscard <= 0;
       end else begin
         if (misTaken) begin
-          instDiscard <= ~hit;
           //only when not hit, the mem receives and needs to discard
           instEn <= `Enable;
           instAddr <= BranchAddr;
           status <= StatusWork;
         end else begin
-          instDiscard <= 0;
           case(status)
             StatusFree: begin
               instEn <= `Enable;
