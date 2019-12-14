@@ -31,6 +31,7 @@ module decoder(
 
     //notice that the BranchTag of output here does not consider the result of the Branch FU
     //which works at this cycle, and it cannot judge this: is supposed to be solved by dispathcer
+    output reg BranchDeeper, 
     output reg[`BranchTagBus]   BranchTag, 
     output wire                 BranchFree, 
     input wire misTaken
@@ -41,7 +42,7 @@ module decoder(
     wire[6:0] func7;
     wire isBranch;
 
-    reg[`BranchTagBus] bTag;
+    reg[`BranchTagBus] bTag, nxtPosBranchTag;
     reg[1:0] BranchNum, BranchTail;
 
     assign BranchFree = (BranchNum + (opClass == `ClassB)) < `branchRsSize;
@@ -49,7 +50,18 @@ module decoder(
     assign opType = inst[6:0];
     assign func3 = inst[14:12];
     assign func7 = inst[31:25];
-    assign isBranch = (opType == `ClassB) & DecEn;
+    assign isBranch = (opType == `ClassB) & DecEn & ~stall;
+
+    always @(*)begin
+        nxtPosBranchTag = 0;
+        if(rst | misTaken)
+            nxtPosBranchTag = 0;
+        else begin
+            nxtPosBranchTag = bTag;
+            if (bFreeEn) nxtPosBranchTag[bFreeNum] = 0;
+            if (isBranch) nxtPosBranchTag[BranchTail] = 1;
+        end
+    end
 
     always @ (posedge clk) begin
       instAddr <= instPC;
@@ -58,7 +70,8 @@ module decoder(
       Jimm <= {{`UimmFillLen{inst[31]}}, inst[19:12], inst[20], inst[30:21], 1'b0};
       Simm <= {{`immFillLen{inst[31]}}, inst[31:25], inst[11:7]};
       Bimm <= {{`immFillLen{inst[31]}}, inst[7], inst[30:25], inst[11:8], 1'b0};
-      BranchTag <= bTag;
+      BranchTag <= isBranch ? nxtPosBranchTag ^ (1 << BranchTail) : nxtPosBranchTag;
+      BranchDeeper <= isBranch;
       if (rst) begin
         regNameO <= `nameFree;
         regNameT <= `nameFree;
@@ -70,12 +83,11 @@ module decoder(
         BranchTail <= 0;
       end else begin
         //if mistaken, clear all. (branch is executed in order, ovo)
+        bTag <= nxtPosBranchTag;
         if (misTaken) begin
-            bTag <= 0;
             BranchNum <= 0;
             BranchTail <= 0;
         end else if (bFreeEn) begin
-            bTag[bFreeNum] <= 0;
             BranchNum <= isBranch ? BranchNum : BranchNum - 1;
         end else begin
             BranchNum <= isBranch ? BranchNum + 1 : BranchNum;
@@ -93,7 +105,6 @@ module decoder(
                 `ClassJAL: opCode <= `JAL;
                 `ClassJALR: opCode <= `JALR;
                 `ClassB:    begin
-                    bTag[BranchTail] <= 1;
                     BranchTail <= (BranchTail + 1 < `branchRsSize) ? BranchTail + 1 : 0;
                     case(func3)
                         `FUN_BEQ_OP: opCode <= `BEQ;

@@ -174,17 +174,17 @@ module lsBuffer(
     wire[`NameBus] issueNameW[`rsSize - 1 : 0];
     wire[`TagBus] issueTagW[`rsSize - 1 : 0];
     wire[`DataBus] issueImm[`rsSize - 1 : 0];
-    wire[`rsSize - 1 : 0] nxtPosEmpty;
+    wire[`rsSize : 0] nxtPosEmpty;
 
-    reg [`TagRootBus]   head, tail, num, judgeIssue;
+    reg [`TagRootBus]   head, tail, judgeIssue, nxtPosTail;
+    reg [`rsSize - 1 : 0] valid;
     wire canIssue;
     //the head is the head while the tail is the next;
     integer i;
 
     assign canIssue = ready[judgeIssue];
-    assign LSfreeTag = (tail != head) ? tail : 
-                        num ? `NoFreeTag : tail;
-    assign LSbufFree = (num + LSen + 1) < `rsSize ? 1 : 0;
+    assign LSfreeTag = empty ? tail : `NoFreeTag;
+    assign LSbufFree = (nxtPosEmpty != 0);
 
     generate
       genvar j;
@@ -193,6 +193,8 @@ module lsBuffer(
           if (rst) empty[j] <= 1;
           else empty[j] <= nxtPosEmpty[j];
         end
+        //if LSdone, valid[head]=0:retirement; if discard j, valid[j]=0: discard,empty[j]=0; if 
+        //
         LSbufLine LSbufLine(
           .clk(clk), 
           .rst(rst), 
@@ -232,8 +234,18 @@ module lsBuffer(
       end
     endgenerate
 
+    assign nxtPosEmpty[`rsSize] = nxtPosEmpty[0];
+    always @(*)begin
+      nxtPosTail = judgeIssue;
+      for (i = 0; i < `rsSize;i = i + 1)
+        if (~nxtPosEmpty[i] & nxtPosEmpty[i + 1]) 
+          nxtPosTail = (i + 1 < `rsSize) ? i + 1 : 0;
+    end
+
     always @(*) begin
       allocEn = 0;
+      //using tail here, since nxtPosTail is determined by nxtPosEmpty which is determined by allocEn.
+      //and when mistaken, LSen is 0 so allocEn is 0. 
       allocEn[tail] = LSen;
       freeEn = 0;
       freeEn[head] = LSdone;
@@ -253,7 +265,6 @@ module lsBuffer(
         judgeIssue <= 0;
         head <= 0;
         tail <= 0;
-        num <= 0;
         LSworkEn <= `Disable; 
         operandO <= `dataFree; 
         operandT <= `dataFree;
@@ -262,14 +273,12 @@ module lsBuffer(
         wrtName <= `nameFree; 
         opCode <= `NOP; 
       end else begin
-        if (LSen) begin
-          tail <= (tail == `rsSize - 1) ? 0 : tail + 1;
-        end
+        tail <= nxtPosTail;
         //needs to improve
         if (LSdone) begin
           head <= judgeIssue;
         end 
-        if ((LSreadEn) && canIssue) begin
+        if (LSreadEn && canIssue) begin
           LSworkEn <= `Enable;
           operandO <= issueOperandO[judgeIssue];
           operandT <= issueOperandT[judgeIssue];
@@ -279,8 +288,6 @@ module lsBuffer(
           imm <= issueImm[judgeIssue];
           judgeIssue <= (judgeIssue == `rsSize - 1) ? 0 : judgeIssue + 1;
         end else begin
-          if (empty[judgeIssue] && judgeIssue != tail)
-            judgeIssue <= (judgeIssue == `rsSize - 1) ? 0 : judgeIssue + 1;
           LSworkEn <= `Disable;
           operandO <= `dataFree;
           operandT <= `dataFree;

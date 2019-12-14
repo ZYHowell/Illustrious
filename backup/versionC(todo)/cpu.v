@@ -49,10 +49,6 @@ module cpu(
     wire [`OpClassBus]  DecOpClass;
     wire [`InstAddrBus] DecAddr;
     wire [`DataBus] DecImm, DecUimm, DecJimm, DecSimm, DecBimm;
-    wire BranchDeeper;
-    
-    wire [`BranchTagBus]  DecBranchTag;
-    wire BranchFree;
 
     //output of Table
     wire [`TagRootBus]  freeTagALUroot;
@@ -80,7 +76,6 @@ module cpu(
     wire [`TagBus]  LSbufTagO, LSbufTagT, LSbufTagW;
     wire [`NameBus] LSbufNameW;
     wire [`OpBus]   LSbufOp;
-    wire [`BranchTagBus] DispBranchTag;
 
     //output of regf
     wire [`DataBus] regDataO, regDataT;
@@ -94,13 +89,12 @@ module cpu(
     wire [`OpBus]   ALUopCode;
     wire [`InstAddrBus] ALUaddr;
     wire [`rsSize - 1 : 0]  ALUfreeStatus;
-    wire[`BranchTagBus] ALUbranchTag;
+
     //output of ALU
     wire ALUROBen;
     wire[`TagBus] ALUROBtagW;
     wire[`DataBus] ALUROBdataW;
     wire[`NameBus] ALUROBnameW;
-    wire[`BranchTagBus] ALUROBbranchW;
     wire jumpEn;
     wire [`InstAddrBus] jumpAddr;
 
@@ -109,12 +103,12 @@ module cpu(
     wire[`DataBus] BranchOperandO, BranchOperandT, BranchImm;
     wire[`OpBus]  BranchOp;
     wire[`InstAddrBus] BranchPC;
-    wire[1:0] BranchTagExNum;
+    wire[`rsSize - 1 : 0] BranchFreeStatus;
+
     //output of Branch 
     wire BranchEn;
     wire[`InstAddrBus]  BranchAddr;
-    wire[`BranchTagBus] bFreeNum;
-    wire misTaken;
+
     //output of LSbuffer
     wire LSworkEn;
     wire[`DataBus] LSoperandO, LSoperandT, LSimm;
@@ -188,17 +182,15 @@ module cpu(
       .RWstate(mem_wr), 
       .RWaddr(mem_a), 
       .ReadData(mem_din), 
-      .WrtData(mem_dout), 
-    //branch
-      .misTaken(misTaken)
+      .WrtData(mem_dout)
   );
 
-  assign stall = ~(ALUfree & LSbufFree & ROBfree & BranchFree);
+  assign stall = ~(ALUfree & LSbufFree & ROBfree);
 
   fetch fetcher(
       .clk(clk_in), 
       .rst(rst_in), 
-      //.rdy(rdy_in),
+      .rdy(rdy_in),
       .stall(stall), 
 
       .enJump(jumpEn), 
@@ -218,18 +210,12 @@ module cpu(
       .instEn(instEn), 
       .instAddr(instAddr), 
       .hit(hit), 
-      .cacheInst(cacheInst), 
-    //branch
-      .misTaken(misTaken)
+      .cacheInst(cacheInst)
   );
-  /*
-   * decoder does not need to check if the current inst is mistaken, 
-   * since this is finished by IF
-   */
+
   decoder decoder(
     .clk(clk_in), 
     .rst(rst_in),
-    .stall(stall),
     .DecEn(DecEn), 
     .instPC(ToDecAddr),
     .inst(ToDecInst),
@@ -245,17 +231,21 @@ module cpu(
     .Uimm(DecUimm), 
     .Jimm(DecJimm), 
     .Simm(DecSimm), 
-    .Bimm(DecBimm), 
-    .bFreeEn(BranchEn), 
-    .bFreeNum(bFreeNum), 
-    .BranchDeeper(BranchDeeper), 
-    .BranchTag(DecBranchTag), 
-    .BranchFree(BranchFree), 
-    .misTaken(misTaken)
+    .Bimm(DecBimm)
   );
-  
+
+  // Table Table(
+  //     .clk(clk_in),
+  //     .rst(rst_in), 
+  //     .freeStatusALU(ALUfreeStatus), 
+  //   //output
+  //     .freeTagALU(freeTagALUroot)
+  // );
+
   dispatcher dispatcher(
     //from decoder
+      // .regNameO(DecNameO), 
+      // .regNameT(DecNameT), 
       .rdName(DecRdName),
       .opCode(DecOp),
       .opClass(DecOpClass),
@@ -312,13 +302,7 @@ module cpu(
       .ROBdataO(ROBrdDataO), 
       .ROBtagTen(ROBrdT), 
       .ROBdataT(ROBrdDataT), 
-      .dispatchEn(dispatchEn), 
-    //branchTag
-      .bFreeEn(BranchEn), 
-      .bFreeNum(bFreeNum), 
-      .DecBranchTag(DecBranchTag), 
-      .FinalBranchTag(DispBranchTag), 
-      .misTaken(misTaken)
+      .dispatchEn(dispatchEn)
   );
 
   Regfile regf(
@@ -343,17 +327,9 @@ module cpu(
       .regDataO(regDataO), 
       .regTagO(regTagO), 
       .regDataT(regDataT), 
-      .regTagT(regTagT), 
-    //
-      .branchDeeper(BranchDeeper), 
-      .bFreeEn(BranchEn),
-      .misTaken(misTaken)
+      .regTagT(regTagT)
   );
 
-  /*
-   * all RS has no need to check if the assigned one should be discarded, 
-   * since it is done in dispatcher: alloc is always safe
-   */
   ALUrs ALUrs(
     .rst(rst_in),
     .clk(clk_in),
@@ -374,7 +350,6 @@ module cpu(
       .ALUnameW(ALUrsNameW), 
       .ALUop(ALUrsOp), 
       .ALUaddr(ALUrsAddr), 
-      .BranchTag(DispBranchTag), 
 
     //to ALU
       .ALUworkEn(ALUworkEn), 
@@ -384,13 +359,9 @@ module cpu(
       .wrtName(ALUwrtName), 
       .opCode(ALUopCode), 
       .instAddr(ALUaddr), 
-      .instBranchTag(ALUbranchTag),
     //to dispatcher
-      .ALUfree(ALUfree), 
-    //branch
-      .misTaken(misTaken), 
-      .bFreeEn(BranchEn),
-      .bFreeNum(bFreeNum)
+      .ALUfree(ALUfree)//, 
+      //.ALUfreeStatus(ALUfreeStatus)
   );
 
   ALU ALU(
@@ -402,19 +373,14 @@ module cpu(
       .wrtName(ALUwrtName), 
       .opCode(ALUopCode), 
       .instAddr(ALUaddr),
-      .instBranchTag(ALUbranchTag), 
     //to ROB
       .ROBen(ALUROBen), 
       .ROBtagW(ALUROBtagW), 
       .ROBdataW(ALUROBdataW),
       .ROBnameW(ALUROBnameW), 
-      .ROBbranchW(ALUROBbranchW),
     //to PC
       .jumpEn(jumpEn), 
-      .jumpAddr(jumpAddr), 
-      .misTaken(misTaken), 
-      .bFreeEn(BranchEn),
-      .bFreeNum(bFreeNum)
+      .jumpAddr(jumpAddr)
   );
 
   BranchRS BranchRS(
@@ -436,7 +402,6 @@ module cpu(
       .BranchOp(BranchRsOp), 
       .BranchImm(BranchRsImm), 
       .BranchPC(BranchRsAddr),
-      .BranchTag(DispBranchTag), 
     //to branchEx
       .BranchWorkEn(BranchWorkEn), 
       .operandO(BranchOperandO), 
@@ -444,10 +409,8 @@ module cpu(
       .imm(BranchImm), 
       .opCode(BranchOp), 
       .PC(BranchPC), 
-      .bNum(BranchTagExNum), 
-      .bFreeEn(BranchEn), 
-      .bFreeNum(bFreeNum), 
-      .misTaken(misTaken)
+    //to dispatcher
+      .BranchFreeStatus(BranchFreeStatus)
   );
 
   Branch Branch(
@@ -458,12 +421,9 @@ module cpu(
       .imm(BranchImm), 
       .opCode(BranchOp), 
       .PC(BranchPC), 
-      .bNum(BranchTagExNum),
     //to the PC
       .BranchResultEn(BranchEn), 
-      .BranchAddr(BranchAddr),
-      .bFreeNum(bFreeNum), 
-      .misTaken(misTaken)
+      .BranchAddr(BranchAddr)
   );
 
   lsBuffer lsBuffer(
@@ -486,7 +446,6 @@ module cpu(
       .LSnameW(LSbufNameW), 
       .LSop(LSbufOp), 
       .LSimm(LSbufImm), 
-      .BranchTag(DispBranchTag), 
     //from the LS
     .LSreadEn(LSunwork), 
     .LSdone(LSoutEn),
@@ -500,11 +459,7 @@ module cpu(
     .opCode(LSop), 
     //to dispatcher
     .LSfreeTag(freeTagLSroot),
-    .LSbufFree(LSbufFree), 
-    //
-    .bFreeEn(BranchEn), 
-    .bFreeNum(bFreeNum), 
-    .misTaken(misTaken)
+    .LSbufFree(LSbufFree)
   );
 
   LS LS(
@@ -532,16 +487,14 @@ module cpu(
       .dataAddr(dataAddr),
       .LSlen(LSlen), 
       .Sdata(Sdata),
-    //to ROB(fake)
+      //to ROB
       .LSROBen(LSROBen), 
       .LSROBdata(LSROBdata), 
       .LSROBtag(LSROBtag), 
       .LSROBname(LSROBname), 
       .LSdone(LSdone)
-    //
-      //.misTaken(misTaken), 
   );
-//branchnisation done
+
   ROB rob(
     .clk(clk_in), 
     .rst(rst_in), 
@@ -574,10 +527,6 @@ module cpu(
     // output reg[`NameBus]    ComNameT, 
     //communicate with Dispatcher: about tagW
     .dispatchEn(dispatchEn), 
-    .dispBranchTag(DispBranchTag), 
-    .freeTag(freeTagALUroot), 
-    .bFreeEn(BranchEn),
-    .bFreeNum(bFreeNum), 
-    .misTaken(misTaken)
+    .freeTag(freeTagALUroot)
   );
 endmodule
