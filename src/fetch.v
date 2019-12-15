@@ -57,7 +57,7 @@ module fetch(
             DecEn = `Disable;
           end
           StatusStall: begin
-            DecEn = ~stall;
+            DecEn = ~stall & ~misTaken;
           end
         endcase
       end
