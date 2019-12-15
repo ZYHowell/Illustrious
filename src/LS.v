@@ -9,7 +9,6 @@ module LS(
     input wire[`DataBus]  operandT,  
     input wire[`DataBus]  imm, 
     input wire[`TagBus] wrtTag, 
-    input wire[`NameBus]  wrtName, 
     input wire[`OpBus]  opCode, 
 
     //to lsbuffer
@@ -28,14 +27,11 @@ module LS(
     output reg LSROBen, 
     output reg[`DataBus] LSROBdata, 
     output reg[`TagBus] LSROBtag, 
-    output reg[`NameBus]  LSROBname, 
-    output reg LSdone, 
-    output wire LSdiscard
+    output reg LSdone
   );
     reg status, sign; 
 
     assign LSunwork = (status == `IsFree) ? ~LSworkEn : LSoutEn;
-    assign LSdiscard = 0;
     always @ (posedge clk or posedge rst) begin
       if (rst) begin
         status <= `IsFree;
@@ -48,7 +44,6 @@ module LS(
         LSROBen <= `Disable;
         LSROBdata <= `dataFree;
         LSROBtag <= `tagFree;
-        LSROBname <= `nameFree;
         LSdone <= 0;
       end else begin
         LSdone <= 0;
@@ -64,7 +59,6 @@ module LS(
                   LSRW <= `Read;
                   LSlen <= `ByteLen;
                   Sdata <= `dataFree;
-                  LSROBname <= wrtName;
                   LSROBtag <= wrtTag;
                   sign <= `SignEx;
                 end
@@ -72,7 +66,6 @@ module LS(
                   LSRW <= `Read;
                   LSlen <= `HexLen;
                   Sdata <= `dataFree;
-                  LSROBname <= wrtName;
                   LSROBtag <= wrtTag;
                   sign <= `SignEx;
                 end
@@ -80,7 +73,6 @@ module LS(
                   LSRW <= `Read;
                   LSlen <= `WordLen;
                   Sdata <= `dataFree;
-                  LSROBname <= wrtName;
                   LSROBtag <= wrtTag;
                   sign <= `SignEx;
                 end
@@ -88,7 +80,6 @@ module LS(
                   LSRW <= `Read;
                   LSlen <= `ByteLen;
                   Sdata <= `dataFree;
-                  LSROBname <= wrtName;
                   LSROBtag <= wrtTag;
                   sign <= `UnsignEx;
                 end
@@ -96,7 +87,6 @@ module LS(
                   LSRW <= `Read;
                   LSlen <= `HexLen;
                   Sdata <= `dataFree;
-                  LSROBname <= wrtName;
                   LSROBtag <= wrtTag;
                   sign <= `UnsignEx;
                 end
@@ -104,7 +94,6 @@ module LS(
                   LSRW <= `Write;
                   LSlen <= 3'b000;
                   Sdata <= operandT;
-                  LSROBname <= `nameFree;
                   LSROBtag <= `tagFree;
                   sign <= `SignEx;
                 end
@@ -112,7 +101,6 @@ module LS(
                   LSRW <= `Write;
                   LSlen <= 3'b001;
                   Sdata <= operandT;
-                  LSROBname <= `nameFree;
                   LSROBtag <= `tagFree;
                   sign <= `SignEx;
                 end
@@ -120,7 +108,6 @@ module LS(
                   LSRW <= `Write;
                   LSlen <= 3'b011;
                   Sdata <= operandT;
-                  LSROBname <= `nameFree;
                   LSROBtag <= `tagFree;
                   sign <= `SignEx;
                 end
@@ -134,7 +121,6 @@ module LS(
               LSROBen <= `Disable;
               LSROBdata <= `dataFree;
               LSROBtag <= `tagFree;
-              LSROBname <= `nameFree;
             end
           end
           `NotFree: begin

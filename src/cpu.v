@@ -113,13 +113,12 @@ module cpu(
     //output of Branch 
     wire BranchEn;
     wire[`InstAddrBus]  BranchAddr;
-    wire[`BranchTagBus] bFreeNum;
+    wire[1:0] bFreeNum;
     wire misTaken;
     //output of LSbuffer
     wire LSworkEn;
     wire[`DataBus] LSoperandO, LSoperandT, LSimm;
     wire[`TagBus] LSwrtTag;
-    wire[`NameBus]  LSwrtName;
     wire[`OpBus]  LSop;
     wire LSbufFree;
     wire [`TagRootBus]  freeTagLSroot;
@@ -134,7 +133,6 @@ module cpu(
     wire LSROBen, LSdone;
     wire [`DataBus] LSROBdata;
     wire [`TagBus]  LSROBtag;
-    wire [`NameBus] LSROBname;
 
   //about icache
     wire hit, memfetchEn;
@@ -149,7 +147,6 @@ module cpu(
     wire enROBComO;
     wire[`TagBus] ROBComTagO;
     wire[`DataBus]  ROBComDataO;
-    wire[`NameBus]  ROBComNameO;
 
   icache icache(
     .clk(clk_in),
@@ -285,7 +282,6 @@ module cpu(
       .ALUtagO(ALUrsTagO), 
       .ALUtagT(ALUrsTagT),
       .ALUtagW(ALUrsTagW), 
-      .ALUnameW(ALUrsNameW), 
       .ALUop(ALUrsOp), 
       .ALUaddr(ALUrsAddr), 
     //to BranchRS
@@ -304,7 +300,6 @@ module cpu(
       .LStagO(LSbufTagO), 
       .LStagT(LSbufTagT),
       .LStagW(LSbufTagW), 
-      .LSnameW(LSbufNameW), 
       .LSimm(LSbufImm), 
       .LSop(LSbufOp), 
     //from ROB
@@ -326,11 +321,9 @@ module cpu(
     .rst(rst_in), 
     .ALUwrtEn(enROBComO), 
     .ALUwrtData(ROBComDataO),
-    .ALUwrtName(ROBComNameO), 
     .ALUwrtTag(ROBComTagO),
     .LSwrtEn(LSROBen), 
     .LSwrtData(LSROBdata),
-    .LSwrtName(LSROBname), 
     .LSwrtTag(LSROBtag), 
     //from decoder
       .regNameO(DecNameO), 
@@ -371,7 +364,6 @@ module cpu(
       .ALUtagO(ALUrsTagO), 
       .ALUtagT(ALUrsTagT),
       .ALUtagW(ALUrsTagW),
-      .ALUnameW(ALUrsNameW), 
       .ALUop(ALUrsOp), 
       .ALUaddr(ALUrsAddr), 
       .BranchTag(DispBranchTag), 
@@ -381,7 +373,6 @@ module cpu(
       .operandO(ALUoperandO), 
       .operandT(ALUoperandT),
       .wrtTag(ALUwrtTag), 
-      .wrtName(ALUwrtName), 
       .opCode(ALUopCode), 
       .instAddr(ALUaddr), 
       .instBranchTag(ALUbranchTag),
@@ -399,7 +390,6 @@ module cpu(
       .operandO(ALUoperandO), 
       .operandT(ALUoperandT), 
       .wrtTag(ALUwrtTag), 
-      .wrtName(ALUwrtName), 
       .opCode(ALUopCode), 
       .instAddr(ALUaddr),
       .instBranchTag(ALUbranchTag), 
@@ -407,7 +397,6 @@ module cpu(
       .ROBen(ALUROBen), 
       .ROBtagW(ALUROBtagW), 
       .ROBdataW(ALUROBdataW),
-      .ROBnameW(ALUROBnameW), 
       .ROBbranchW(ALUROBbranchW),
     //to PC
       .jumpEn(jumpEn), 
@@ -483,7 +472,6 @@ module cpu(
       .LStagO(LSbufTagO), 
       .LStagT(LSbufTagT), 
       .LStagW(LSbufTagW), 
-      .LSnameW(LSbufNameW), 
       .LSop(LSbufOp), 
       .LSimm(LSbufImm), 
       .BranchTag(DispBranchTag), 
@@ -496,7 +484,6 @@ module cpu(
     .operandT(LSoperandT),
     .imm(LSimm), 
     .wrtTag(LSwrtTag), 
-    .wrtName(LSwrtName), 
     .opCode(LSop), 
     //to dispatcher
     .LSfreeTag(freeTagLSroot),
@@ -517,7 +504,6 @@ module cpu(
       .operandT(LSoperandT),
       .imm(LSimm), 
       .wrtTag(LSwrtTag), 
-      .wrtName(LSwrtName), 
       .opCode(LSop), 
 
     //to lsbuffer
@@ -536,7 +522,6 @@ module cpu(
       .LSROBen(LSROBen), 
       .LSROBdata(LSROBdata), 
       .LSROBtag(LSROBtag), 
-      .LSROBname(LSROBname), 
       .LSdone(LSdone)
     //
       //.misTaken(misTaken), 
@@ -549,12 +534,10 @@ module cpu(
     .enWrtO(ALUROBen), 
     .WrtTagO(ALUROBtagW), 
     .WrtDataO(ALUROBdataW), 
-    .WrtNameO(ALUROBnameW), 
     //input from LS for precise exception, but not now
     // input wire enWrtT, 
     // input wire[`TagBus] WrtTagT,
     // input wire[`DataBus] WrtDataT,
-    // input wire[`NameBus] WrtNameT, 
     //communicate with dispatcher: about write out
     .ReadTagO(regTagO), 
     .ReadTagT(regTagT), 
@@ -567,11 +550,9 @@ module cpu(
     .enComO(enROBComO), 
     .ComTagO(ROBComTagO), 
     .ComDataO(ROBComDataO), 
-    .ComNameO(ROBComNameO), 
     // output reg enComT, 
     // output reg[`TagBus]     ComTagT, 
     // output reg[`DataBus]    ComDataT, 
-    // output reg[`NameBus]    ComNameT, 
     //communicate with Dispatcher: about tagW
     .dispatchEn(dispatchEn), 
     .dispBranchTag(DispBranchTag), 

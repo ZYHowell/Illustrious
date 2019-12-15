@@ -93,12 +93,10 @@ module Regfile(
     input wire rst, 
     //ALU is actually from the ROB. 
     input wire ALUwrtEn, 
-    input wire [`NameBus] ALUwrtName, 
     input wire [`TagBus] ALUwrtTag,
     input wire [`DataBus] ALUwrtData, 
 
     input wire LSwrtEn, 
-    input wire [`NameBus] LSwrtName,
     input wire [`TagBus] LSwrtTag,
     input wire [`DataBus] LSwrtData,
     //from decoder

@@ -33,7 +33,6 @@ module dispatcher(
     output reg[`TagBus]         ALUtagO, 
     output reg[`TagBus]         ALUtagT,
     output reg[`TagBus]         ALUtagW, 
-    output reg[`NameBus]        ALUnameW, 
     output reg[`OpBus]          ALUop, 
     output reg[`InstAddrBus]    ALUaddr, 
     //to BranchRS
@@ -52,7 +51,6 @@ module dispatcher(
     output reg[`TagBus]         LStagO, 
     output reg[`TagBus]         LStagT,
     output reg[`TagBus]         LStagW, 
-    output reg[`NameBus]        LSnameW, 
     output reg[`DataBus]        LSimm, 
     output reg[`OpBus]          LSop, 
     //from ROB
@@ -108,7 +106,6 @@ module dispatcher(
       ALUtagO = `tagFree;
       ALUtagT = `tagFree;
       ALUtagW = `tagFree;
-      ALUnameW = `nameFree;
       BranchEn = `Disable;
       BranchOperandO = `dataFree;
       BranchOperandT = `dataFree;
@@ -122,7 +119,6 @@ module dispatcher(
       LStagO = `tagFree;
       LStagT = `tagFree;
       LStagW = `tagFree;
-      LSnameW = `nameFree;
       LSimm = `dataFree;
       LSop = `NOP;
       enWrt = `Disable;
@@ -136,7 +132,6 @@ module dispatcher(
             ALUtagO = rdFinalTagO;
             ALUtagT = `tagFree;
             ALUtagW = finalTag;
-            ALUnameW = rdName;
             enWrt = `Enable;
           end
           `ClassAUIPC: begin
@@ -147,7 +142,6 @@ module dispatcher(
             ALUtagO = rdFinalTagO;
             ALUtagT = `tagFree;
             ALUtagW = finalTag;
-            ALUnameW = rdName;
             enWrt = `Enable;
           end
           `ClassJAL: begin
@@ -158,7 +152,6 @@ module dispatcher(
             ALUtagO = `tagFree;
             ALUtagT = `tagFree;
             ALUtagW = finalTag;
-            ALUnameW = rdName;
             enWrt = `Enable;
           end
           `ClassJALR: begin
@@ -169,7 +162,6 @@ module dispatcher(
             ALUtagO = rdFinalTagO;
             ALUtagT = `tagFree;
             ALUtagW = finalTag;
-            ALUnameW = rdName;
             enWrt = `Enable;
           end
           `ClassB:    begin
@@ -188,7 +180,6 @@ module dispatcher(
             LStagO = rdFinalTagO;
             LStagT = `tagFree;
             LStagW = finalTag;
-            LSnameW = rdName;
             LSimm = imm;
             LSop = opCode;
             enWrt = `Enable;
@@ -200,7 +191,6 @@ module dispatcher(
             LStagO = rdFinalTagO;
             LStagT = rdFinalTagT;
             LStagW = finalTag;
-            LSnameW = `nameFree;
             LSimm = Simm;
             LSop = opCode;
           end
@@ -212,7 +202,6 @@ module dispatcher(
             ALUtagO = rdFinalTagO;
             ALUtagT = `tagFree;
             ALUtagW = finalTag;
-            ALUnameW = rdName;
             enWrt = `Enable;
           end
           `ClassRR:   begin
@@ -223,7 +212,6 @@ module dispatcher(
             ALUtagO = rdFinalTagO;
             ALUtagT = rdFinalTagT;
             ALUtagW = finalTag;
-            ALUnameW = rdName;
             enWrt = `Enable;
           end
         endcase

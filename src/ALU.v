@@ -6,7 +6,6 @@ module ALU(
     input wire[`DataBus]    operandO, 
     input wire[`DataBus]    operandT, 
     input wire[`TagBus]     wrtTag, 
-    input wire[`NameBus]    wrtName, 
     input wire[`OpBus]      opCode, 
     input wire[`InstAddrBus]instAddr, 
     input wire[`BranchTagBus] instBranchTag, 
@@ -14,7 +13,6 @@ module ALU(
     output reg ROBen, 
     output reg[`TagBus]     ROBtagW, 
     output reg[`DataBus]    ROBdataW,
-    output reg[`NameBus]    ROBnameW,
     output reg[`BranchTagBus] ROBbranchW, 
     //to PC
     output reg jumpEn, 
@@ -29,7 +27,6 @@ module ALU(
       if (ALUworkEn & ~misTaken) begin
         ROBen = `Enable;
         ROBtagW = wrtTag;
-        ROBnameW = wrtName;
         jumpEn = `Disable;
         jumpAddr = `addrFree;
         ROBdataW = `dataFree;
@@ -62,7 +59,6 @@ module ALU(
       end else begin
         ROBen = `Disable;
         ROBtagW = `tagFree;
-        ROBnameW = `nameFree;
         ROBdataW = `dataFree;
         ROBbranchW = 0;
         jumpEn = `Disable;

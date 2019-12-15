@@ -16,7 +16,6 @@ module LSbufLine(
     input wire[`TagBus]     allocTagO, 
     input wire[`TagBus]     allocTagT,
     input wire[`TagBus]     allocTagW,
-    input wire[`NameBus]    allocNameW,  
     input wire[`OpBus]      allocOp, 
     input wire[`InstAddrBus]allocImm, 
     input wire[`BranchTagBus] allocBranchTag, 
@@ -25,8 +24,7 @@ module LSbufLine(
     output wire ready, 
     output wire[`DataBus] issueOperandO, 
     output wire[`DataBus] issueOperandT, 
-    output wire[`OpBus]   issueOp,  
-    output wire[`NameBus] issueNameW, 
+    output wire[`OpBus]   issueOp, 
     output wire[`TagBus]  issueTagW,
     output wire[`DataBus] issueImm,
     //the imm is pc in alu, is imm in ls; but ls needs to clear branchTag before issuing
@@ -38,7 +36,6 @@ module LSbufLine(
 );
     reg[`TagBus]  rsTagO, rsTagT;
     reg[`DataBus] rsDataO, rsDataT;
-    reg[`NameBus] rsNameW;
     reg[`TagBus]  rsTagW;
     reg[`DataBus] rsImm;
     reg[`OpBus]   rsOp;
@@ -54,7 +51,6 @@ module LSbufLine(
     assign issueOperandO = (nxtPosTagO == `tagFree) ? nxtPosDataO : rsDataO;
     assign issueOperandT = (nxtPosTagT == `tagFree) ? nxtPosDataT : rsDataT;
     assign issueOp = rsOp;
-    assign issueNameW = rsNameW;
     assign issueImm = rsImm;
     assign issueTagW = rsTagW;
     assign nxtPosBranchTag = (bFreeEn & BranchTag[bFreeNum]) ? (BranchTag ^ (1 << bFreeNum)) : BranchTag;
@@ -89,7 +85,6 @@ module LSbufLine(
         rsTagT <= `tagFree;
         rsDataO <= `dataFree;
         rsDataT <= `dataFree;
-        rsNameW <= `nameFree;
         rsTagW <= `tagFree;
         rsImm <= `dataFree;
         rsOp <= `NOP;
@@ -99,7 +94,6 @@ module LSbufLine(
         rsTagT <= allocTagT;
         rsDataO <= allocOperandO;
         rsDataT <= allocOperandT;
-        rsNameW <= allocNameW;
         rsTagW <= allocTagW;
         rsImm <= allocImm;
         rsOp <= allocOp;
@@ -130,7 +124,6 @@ module lsBuffer(
     input wire[`TagBus]         LStagO, 
     input wire[`TagBus]         LStagT, 
     input wire[`TagBus]         LStagW, 
-    input wire[`NameBus]        LSnameW, 
     input wire[`OpBus]          LSop, 
     input wire[`DataBus]        LSimm, 
     input wire[`BranchTagBus]   BranchTag, 
@@ -143,7 +136,6 @@ module lsBuffer(
     output reg[`DataBus]        operandT,
     output reg[`DataBus]        imm, 
     output reg[`TagBus]         wrtTag, 
-    output reg[`NameBus]        wrtName, 
     output reg[`OpBus]          opCode, 
     //to dispatcher
     output wire[`TagRootBus] LSfreeTag, 
@@ -162,7 +154,6 @@ module lsBuffer(
     reg[`TagBus]      AllocPostTagO; 
     reg[`TagBus]      AllocPostTagT;
     reg[`TagBus]      AllocPostTagW;
-    reg[`NameBus]     AllocPostNameW;  
     reg[`OpBus]       AllocPostOp; 
     reg[`DataBus]     AllocPostImm; 
     reg[`BranchTagBus] AllocBranchTag;
@@ -171,7 +162,6 @@ module lsBuffer(
     wire[`DataBus] issueOperandO[`rsSize - 1 : 0];
     wire[`DataBus] issueOperandT[`rsSize - 1 : 0];
     wire[`OpBus]   issueOp[`rsSize - 1 : 0]; 
-    wire[`NameBus] issueNameW[`rsSize - 1 : 0];
     wire[`TagBus] issueTagW[`rsSize - 1 : 0];
     wire[`DataBus] issueImm[`rsSize - 1 : 0];
     wire[`rsSize : 0] nxtPosEmpty;
@@ -212,7 +202,6 @@ module lsBuffer(
           .allocTagO(AllocPostTagO), 
           .allocTagT(AllocPostTagT),
           .allocTagW(AllocPostTagW),
-          .allocNameW(AllocPostNameW),
           .allocOp(AllocPostOp), 
           .allocImm(AllocPostImm), 
           .allocBranchTag(AllocBranchTag), 
@@ -222,7 +211,6 @@ module lsBuffer(
           .issueOperandO(issueOperandO[j]), 
           .issueOperandT(issueOperandT[j]), 
           .issueOp(issueOp[j]), 
-          .issueNameW(issueNameW[j]), 
           .issueTagW(issueTagW[j]), 
           .issueImm(issueImm[j]),
           .bFreeEn(bFreeEn), 
@@ -256,7 +244,6 @@ module lsBuffer(
       AllocPostTagO = LStagO;
       AllocPostTagT = LStagT;
       AllocPostTagW = LStagW;
-      AllocPostNameW = LSnameW;
       AllocBranchTag = BranchTag;
     end
 
@@ -270,7 +257,6 @@ module lsBuffer(
         operandT <= `dataFree;
         imm <= `dataFree;
         wrtTag <= `tagFree; 
-        wrtName <= `nameFree; 
         opCode <= `NOP; 
       end else begin
         tail <= nxtPosTail;
@@ -283,7 +269,6 @@ module lsBuffer(
           operandO <= issueOperandO[judgeIssue];
           operandT <= issueOperandT[judgeIssue];
           opCode <= issueOp[judgeIssue];
-          wrtName <= issueNameW[judgeIssue];
           wrtTag <= issueTagW[judgeIssue];
           imm <= issueImm[judgeIssue];
           judgeIssue <= (judgeIssue == `rsSize - 1) ? 0 : judgeIssue + 1;
@@ -292,7 +277,6 @@ module lsBuffer(
           operandO <= `dataFree;
           operandT <= `dataFree;
           opCode <= `NOP;
-          wrtName <= `nameFree;
           wrtTag <= `tagFree;
           imm <= `dataFree;
         end
