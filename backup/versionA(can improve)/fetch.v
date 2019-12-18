@@ -3,50 +3,47 @@
 module fetch(
     input wire clk, 
     input wire rst, 
-    input wire rdy, 
+    //input wire rdy, 
     input wire stall, 
 
     input wire enJump, 
     input wire[`InstAddrBus] JumpAddr, 
-
-    input wire mistaken, 
-    input wire[`InstAddrBus] BranchAddr,
 
     //to decoder
     output reg DecEn, 
     output reg[`InstAddrBus] DecPC, 
     output reg[`InstBus]   DecInst, 
     //with mem
-    output reg instEn, 
-    output reg[`InstAddrBus] instAddr,
     input wire memInstOutEn, 
     input wire[`InstBus] memInst, 
+
+    output reg instEn, 
+    output reg[`InstAddrBus] instAddr,
+
     input wire hit,
     input wire[`InstBus] cacheInst, 
-    //with BP
-    output wire predEn, 
-    input wire[`InstAddrBus] predAddr
+    //branch
+    input wire misTaken, 
+    input wire enBranch, 
+    input wire[`InstAddrBus] BranchAddr
 );
     localparam StatusFree = 2'b00;
     localparam StatusWork = 2'b01;
-    localparam StatusWaitBJ = 2'b10;
+    localparam StatusWaitJ = 2'b10;
     localparam StatusStall = 2'b11;
 
     reg[1:0] status;
-    reg StallToWaitBJ;
-    reg[`InstBus] _decInst;
-    reg isJ;
-    wire isBJ, cacheIsBJ;
+    reg StallToWaitJ;
+    reg[`InstBus] _DecInst;
+    reg[`InstAddrBus] _DecPC;
+    wire isJ, cacheIsJ;
 
-    assign isBJ = memInst[6];
-    assign cacheIsBJ = cacheInst[6];
-
-    assign predEn = (hit & ~cacheInst[2]) | (memInstOutEn & ~memInst[2]);
+    assign isJ = memInst[6] & memInst[2];
+    assign cacheIsJ = cacheInst[6] & cacheInst[2];
 
     always @(*) begin
       DecEn = `Disable;
-      DecPC = instAddr;
-      DecInst = (~(hit | memInstOutEn)) ? DecInst : 
+      DecInst = (~(hit | memInstOutEn)) ? _DecInst : 
                 (hit ? cacheInst : memInst);
       if (rst == `Disable) begin
         case(status)
@@ -54,30 +51,33 @@ module fetch(
             DecInst = `dataFree;
           end
           StatusWork: begin
-            DecEn = (~stall & (hit | memInstOutEn)) ? `Enable : `Disable;
+            DecEn = ~stall & (hit | memInstOutEn) & ~misTaken;
           end
-          StatusWaitBJ: begin
+          StatusWaitJ: begin
             DecEn = `Disable;
           end
           StatusStall: begin
-            DecEn = stall ? `Disable : `Enable;
+            DecEn = ~stall & ~misTaken;
           end
         endcase
       end
+      DecPC = DecEn ? instAddr : _DecPC;
     end
 
     always @(posedge clk) begin
-      if (rst) begin
-        StallToWaitBJ <= 0;
+      _DecPC <= DecPC;
+      _DecInst <= DecInst;
+      if (rst) begin //| ~rdy) begin
+        StallToWaitJ <= 0;
         status <= StatusFree;
         instEn <= `Disable;
         instAddr <= `addrFree;
-      end else if (rdy) begin
-        if (mistaken) begin
-          StallToWaitBJ <= 0;
-          status <= StatusFree;
+      end else begin
+        if (misTaken) begin
+          //only when not hit, the mem receives and needs to discard
           instEn <= `Enable;
           instAddr <= BranchAddr;
+          status <= StatusWork;
         end else begin
           case(status)
             StatusFree: begin
@@ -86,46 +86,39 @@ module fetch(
             end
             StatusWork: begin
               if (hit) begin
-                isJ <= cacheInst[2];
                 if (~stall) begin
-                  if (cacheIsBJ) begin
+                  if (cacheIsJ) begin
                     instEn <= `Disable;
-                    status <= StatusWaitBJ;
+                    status <= StatusWaitJ;
                   end else begin
                     instEn <= `Enable;
                     instAddr <= instAddr + `PCnext;
                   end
                 end else begin
                   instEn <= `Disable;
-                  StallToWaitBJ <= cacheIsBJ;
+                  StallToWaitJ <= cacheIsJ;
                   status <= StatusStall;
                 end
               end else if (memInstOutEn) begin
-                isJ <= memInst[2];
                 if (~stall) begin
-                  if (isBJ) begin
+                  if (isJ) begin
                     instEn <= `Disable;
-                    status <= StatusWaitBJ;
+                    status <= StatusWaitJ;
                   end else begin
                     instEn <= `Enable;
                     instAddr <= instAddr + `PCnext;
                   end
                 end else begin
                   instEn <= `Disable;
-                  StallToWaitBJ <= isBJ;
+                  StallToWaitJ <= isJ;
                   status <= StatusStall;
                 end
               end else begin
-                isJ <= 0;
                 instEn <= `Disable;
               end
             end
-            StatusWaitBJ: begin
-              if (~isJ) begin
-                instEn <= `Enable;
-                instAddr <= predAddr;
-                status <= StatusWork;
-              end else if (enJump) begin
+            StatusWaitJ: begin
+              if (enJump) begin
                 instEn <= `Enable;
                 instAddr <= JumpAddr;
                 status <= StatusWork;
@@ -137,9 +130,9 @@ module fetch(
               if (stall) begin
                 instEn <= `Disable;
               end else begin
-                status <= StallToWaitBJ ? StatusWaitBJ : StatusWork;
-                instEn <= StallToWaitBJ ? `Disable : `Enable;
-                instAddr <= StallToWaitBJ ? instAddr : instAddr + 4;
+                status <= StallToWaitJ ? StatusWaitJ : StatusWork;
+                instEn <= StallToWaitJ ? `Disable : `Enable;
+                instAddr <= StallToWaitJ ? instAddr : instAddr + 4;
               end
             end
           endcase

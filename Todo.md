@@ -1,21 +1,21 @@
-stage 1:(week 12 or about)
+#### stage 1:(week 12 or about)
 
-add an icache(done)
+* add an icache(done)
+* make use of stall(done) and rdy**(todo)**
+* confirm the safety of the use of negedge(done)
 
-make use of stall(done) and rdy(todo)
+#### stage 2:(week 13)
 
-confirm the safety of the use of negedge(done)
+* add dcache with write through**(todo)**
 
-stage 2:(week 13)
+#### stage 3:(week 14 and week 17~18)
 
-add dcache with write through
+* add a FIFO ROB and make it 4 stages(done)
 
-stage 3:(week 14 and week 17~18)
+* add branch prediction(done)
+* pass FPGA test **(todo)**
+* speed up**(todo)**
 
-add an 2-issue FIFO ROB and make it 4 stages(done)
-
-add branch prediction(working)
-
-step optional: 
+##### step optional: 
 
 make it superscalar

@@ -103,7 +103,6 @@ module cpu(
     wire[`DataBus] BranchOperandO, BranchOperandT, BranchImm;
     wire[`OpBus]  BranchOp;
     wire[`InstAddrBus] BranchPC;
-    wire[`rsSize - 1 : 0] BranchFreeStatus;
 
     //output of Branch 
     wire BranchEn;
@@ -138,6 +137,7 @@ module cpu(
   icache icache(
     .clk(clk_in),
     .rst(rst_in),
+    .rdy(rdy_in), 
     .fetchEn(instEn), 
     .Addr(instAddr), 
     .addEn(instOutEn), 
@@ -152,6 +152,7 @@ module cpu(
   mem mcu(
     .clk(clk_in), 
     .rst(rst_in), 
+    .rdy(rdy_in), 
     //with PC
       .fetchEn(memfetchEn), 
       .fetchAddr(memfetchAddr), 
@@ -180,6 +181,7 @@ module cpu(
   fetch fetcher(
       .clk(clk_in), 
       .rst(rst_in), 
+      .rdy(rdy_in), 
       .stall(stall), 
 
       .enJump(jumpEn), 
@@ -205,6 +207,7 @@ module cpu(
   decoder decoder(
     .clk(clk_in), 
     .rst(rst_in),
+    .rdy(rdy_in), 
     .stall(stall), 
     .DecEn(DecEn), 
     .instPC(ToDecAddr),
@@ -234,8 +237,6 @@ module cpu(
 
   dispatcher dispatcher(
     //from decoder
-      // .regNameO(DecNameO), 
-      // .regNameT(DecNameT), 
       .rdName(DecRdName),
       .opCode(DecOp),
       .opClass(DecOpClass),
@@ -292,11 +293,8 @@ module cpu(
   Regfile regf(
     .clk(clk_in), 
     .rst(rst_in), 
-    // //from CDB
-    //   .enCDBWrt(), 
-    //   .CDBwrtName(), 
-    //   .CDBwrtData(), 
-    //   .CDBwrtTag(),
+    .rdy(rdy_in), 
+    // 
     .ALUwrtEn(ALUROBen), 
     .ALUwrtData(ALUROBdataW),
     .ALUwrtName(ALUROBnameW), 
@@ -322,6 +320,7 @@ module cpu(
   ALUrs ALUrs(
     .rst(rst_in),
     .clk(clk_in),
+    .rdy(rdy_in), 
     //from ALU and LS
       .enALUwrt(ALUROBen),
       .ALUtag(ALUROBtagW),
@@ -375,6 +374,7 @@ module cpu(
   BranchRS BranchRS(
     .rst(rst_in), 
     .clk(clk_in), 
+    .rdy(rdy_in), 
     //from ALU and LS
       .enALUwrt(ALUROBen),
       .ALUtag(ALUROBtagW),
@@ -397,9 +397,7 @@ module cpu(
       .operandT(BranchOperandT), 
       .imm(BranchImm), 
       .opCode(BranchOp), 
-      .PC(BranchPC), 
-    //to dispatcher
-      .BranchFreeStatus(BranchFreeStatus)
+      .PC(BranchPC)
   );
 
   Branch Branch(
@@ -418,6 +416,7 @@ module cpu(
   lsBuffer lsBuffer(
     .rst(rst_in), 
     .clk(clk_in), 
+    .rdy(rdy_in), 
     //from ALU and LS
       .enALUwrt(ALUROBen),
       .ALUtag(ALUROBtagW),
@@ -454,6 +453,7 @@ module cpu(
   LS LS(
     .clk(clk_in), 
     .rst(rst_in), 
+    .rdy(rdy_in), 
 
     //from lsbuffer
       .LSworkEn(LSworkEn), 
@@ -483,22 +483,4 @@ module cpu(
       .LSROBname(LSROBname), 
       .LSdone(LSdone)
   );
-
-  // ROB ROB(
-  //   .clk(clk_in), 
-  //   .rst(rst_in), 
-  //   //input from alu
-  //   .ROBenW(), 
-  //   .ROBtagW(), 
-  //   .ROBdataW(), 
-  //   .ROBnameW(), 
-  //   //input from LS
-    
-  //   //output
-  //   .enCDBWrt(), 
-  //   .CDBwrtName(), 
-  //   .CDBwrtTag(), 
-  //   .CDBwrtData(), 
-  //   .ROBfreeStatus()
-  // );
 endmodule

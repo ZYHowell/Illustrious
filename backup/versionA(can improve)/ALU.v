@@ -6,27 +6,31 @@ module ALU(
     input wire[`DataBus]    operandO, 
     input wire[`DataBus]    operandT, 
     input wire[`TagBus]     wrtTag, 
-    input wire[`NameBus]    wrtName, 
     input wire[`OpBus]      opCode, 
     input wire[`InstAddrBus]instAddr, 
+    input wire[`BranchTagBus] instBranchTag, 
     //to ROB
     output reg ROBen, 
     output reg[`TagBus]     ROBtagW, 
     output reg[`DataBus]    ROBdataW,
-    output reg[`NameBus]    ROBnameW,
-    //todo: to PC
+    output reg[`BranchTagBus] ROBbranchW, 
+    //to PC
     output reg jumpEn, 
-    output reg[`InstAddrBus]  jumpAddr
+    output reg[`InstAddrBus]  jumpAddr,
+    //
+    input wire                  misTaken, 
+    input wire                  bFreeEn, 
+    input wire[1:0]             bFreeNum
 );
 
     always @ (*) begin
-      if (ALUworkEn == `Enable) begin
+      if (ALUworkEn & ~misTaken) begin
         ROBen = `Enable;
         ROBtagW = wrtTag;
-        ROBnameW = wrtName;
         jumpEn = `Disable;
         jumpAddr = `addrFree;
         ROBdataW = `dataFree;
+        ROBbranchW = (bFreeEn & instBranchTag[bFreeNum]) ? (instBranchTag ^ (1 << bFreeNum)) : instBranchTag;
         case(opCode)
           `ADD: ROBdataW = $signed(operandO) + $signed(operandT);
           `SUB: ROBdataW = $signed(operandO) - $signed(operandT);
@@ -55,8 +59,8 @@ module ALU(
       end else begin
         ROBen = `Disable;
         ROBtagW = `tagFree;
-        ROBnameW = `nameFree;
         ROBdataW = `dataFree;
+        ROBbranchW = 0;
         jumpEn = `Disable;
         jumpAddr = `addrFree;
       end

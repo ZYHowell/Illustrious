@@ -1,4 +1,3 @@
-//
 `define Enable  1'b1
 `define Disable 1'b0
 `define InstValid   1'b0
@@ -53,6 +52,7 @@
 `define memTagBus   7:0
 `define memAddrTagBus   16:9
 `define memAddrIndexBus 8:2
+`define BranchTagBus 2:0
 
 `define immFillLen 20
 `define UimmFillLen 12
@@ -60,7 +60,7 @@
 
 `define rsWidth 128
 `define rsSize 6
-`define LSrsSize 7
+`define branchRsSize 3
 `define ROBsize 6
 `define memCacheSize 128
 

@@ -3,6 +3,7 @@
 module fetch(
     input wire clk, 
     input wire rst, 
+    input wire rdy, 
     input wire stall, 
 
     input wire enJump, 
@@ -41,7 +42,7 @@ module fetch(
 
     always @(*) begin
       DecEn = `Disable;
-      DecInst = (~(hit | memInstOutEn)) ? DecInst : 
+      DecInst = (~(hit | memInstOutEn)) ? _decInst : 
                 (hit ? cacheInst : memInst);
       DecPC = _DecPC;
       if (rst == `Disable) begin
@@ -66,12 +67,13 @@ module fetch(
 
     always @(posedge clk) begin
       _DecPC <= DecPC;
+      _decInst <= DecInst;
       if (rst == `Enable) begin
         StallToWaitBJ <= 0;
         status <= StatusFree;
         instEn <= `Disable;
         instAddr <= `addrFree;
-      end else begin
+      end else if (rdy) begin
         case(status)
           StatusFree: begin
             instEn <= `Enable;

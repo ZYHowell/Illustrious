@@ -1,104 +1,14 @@
 `include "defines.v"
-module regfileLine(
-  input wire clk, 
-  input wire rst, 
-  input wire branchDeeper, 
-  input wire branchFree, 
-  input wire misTaken, 
 
-  input wire renamEn, 
-  input wire[`TagBus] renamTag, 
-
-  input wire enWrtO, 
-  input wire[`DataBus] WrtDataO, 
-  input wire[`TagBus] WrtTagO, 
-  input wire enWrtT, 
-  input wire[`DataBus] WrtDataT, 
-  input wire[`TagBus] WrtTagT, 
-  output wire[`DataBus] dataS, 
-  output wire[`TagBus] tagS
-);
-  reg[`TagBus] allTag[3:0];
-  reg[`DataBus] allData[3:0];
-  wire[`TagBus] nxtPosTag[3:0];
-  wire[`DataBus] nxtPosData[3:0];
-  reg[1:0] head, tail;
-  wire[1:0] nxtHead, nxtTail;
-
-  assign nxtHead = head < 3 ? head + 1 : 0;
-  assign nxtTail = tail < 3 ? tail + 1 : 0;
-
-  assign dataS = nxtPosData[tail];
-  assign tagS = nxtPosTag[tail];
-  generate
-    genvar j;
-    for(j = 0;j < 4;j = j + 1) begin: nxtPosCounter
-      nxtPosCal nxtPosCal(
-        .enWrtO(enWrtO), 
-        .WrtTagO(WrtTagO), 
-        .WrtDataO(WrtDataO), 
-        .enWrtT(enWrtT), 
-        .WrtTagT(WrtTagT), 
-        .WrtDataT(WrtDataT), 
-        .dataNow(allData[j]), 
-        .tagNow(allTag[j]), 
-        .dataNxtPos(nxtPosData[j]),
-        .tagNxtPos(nxtPosTag[j])
-      );
-    end
-  endgenerate
-
-  integer i;
-  always @(posedge clk) begin
-    if (rst) begin
-      for(i = 0;i < 4;i = i + 1) begin
-        allTag[i] <= `tagFree;
-        allData[i] <= `dataFree;
-      end
-      head <= 0;
-      tail <= 0;
-    end else begin
-      for (i = 0; i < 4;i = i + 1) begin
-        allTag[i] <= (renamEn && (i == tail)) ? renamTag : nxtPosTag[i];
-        allData[i] <= nxtPosData[i];
-      end
-      
-      if (branchFree & ~misTaken) begin
-        head <= nxtHead;
-      end
-      if (misTaken) begin
-        tail <= head;
-      end else if (branchDeeper) begin
-        tail <= nxtTail;
-        allTag[nxtTail] <= nxtPosTag[tail];
-        allData[nxtTail] <= nxtPosData[tail];
-      end
-      //if the inst is a branchInst, it will send branchDeeper without renamEn, so the nxtTail can just copy the current Tag and data. 
-    end
-  end
-  //notice that the branch tag can only be a continuous set of 1:000//001,010,100//011,110,101//111//
-  /*
-   * head records the latest and reliable data and tag, (so head+1 is the next to be free)
-   * tail records the latest but maybe not reliable data and tag. 
-   * When read: returns the tag[tail] and data[tail], judge the enwrt at the same time;(done)
-   * When write: check the tag with each one, if any one fits, replace the tag and data with the input one(done)
-   * When free: head+1(done)
-   * When mistaken: tail=head(done)
-   * When a new branch tag is used: tail+1(done)
-   * When rename: change tag[tail](done)
-  */
-endmodule
 module Regfile(
     input wire clk, 
     input wire rst, 
-    //ALU is actually from the ROB. 
-    input wire ALUwrtEn, 
-    input wire [`TagBus] ALUwrtTag,
-    input wire [`DataBus] ALUwrtData, 
-
-    input wire LSwrtEn, 
-    input wire [`TagBus] LSwrtTag,
-    input wire [`DataBus] LSwrtData,
+    input wire rdy, 
+    //from the ROB. 
+    input wire wrtEn, 
+    input wire [`NameBus] wrtName, 
+    input wire [`TagBus] wrtTag,
+    input wire [`DataBus] wrtData, 
     //from decoder
     input wire [`NameBus]   regNameO, 
     input wire [`NameBus]   regNameT, 
@@ -110,54 +20,52 @@ module Regfile(
     output reg [`DataBus]   regDataO, 
     output reg [`TagBus]    regTagO, 
     output reg [`DataBus]   regDataT, 
-    output reg [`TagBus]    regTagT, 
-    //
-    input wire branchDeeper, 
-    input wire bFreeEn, 
-    input wire misTaken
+    output reg [`TagBus]    regTagT
 );
+    reg [`DataBus] data[`regSize - 1 : 0];
+    reg [`TagBus] tag[`regSize - 1 : 0];
+
+    wire tagClear, wrtCover;
+    assign tagClear  = wrtEn & (wrtTag == tag[wrtName]);
+    assign wrtCover  = ((wrtName == wrtNameDec) & enWrtDec);
 
     integer i;
-    
-    reg[`regSize - 1 : 0] renamEn;
-    wire [`DataBus] data[`regSize - 1 : 0];
-    wire [`TagBus] tag[`regSize - 1 : 0];
-
-    always @(*) begin
-      renamEn = 0;
-      renamEn[wrtNameDec] = enWrtDec;
+    //change tags and datas
+    always @ (posedge clk) begin
+      if (rst) begin
+        for (i = 0;i < `regSize;i = i + 1) begin
+          tag[i] <= `tagFree;
+          data[i] <= `dataFree;
+        end
+      end else if (rdy) begin
+        if (tagClear & ~wrtCover) begin
+          data[wrtName] <= wrtData;
+          tag[wrtName] <= `tagFree;
+        end
+        if (enWrtDec) 
+          tag[wrtNameDec] <= wrtTagDec;
+      end
     end
 
-    generate
-      genvar j;
-      for (j = 0; j < `regSize;j = j + 1) begin: regfileLine
-        regfileLine regfileLine(
-          .clk(clk), 
-          .rst(rst), 
-          .branchDeeper(branchDeeper), 
-          .branchFree(bFreeEn), 
-          .misTaken(misTaken), 
-          .renamEn(renamEn[j]), 
-          .renamTag(wrtTagDec), 
-
-          .enWrtO(ALUwrtEn), 
-          .WrtDataO(ALUwrtData), 
-          .WrtTagO(ALUwrtTag), 
-
-          .enWrtT(LSwrtEn), 
-          .WrtDataT(LSwrtData),
-          .WrtTagT(LSwrtTag), 
-          
-          .dataS(data[j]), 
-          .tagS(tag[j])
-        );
+    //reg1
+    always @ (*) begin
+      if (rst | (!regNameO)) begin
+        regDataO = `dataFree;
+        regTagO = `tagFree; 
+      end else begin
+        regDataO = ((wrtName == regNameO) && tagClear) ? wrtData : data[regNameO];
+        regTagO = ((wrtName == regNameO) && tagClear) ? `tagFree : tag[regNameO];
       end
-    endgenerate
+    end
 
-    always @(*) begin
-      regDataO = regNameO ? data[regNameO] : 0;
-      regTagO = regNameO ? tag[regNameO] : `tagFree;
-      regDataT = regNameT ? data[regNameT] : 0;
-      regTagT = regNameT ? tag[regNameT] : `tagFree;
+    //reg2
+    always @ (*) begin
+      if (rst | (!regNameT)) begin
+        regDataT = `dataFree;
+        regTagT = `tagFree;
+      end else begin
+        regDataT = ((wrtName == regNameT) && tagClear) ? wrtData : data[regNameT];
+        regTagT = ((wrtName == regNameT) && tagClear) ? `tagFree : tag[regNameT];
+      end
     end
 endmodule 

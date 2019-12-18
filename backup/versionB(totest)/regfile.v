@@ -3,11 +3,8 @@
 module Regfile(
     input wire clk, 
     input wire rst, 
-    // //from CDB
-    // input wire enCDBWrt, 
-    // input wire [`NameBus]   CDBwrtName, 
-    // input wire [`DataBus]   CDBwrtData, 
-    // input wire [`TagBus]    CDBwrtTag, 
+    input wire rdy, 
+    //
     input wire ALUwrtEn, 
     input wire [`NameBus] ALUwrtName, 
     input wire [`TagBus] ALUwrtTag,
@@ -47,15 +44,7 @@ module Regfile(
           tag[i] <= `tagFree;
           data[i] <= `dataFree;
         end
-      end else begin
-        // if (enCDBWrt == `Enable) begin
-        //   if (CDBwrtName) begin
-        //     data[CDBwrtName] <= CDBwrtData;
-        //     if (CDBwrtTag == tag[CDBwrtName] && CDBwrtTag != wrtTagDec) 
-        //       tag[CDBwrtName] <= `tagFree;
-        //   end
-        // end
-        //data can also be changed only when clear. this is for debug use: to make it clear.
+      end else if (rdy) begin
         if (ALUwrtEn) data[ALUwrtName] <= ALUwrtData;
         if (ALUtagClear & ~ALUwrtCover) begin
           tag[ALUwrtName] <= `tagFree;

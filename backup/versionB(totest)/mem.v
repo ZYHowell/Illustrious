@@ -3,6 +3,7 @@
 module icache(
     input wire clk, 
     input wire rst, 
+    input wire rdy, 
     input wire fetchEn, 
     input wire[`AddrBus]  Addr, 
     input wire addEn, 
@@ -33,7 +34,7 @@ module icache(
           memTag[i] <= `memTagFree;
           memValid[i] <= `Invalid;
         end
-      end else if ((addEn == `Enable) && (addAddr[17:16] != 2'b11)) begin
+      end else if ((addEn == `Enable) && (addAddr[17:16] != 2'b11) && rdy) begin
         memInst[addAddr[`memAddrIndexBus]] <= addInst;
         memTag[addAddr[`memAddrIndexBus]] <= addAddr[`memAddrTagBus];
         memValid[addAddr[`memAddrIndexBus]] <= `Valid;
@@ -44,6 +45,7 @@ endmodule
 module mem(
     input wire clk, 
     input wire rst, 
+    input wire rdy, 
     //with icache and PC
     input wire fetchEn, 
     input wire[`InstAddrBus]    fetchAddr, 
@@ -113,7 +115,7 @@ module mem(
         LSdone <= `Disable;
         LdData <= `dataFree;
         addAddr <= `addrFree;
-      end else begin
+      end else if (rdy) begin
         instOutEn <= `Disable;
         LSdone <= `Disable;
         addAddr <= addAddr;
@@ -276,209 +278,3 @@ module mem(
       end
     end
 endmodule
-/*
-the following is a draft when RAM can return the read data at once(always @(*))
-but it is @(posedge) to record the address, so it failed
-QAQ
-////////////////////////////////////////////////////////////////
-module mcu(
-  input wire clk, 
-  input wire rst, 
-  //from icache
-  input wire fetchEn, 
-  input wire [`InstAddrBus] fetchAddr, 
-  //to fetcher
-  output wire instOutEn, 
-  output reg [`InstBus]instOut,
-
-  input wire LSen, 
-  input wire LSRW, 
-  input wire [`DataAddrBus] LSaddr, 
-  input wire [`DataBus] Sdata, 
-  input wire [1:0] LSlen, 
-
-  output wire LSdone, 
-  output reg[`DataBus]  LdData, 
-
-  //with ram
-  output wire RWstate, 
-  output wire[`AddrBus]        RWaddr, 
-  input wire[`RAMBus]         ReadData, 
-  output wire[`RAMBus]         WrtData
-);
-  reg status;
-  //isfree/notfree
-  
-  reg[1:0]        Waiting;
-  reg[1:0]        WaitingRW;
-  //Waiting[0]:inst, Waiting[1]:LS
-  reg [`AddrBus]  WaitingAddr[1:0];
-  reg [1:0]       WaitingLen[1:0];
-  reg [`DataBus]  WaitingData;
-  //only Save can put something here
-  
-  reg             RW;
-  reg             Port;//0 for inst and 1 for LS
-  reg [`StageBus] stage;
-  reg [`AddrBus]  AddrPlatform;
-  reg [`RAMBus]   DataPlatformW[3:0];
-  reg [1:0]       Lens;
-
-  assign RWstate = RW;
-  assign RWaddr = AddrPlatform;
-  assign WrtData = DataPlatformW[stage];
-
-  assign LSdone = (status == `NotFree) && (Port == `LSport) && (stage == Lens);
-  assign instOutEn = (status == `NotFree) && (Port == `instPort) && (stage == Lens);
-
-  always @(*) begin
-    if (rst) begin
-      LdData = `dataFree;
-      instOut = `dataFree;
-    end else if (Port) begin
-      case(stage)
-        2'b00: LdData[7:0] = ReadData;
-        2'b01: LdData[15:8] = ReadData;
-        2'b10: LdData[23:16] = ReadData;
-        2'b11: LdData[31:24] = ReadData;
-      endcase
-    end else begin
-      case(stage)
-        2'b00: instOut[7:0] = ReadData;
-        2'b01: instOut[15:8] = ReadData;
-        2'b10: instOut[23:16] = ReadData;
-        2'b11: instOut[31:24] = ReadData;
-      endcase
-    end
-  end
-  always @(posedge clk or posedge rst) begin
-    if (rst) begin
-      status <= `IsFree;
-      RW <= `Read;
-      Port <= 0;
-      stage <= 2'b00;
-      AddrPlatform <= `addrFree;
-      Waiting[0] <= `NotUsing;
-      Waiting[1] <= `NotUsing;
-    end else begin
-      if (fetchEn) begin
-        Waiting[`instPort] <= `IsUsing;
-        WaitingRW[`instPort] <= `Read;
-        WaitingAddr[`instPort] <= fetchAddr;
-        WaitingLen[`instPort] <= 2'b11;
-      end
-      if (LSen) begin
-        Waiting[`LSport] <= `IsUsing;
-        WaitingRW[`LSport] <= LSRW;
-        WaitingAddr[`LSport] <= LSaddr;
-        WaitingLen[`LSport] <= LSlen;
-        WaitingData <= Sdata;
-      end
-      case(status)
-        `IsFree: begin
-          if (LSen) begin
-            Port <= `LSport;
-            AddrPlatform <= LSaddr;
-            RW <= LSRW;
-            Lens <= LSlen;
-            DataPlatformW[0] <= Sdata[7:0];
-            DataPlatformW[1] <= Sdata[15:8];
-            DataPlatformW[2] <= Sdata[23:16];
-            DataPlatformW[3] <= Sdata[31:24];
-            stage <= 2'b00;
-            status <= `NotFree;
-
-            Waiting[`LSport] <= `NotUsing;
-          end else if (fetchEn) begin
-            Port <= `instPort;
-            AddrPlatform <= fetchAddr;
-            RW <= `Read;
-            Lens <= 2'b11;
-            DataPlatformW[0] <= 0;
-            DataPlatformW[1] <= 0;
-            DataPlatformW[2] <= 0;
-            DataPlatformW[3] <= 0;
-            stage <= 2'b00;
-            status <= `NotFree;
-
-            Waiting[`instPort] <= `NotUsing;
-          end else begin
-            status <= `IsFree;
-          end
-        end
-        `NotFree: begin 
-          if (stage == Lens) begin
-            if (LSen) begin
-              Port <= `LSport;
-              AddrPlatform <= LSaddr;
-              RW <= LSRW;
-              Lens <= LSlen;
-              DataPlatformW[0] <= Sdata[7:0];
-              DataPlatformW[1] <= Sdata[15:8];
-              DataPlatformW[2] <= Sdata[23:16];
-              DataPlatformW[3] <= Sdata[31:24];
-              stage <= 2'b00;
-              status <= `NotFree;
-
-              Waiting[`LSport] <= `NotUsing;
-            end else if (fetchEn) begin
-              Port <= `instPort;
-              AddrPlatform <= fetchAddr;
-              RW <= `Read;
-              Lens <= 2'b11;
-              DataPlatformW[0] <= 8'h00;
-              DataPlatformW[1] <= 8'h00;
-              DataPlatformW[2] <= 8'h00;
-              DataPlatformW[3] <= 8'h00;
-              stage <= 2'b00;
-              status <= `NotFree;
-
-              Waiting[`instPort] <= `NotUsing;
-            end else if (Waiting[`LSport] == `IsUsing) begin
-              RW <= WaitingRW[`LSport];
-              DataPlatformW[0] <= WaitingData[7:0];
-              DataPlatformW[1] <= WaitingData[15:8];
-              DataPlatformW[2] <= WaitingData[23:16];
-              DataPlatformW[3] <= WaitingData[31:24];
-              AddrPlatform <= WaitingAddr[`LSport];
-              Lens <= WaitingLen[`LSport];
-              stage <= 2'b00;
-              status <= `NotFree;
-              Port <= `LSport;
-
-              Waiting[`LSport] <= `NotUsing;
-              WaitingRW[`LSport] <= `Read;
-              WaitingAddr[`LSport] <= `addrFree;
-              WaitingData <= `dataFree;
-              WaitingLen[`LSport] <= 2'b00;
-            end else if (Waiting[`instPort] == `IsUsing) begin 
-              RW <= WaitingRW[`instPort];
-              DataPlatformW[0] <= 8'h00;
-              DataPlatformW[1] <= 8'h00;
-              DataPlatformW[2] <= 8'h00;
-              DataPlatformW[3] <= 8'h00;
-              AddrPlatform <= WaitingAddr[`instPort];
-              Lens <= WaitingLen[`instPort];
-              stage <= 2'b00;
-              status <= `NotFree;
-              Port <= `instPort;
-
-              Waiting[`instPort] <= `NotUsing;
-              WaitingRW[`instPort] <= `Read;
-              WaitingAddr[`instPort] <= `addrFree;
-              WaitingLen[`instPort] <= 2'b00;
-            end else begin
-              status <= `IsFree;
-              RW <= `Read;
-              stage <= 0;
-            end
-          end else begin
-            stage <= stage + 1;
-            AddrPlatform <= AddrPlatform + 1;
-          end
-        end
-      endcase
-    end
-  end
-endmodule
-*/

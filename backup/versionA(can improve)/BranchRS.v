@@ -3,7 +3,6 @@
 module BRsLine(
     input clk, 
     input rst, 
-    input rdy, 
     //
     input wire enWrtO, 
     input wire[`TagBus] WrtTagO, 
@@ -27,8 +26,10 @@ module BRsLine(
     output wire[`DataBus] issueOperandT, 
     output wire[`OpBus]   issueOp, 
     output wire[`DataBus] issueImm, 
-    output wire[`InstAddrBus] issuePC
+    output wire[`InstAddrBus] issuePC,
     //the imm is pc in alu, is imm in ls; so bucket branchRS for it contains both
+    input wire                  bFreeEn, 
+    input wire[1:0]             bFreeNum
 );
     reg[`TagBus]  rsTagO, rsTagT;
     reg[`DataBus] rsDataO, rsDataT;
@@ -44,6 +45,7 @@ module BRsLine(
     assign issueOp = rsOp;
     assign issueImm = rsImm;
     assign issuePC = rsPC;
+
     nxtPosCal nxtPosCalO(
       .enWrtO(enWrtO), 
       .WrtTagO(WrtTagO), 
@@ -77,21 +79,19 @@ module BRsLine(
         rsPC    <= `addrFree;
         rsImm   <= `dataFree;
         rsOp    <= `NOP;
-      end else if (rdy) begin
-        if (allocEn == `Enable) begin
-          rsTagO  <= allocTagO;
-          rsTagT  <= allocTagT;
-          rsDataO <= allocOperandO;
-          rsDataT <= allocOperandT;
-          rsPC    <= allocPC;
-          rsImm   <= allocImm;
-          rsOp    <= allocOp;
-        end else begin
-          rsTagO  <= nxtPosTagO;
-          rsTagT  <= nxtPosTagT;
-          rsDataO <= nxtPosDataO;
-          rsDataT <= nxtPosDataT;
-        end
+      end else if (allocEn == `Enable) begin
+        rsTagO  <= allocTagO;
+        rsTagT  <= allocTagT;
+        rsDataO <= allocOperandO;
+        rsDataT <= allocOperandT;
+        rsPC    <= allocPC;
+        rsImm   <= allocImm;
+        rsOp    <= allocOp;
+      end else begin
+        rsTagO  <= nxtPosTagO;
+        rsTagT  <= nxtPosTagT;
+        rsDataO <= nxtPosDataO;
+        rsDataT <= nxtPosDataT;
       end
     end
 endmodule
@@ -99,7 +99,6 @@ endmodule
 module BranchRS(
     input rst, 
     input clk, 
-    input wire rdy, 
     //from ALU and LS
     input wire enALUwrt, 
     input wire[`TagBus] ALUtag, 
@@ -122,93 +121,102 @@ module BranchRS(
     output reg[`DataBus]        operandT, 
     output reg[`DataBus]        imm, 
     output reg[`OpBus]          opCode, 
-    output reg[`InstAddrBus]    PC
+    output reg[`InstAddrBus]    PC,
+    output reg[1:0]             bNum, 
+    //from branch
+    input wire                  bFreeEn, 
+    input wire[1:0]             bFreeNum, 
+    input wire misTaken
 );
-    wire ready;
-    reg empty;
+    wire [`branchRsSize - 1 : 0] ready;
+    reg [`branchRsSize - 1 : 0] empty;
 
-    reg allocEn;
-    reg[`DataBus]    AllocPostOperandO; 
-    reg[`DataBus]    AllocPostOperandT; 
-    reg[`TagBus]     AllocPostTagO; 
-    reg[`TagBus]     AllocPostTagT; 
-    reg[`OpBus]      AllocPostOp; 
-    reg[`DataBus]    AllocPostImm; 
-    reg[`InstAddrBus]AllocPostAddr; 
+    reg[`branchRsSize - 1 : 0] allocEn;
 
-    wire[`DataBus] issueOperandO;
-    wire[`DataBus] issueOperandT;
-    wire[`OpBus]   issueOp; 
-    wire[`NameBus] issueNameW;
-    wire[`DataBus] issueImm;
-    wire[`InstAddrBus] issuePC;
+    wire[`DataBus] issueOperandO[`branchRsSize - 1 : 0];
+    wire[`DataBus] issueOperandT[`branchRsSize - 1 : 0];
+    wire[`OpBus]   issueOp[`branchRsSize - 1 : 0]; 
+    wire[`NameBus] issueNameW[`branchRsSize - 1 : 0];
+    wire[`DataBus] issueImm[`branchRsSize - 1 : 0];
+    wire[`InstAddrBus] issuePC[`branchRsSize - 1 : 0];
 
-    assign canIssue = ready;
-    assign BranchFreeStatus = empty;
+    reg [1:0]   head, tail;
+    wire canIssue;
+    //the head is the head while the tail is the next;
+    integer i;
 
-    BRsLine ALUrsLine(
-      .clk(clk), 
-      .rst(rst), 
-      .rdy(rdy), 
-      //
-      .enWrtO(enALUwrt), 
-      .WrtTagO(ALUtag), 
-      .WrtDataO(ALUdata), 
-      .enWrtT(enLSwrt), 
-      .WrtTagT(LStag),
-      .WrtDataT(LSdata), 
-      //
-      .allocEn(allocEn), 
-      .allocOperandO(AllocPostOperandO), 
-      .allocOperandT(AllocPostOperandT), 
-      .allocTagO(AllocPostTagO), 
-      .allocTagT(AllocPostTagT),
-      .allocOp(AllocPostOp), 
-      .allocImm(AllocPostImm),
-      .allocPC(AllocPostAddr), 
-      //
-      .empty(empty), 
-      .ready(ready), 
-      .issueOperandO(issueOperandO), 
-      .issueOperandT(issueOperandT), 
-      .issueOp(issueOp), 
-      .issueImm(issueImm), 
-      .issuePC(issuePC)
-    );
+    assign canIssue = ready[head];
+
+    generate
+      genvar j;
+      for (j = 0;j < `branchRsSize;j = j + 1) begin: BrsLine
+        BRsLine BrsLine(
+          .clk(clk), 
+          .rst(rst), 
+          //
+          .enWrtO(enALUwrt), 
+          .WrtTagO(ALUtag), 
+          .WrtDataO(ALUdata), 
+          .enWrtT(enLSwrt), 
+          .WrtTagT(LStag),
+          .WrtDataT(LSdata), 
+          //
+          .allocEn(allocEn[j]), 
+          .allocOperandO(BranchOperandO), 
+          .allocOperandT(BranchOperandT), 
+          .allocTagO(BranchTagO), 
+          .allocTagT(BranchTagT),
+          .allocOp(BranchOp), 
+          .allocImm(BranchImm),
+          .allocPC(BranchPC), 
+          //
+          .empty(empty[j]), 
+          .ready(ready[j]), 
+          .issueOperandO(issueOperandO[j]), 
+          .issueOperandT(issueOperandT[j]), 
+          .issueOp(issueOp[j]), 
+          .issueImm(issueImm[j]), 
+          .issuePC(issuePC[j]),
+          //
+          .bFreeEn(bFreeEn), 
+          .bFreeNum(bFreeNum) 
+        );
+      end
+    endgenerate
 
     //push inst to RS, each tag can be assigned to an RS
     always @(*) begin
-      allocEn = BranchEn;
-      AllocPostImm = BranchImm;
-      AllocPostAddr = BranchPC;
-      AllocPostOp = BranchOp;
-      AllocPostOperandO = BranchOperandO;
-      AllocPostOperandT = BranchOperandT;
-      AllocPostTagO = BranchTagO;
-      AllocPostTagT = BranchTagT;
+      allocEn = 0;
+      allocEn[tail] = BranchEn;
     end
 
-    always @ (posedge clk or posedge rst) begin
-      if (rst) begin
-        empty <= 1;
+    always @ (posedge clk) begin
+      if (rst | misTaken) begin
+        head <= 0;
+        tail <= 0;
+        empty <= {`branchRsSize{1'b1}};
         BranchWorkEn <= `Disable; 
         operandO <= `dataFree; 
         operandT <= `dataFree;
         imm <= `dataFree;
         opCode <= `NOP; 
         PC <= `addrFree;
-      end else if (rdy) begin
+        bNum <= 0;
+      end else begin
+        bNum <= head;
         if (BranchEn) begin
-          empty <= 0;
+          empty[tail] <= 0;
+          tail <= (tail == `branchRsSize - 1) ? 0 : tail + 1;
         end
         if (canIssue) begin
           BranchWorkEn <= `Enable;
-          operandO <= issueOperandO;
-          operandT <= issueOperandT;
-          opCode <= issueOp;
-          imm <= issueImm;
-          PC <= issuePC;
-          empty <= 1;
+          operandO <= issueOperandO[head];
+          operandT <= issueOperandT[head];
+          opCode <= issueOp[head];
+          imm <= issueImm[head];
+          PC <= issuePC[head];
+          empty[head] <= 1;
+          head <= (head == `branchRsSize - 1) ? 0 : head + 1;
         end else begin
           BranchWorkEn <= `Disable;
           operandO <= `dataFree;

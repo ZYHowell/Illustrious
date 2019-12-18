@@ -1,3 +1,4 @@
+//
 `define Enable  1'b1
 `define Disable 1'b0
 `define InstValid   1'b0
@@ -52,19 +53,18 @@
 `define memTagBus   7:0
 `define memAddrTagBus   16:9
 `define memAddrIndexBus 8:2
-`define BranchTagBus 2:0
 
 `define immFillLen 20
 `define UimmFillLen 12
 `define regSize 32
 
 `define rsWidth 128
-`define rsSize 6
-`define branchRsSize 3
-`define ROBsize 6
+`define rsSize 3
+`define LSbufSize 8
+`define ROBsize 15
 `define memCacheSize 128
 
-`define tagFree     4'b0110
+`define tagFree     4'b1111
 `define nameFree    5'b00000
 `define dataFree    32'h00000000
 `define addrFree    32'h00000000

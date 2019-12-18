@@ -1,12 +1,9 @@
-//module:   id
-//file:     id.v
-//decode instructions in this module
-
-//`include "defines.v"
+`include "defines.v"
 
 module decoder(
-    input wire                  clk, 
-    input wire                  rst,
+    input wire clk, 
+    input wire rst,
+    input wire rdy, 
     input wire                  DecEn, 
     input wire[`InstAddrBus]    instPC,
     input wire[`InstBus]        inst,
@@ -48,7 +45,7 @@ module decoder(
         rdName <= `nameFree;
         opCode <= `NOP;
         opClass <= `ClassNOP;
-      end else if (DecEn & ~stall) begin
+      end else if (DecEn & ~stall & rdy) begin
         opClass <= opType;
         regNameO = inst[19:15];
         regNameT <= inst[24:20];
@@ -135,9 +132,6 @@ module decoder(
             default:;
         endcase
       end else begin
-        // regNameO <= `nameFree;
-        // regNameT <= `nameFree;
-        // rdName <= `nameFree;
         opCode <= `NOP;
         opClass <= `ClassNOP;
       end

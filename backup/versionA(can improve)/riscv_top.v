@@ -24,6 +24,7 @@ wire clk;
 
 //assign EXCLK (or your own clock module) to clk
 assign clk = EXCLK;
+//clk_wiz_0 clock(.clk_out1(clk), .reset(RST), .clk_in1(EXCLK));
 wire locked;
 always @(posedge clk or posedge btnC)
 begin
