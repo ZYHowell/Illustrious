@@ -3,6 +3,7 @@
 module fetch(
     input wire clk, 
     input wire rst, 
+    input wire rdy, 
     //input wire rdy, 
     input wire stall, 
 
@@ -72,7 +73,7 @@ module fetch(
         status <= StatusFree;
         instEn <= `Disable;
         instAddr <= `addrFree;
-      end else begin
+      end else if (rdy) begin
         if (misTaken) begin
           //only when not hit, the mem receives and needs to discard
           instEn <= `Enable;

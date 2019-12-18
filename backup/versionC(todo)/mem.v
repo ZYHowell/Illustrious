@@ -3,6 +3,7 @@
 module icache(
     input wire clk, 
     input wire rst, 
+    input wire rdy, 
     input wire fetchEn, 
     input wire[`AddrBus]  Addr, 
     input wire addEn, 
@@ -26,17 +27,19 @@ module icache(
     assign memfetchAddr = hit ? `addrFree : Addr;
 
     integer i;
-    always @ (posedge clk or posedge rst) begin
-      if (rst == `Enable) begin
+    always @ (posedge clk) begin
+      if (rst) begin
         for (i = 0; i < `memCacheSize;i = i + 1) begin
           memInst[i] <= `dataFree;
           memTag[i] <= `memTagFree;
           memValid[i] <= `Invalid;
         end
-      end else if ((addEn == `Enable) && (addAddr[17:16] != 2'b11)) begin
-        memInst[addAddr[`memAddrIndexBus]] <= addInst;
-        memTag[addAddr[`memAddrIndexBus]] <= addAddr[`memAddrTagBus];
-        memValid[addAddr[`memAddrIndexBus]] <= `Valid;
+      end else if (rdy) begin
+        if ((addEn) && (addAddr[17:16] != 2'b11)) begin
+          memInst[addAddr[`memAddrIndexBus]] <= addInst;
+          memTag[addAddr[`memAddrIndexBus]] <= addAddr[`memAddrTagBus];
+          memValid[addAddr[`memAddrIndexBus]] <= `Valid;
+        end
       end
     end
 endmodule
@@ -44,6 +47,7 @@ endmodule
 module mem(
     input wire clk, 
     input wire rst, 
+    input wire rdy, 
     //with icache and PC
     input wire fetchEn, 
     input wire[`InstAddrBus]    fetchAddr, 
@@ -63,9 +67,9 @@ module mem(
     output wire RWstate, 
     output wire[`AddrBus]        RWaddr, 
     input wire[`RAMBus]         ReadData, 
-    output wire[`RAMBus]         WrtData
-    //with cache
-    //input wire iHit
+    output wire[`RAMBus]         WrtData, 
+    //branch
+    input wire mistaken
 );
     reg status;
     //0:free,1:working
@@ -92,32 +96,28 @@ module mem(
     integer i;
 
     always @ (posedge clk) begin
-      if (rst == `Enable) begin
+      if (rst | mistaken) begin
+      //only at the cycle next to mistaken can enable sent here. 
         status <= `IsFree;
-        for (i = 0;i < 2;i = i + 1) begin
-          Waiting[i] <= `NotUsing;
-          WaitingRW[i] <= `Read;
-          WaitingAddr[i] <= `addrFree;
-          WaitingLen[i] <= `ZeroLen;
-        end
+        Waiting <= 0;
         WaitingData <= `dataFree;
         RW <= `Read;
         stage <= `ZeroLen;
         AddrPlatform <= `addrFree;
         for (i = 0;i < 4;i = i + 1)
           DataPlatformW[i] <= 8'h00;
-
         //output
         instOutEn <= `Disable;
         inst <= `dataFree;
         LSdone <= `Disable;
         LdData <= `dataFree;
         addAddr <= `addrFree;
-      end else begin
+      end else if (rdy) begin
         instOutEn <= `Disable;
         LSdone <= `Disable;
         addAddr <= addAddr;
         //input and fill in
+        //cannot be enable when mistaken is 1
         if (fetchEn) begin
           Waiting[`instPort] <= `IsUsing;
           WaitingAddr[`instPort] <= fetchAddr;
@@ -140,7 +140,7 @@ module mem(
              * if it is thrown when the state is free, it is handle there, 
              * if it is thrown when the state is busy, it waited but then the state cannot turn to free
              */
-            if (LSen == `Enable) begin
+            if (LSen) begin
               RW <= LSRW;
               DataPlatformW[0] <= Sdata[7:0];
               DataPlatformW[1] <= Sdata[15:8];
@@ -153,11 +153,7 @@ module mem(
               Port <= `LSport;
 
               Waiting[`LSport] <= `NotUsing;
-              WaitingRW[`LSport] <= `Read;
-              WaitingAddr[`LSport] <= `addrFree;
-              WaitingData <= `dataFree;
-              WaitingLen[`LSport] <= `ZeroLen;
-            end else if (fetchEn == `Enable)begin
+            end else if (fetchEn)begin
               RW <= `Read;
               for (i = 0; i < 4;i = i + 1)
                 DataPlatformW[i] <= 8'h00;
@@ -169,9 +165,6 @@ module mem(
               Port <= `instPort;
 
               Waiting[`instPort] <= `NotUsing;
-              WaitingRW[`instPort] <= `Read;
-              WaitingAddr[`instPort] <= `addrFree;
-              WaitingLen[`instPort] <= `ZeroLen;
             end else begin
               status <= `IsFree;
               RW <= `Read;

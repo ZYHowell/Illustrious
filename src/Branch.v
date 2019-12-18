@@ -19,9 +19,9 @@ module Branch(
     assign nxtAddr = PC + 4;
 
     always @ (*) begin
-      BranchAddr = `addrFree;
-      BranchResultEn = BranchWorkEn;
-      if (BranchWorkEn) begin
+      if (BranchWorkEn == `Enable) begin
+        BranchResultEn = `Enable;
+        BranchAddr = 0;
         case (opCode)
           `BEQ: BranchAddr = operandO == operandT ? jmpAddr : nxtAddr;
           `BNE: BranchAddr = operandO != operandT ? jmpAddr : nxtAddr;
@@ -30,6 +30,10 @@ module Branch(
           `BLTU:BranchAddr = operandO <  operandT ? jmpAddr : nxtAddr;
           `BGEU:BranchAddr = operandO >= operandT ? jmpAddr : nxtAddr;
         endcase
+      end
+      else begin
+        BranchResultEn = `Disable;
+        BranchAddr = `addrFree;
       end
     end
 endmodule

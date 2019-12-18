@@ -42,6 +42,11 @@ module cpu(
     wire DecEn;
     wire [`InstAddrBus] ToDecAddr;
     wire [`InstBus] ToDecInst;
+    wire predEn; 
+
+    //output of BP
+    wire predTaken;
+    wire [`InstAddrBus] predAddr;
 
     //output of decoder
     wire [`NameBus] DecNameO, DecNameT, DecRdName;
@@ -59,23 +64,13 @@ module cpu(
     wire [`TagBus]  RegWrtTag;
 
     wire ALUrsEn;
-    wire [`DataBus] ALUrsOperandO, ALUrsOperandT;
-    wire [`TagBus]  ALUrsTagO, ALUrsTagT, ALUrsTagW;
-    wire [`NameBus] ALUrsNameW;
-    wire [`OpBus]   ALUrsOp;
-    wire [`InstAddrBus] ALUrsAddr;
-
     wire BranchRsEn;
-    wire [`DataBus] BranchRsOperandO, BranchRsOperandT, BranchRsImm;
-    wire [`TagBus]  BranchRsTagO, BranchRsTagT;
-    wire [`OpBus]   BranchRsOp;
-    wire [`InstAddrBus] BranchRsAddr;
-
     wire LSbufEn;
-    wire [`DataBus] LSbufOperandO, LSbufOperandT, LSbufImm;
-    wire [`TagBus]  LSbufTagO, LSbufTagT, LSbufTagW;
-    wire [`NameBus] LSbufNameW;
-    wire [`OpBus]   LSbufOp;
+    wire [`DataBus] rsOperandO, rsOperandT, rsImm;
+    wire [`TagBus]  rsTagO, rsTagT, rsTagW;
+    wire [`NameBus] rsNameW;
+    wire [`OpBus]   rsOp;
+    wire [`InstAddrBus] rsAddr;
 
     //output of regf
     wire [`DataBus] regDataO, regDataT;
@@ -104,6 +99,7 @@ module cpu(
     wire[`OpBus]  BranchOp;
     wire[`InstAddrBus] BranchPC;
     wire[`rsSize - 1 : 0] BranchFreeStatus;
+    wire BranchFree;
 
     //output of Branch 
     wire BranchEn;
@@ -116,7 +112,6 @@ module cpu(
     wire[`NameBus]  LSwrtName;
     wire[`OpBus]  LSop;
     wire LSbufFree;
-    wire [`TagRootBus]  freeTagLSroot;
 
     //output of LS
     wire LSunwork;
@@ -144,10 +139,13 @@ module cpu(
     wire[`TagBus] ROBComTagO;
     wire[`DataBus]  ROBComDataO;
     wire[`NameBus]  ROBComNameO;
+    wire[`TagBus] ROBfreeTag;
+    wire mistaken;
 
   icache icache(
     .clk(clk_in),
     .rst(rst_in),
+    .rdy(rdy_in),
     .fetchEn(instEn), 
     .Addr(instAddr), 
     .addEn(instOutEn), 
@@ -162,6 +160,7 @@ module cpu(
   mem mcu(
     .clk(clk_in), 
     .rst(rst_in), 
+    .rdy(rdy_in), 
     //with PC
       .fetchEn(memfetchEn), 
       .fetchAddr(memfetchAddr), 
@@ -182,10 +181,11 @@ module cpu(
       .RWstate(mem_wr), 
       .RWaddr(mem_a), 
       .ReadData(mem_din), 
-      .WrtData(mem_dout)
+      .WrtData(mem_dout), 
+    .mistaken(mistaken)
   );
-
-  assign stall = ~(ALUfree & LSbufFree & ROBfree);
+  
+  assign stall = ~(ALUfree & LSbufFree & ROBfree & BranchFree);
 
   fetch fetcher(
       .clk(clk_in), 
@@ -196,29 +196,46 @@ module cpu(
       .enJump(jumpEn), 
       .JumpAddr(jumpAddr), 
 
-      .enBranch(BranchEn), 
-      .BranchAddr(BranchAddr),
+      .mistaken(mistaken), 
+      .BranchAddr(ROBComDataO),
 
     //to decoder
       .DecEn(DecEn), 
       .DecPC(ToDecAddr), 
       .DecInst(ToDecInst), 
+      .taken(predtaken), 
     //with mem and cache
-      .memInstOutEn(instOutEn), 
-      .memInst(FetchInst), 
-
       .instEn(instEn), 
       .instAddr(instAddr), 
+      .memInstOutEn(instOutEn), 
+      .memInst(FetchInst), 
       .hit(hit), 
-      .cacheInst(cacheInst)
+      .cacheInst(cacheInst), 
+    //with bp
+      .predEn(predEn), 
+      .predAddr(predAddr)
   );
 
+  BP BP(
+      .clk(clk_in),
+      .rst(rst_in),
+      .rdy(rdy_in),
+      .predEn(predEn),
+      .inst(ToDecInst),
+      .PC(ToDecAddr), 
+      .taken(predTaken), 
+      .predAddr(predAddr)
+  );
+  
   decoder decoder(
     .clk(clk_in), 
     .rst(rst_in),
+    .rdy(rdy_in),
+    .stall(stall),
     .DecEn(DecEn), 
     .instPC(ToDecAddr),
     .inst(ToDecInst),
+    .mistaken(mistaken), 
 
     //simply output everything to the dispatcher
     .regNameO(DecNameO), 
@@ -233,19 +250,9 @@ module cpu(
     .Simm(DecSimm), 
     .Bimm(DecBimm)
   );
-
-  // Table Table(
-  //     .clk(clk_in),
-  //     .rst(rst_in), 
-  //     .freeStatusALU(ALUfreeStatus), 
-  //   //output
-  //     .freeTagALU(freeTagALUroot)
-  // );
-
+  
   dispatcher dispatcher(
     //from decoder
-      // .regNameO(DecNameO), 
-      // .regNameT(DecNameT), 
       .rdName(DecRdName),
       .opCode(DecOp),
       .opClass(DecOpClass),
@@ -260,62 +267,42 @@ module cpu(
       .regDataO(regDataO), 
       .regTagT(regTagT), 
       .regDataT(regDataT), 
-    //from Table
-      .ALUfreeTag(freeTagALUroot), 
-    //from LSbuffer
-      .LSfreeTag(freeTagLSroot),
+    //from ROB
+      .ROBtagOen(ROBrdO), 
+      .ROBdataO(ROBrdDataO), 
+      .ROBtagTen(ROBrdT), 
+      .ROBdataT(ROBrdDataT), 
+      .ROBfreeTag(ROBfreeTag), 
     //to regfile(rename the rd)
       .enWrt(enRegWrt), 
       .wrtTag(RegWrtTag), 
       .wrtName(RegWrtName), 
     //to ALUrs
       .ALUen(ALUrsEn), 
-      .ALUoperandO(ALUrsOperandO), 
-      .ALUoperandT(ALUrsOperandT), 
-      .ALUtagO(ALUrsTagO), 
-      .ALUtagT(ALUrsTagT),
-      .ALUtagW(ALUrsTagW), 
-      .ALUnameW(ALUrsNameW), 
-      .ALUop(ALUrsOp), 
-      .ALUaddr(ALUrsAddr), 
-    //to BranchRS
       .BranchEn(BranchRsEn), 
-      .BranchOperandO(BranchRsOperandO), 
-      .BranchOperandT(BranchRsOperandT), 
-      .BranchTagO(BranchRsTagO), 
-      .BranchTagT(BranchRsTagT), 
-      .BranchOp(BranchRsOp), 
-      .BranchImm(BranchRsImm),
-      .BranchAddr(BranchRsAddr),  
-    //to LSbuffer
       .LSen(LSbufEn), 
-      .LSoperandO(LSbufOperandO), 
-      .LSoperandT(LSbufOperandT), 
-      .LStagO(LSbufTagO), 
-      .LStagT(LSbufTagT),
-      .LStagW(LSbufTagW), 
-      .LSnameW(LSbufNameW), 
-      .LSimm(LSbufImm), 
-      .LSop(LSbufOp), 
-    //from ROB
-      .ROBtagOen(ROBrdO), 
-      .ROBdataO(ROBrdDataO), 
-      .ROBtagTen(ROBrdT), 
-      .ROBdataT(ROBrdDataT), 
+    //sources
+      .operandO(rsOperandO), 
+      .operandT(rsOperandT), 
+      .tagO(rsTagO), 
+      .tagT(rsTagT), 
+      .nameW(LSbufNameW), 
+      .immO(rsImm),
+      .op(rsOp), 
+      .Addr(rsAddr),  
+      .ROBloc(rsTagW), 
+    //to ROB
       .dispatchEn(dispatchEn)
   );
-
+  
   Regfile regf(
     .clk(clk_in), 
     .rst(rst_in), 
-    .ALUwrtEn(enROBComO), 
-    .ALUwrtData(ROBComDataO),
-    .ALUwrtName(ROBComNameO), 
-    .ALUwrtTag(ROBComTagO),
-    .LSwrtEn(LSROBen), 
-    .LSwrtData(LSROBdata),
-    .LSwrtName(LSROBname), 
-    .LSwrtTag(LSROBtag), 
+    .rdy(rdy_in),
+      .wrtEn(enROBComO), 
+      .wrtData(ROBComDataO),
+      .wrtName(ROBComNameO), 
+      .wrtTag(ROBComTagO),
     //from decoder
       .regNameO(DecNameO), 
       .regNameT(DecNameT), 
@@ -329,7 +316,7 @@ module cpu(
       .regDataT(regDataT), 
       .regTagT(regTagT)
   );
-
+  //done, the following need to re-consider since LS needs more consideration
   ALUrs ALUrs(
     .rst(rst_in),
     .clk(clk_in),
@@ -342,14 +329,14 @@ module cpu(
       .LSdata(LSROBdata), 
     //from dispatcher
       .ALUen(ALUrsEn), 
-      .ALUoperandO(ALUrsOperandO), 
-      .ALUoperandT(ALUrsOperandT), 
-      .ALUtagO(ALUrsTagO), 
-      .ALUtagT(ALUrsTagT),
-      .ALUtagW(ALUrsTagW),
-      .ALUnameW(ALUrsNameW), 
-      .ALUop(ALUrsOp), 
-      .ALUaddr(ALUrsAddr), 
+      .ALUoperandO(rsOperandO), 
+      .ALUoperandT(rsOperandT), 
+      .ALUtagO(rsTagO), 
+      .ALUtagT(rsTagT),
+      .ALUtagW(rsTagW),
+      .ALUnameW(rsNameW), 
+      .ALUop(rsOp), 
+      .ALUaddr(rsAddr), 
 
     //to ALU
       .ALUworkEn(ALUworkEn), 
@@ -360,8 +347,7 @@ module cpu(
       .opCode(ALUopCode), 
       .instAddr(ALUaddr), 
     //to dispatcher
-      .ALUfree(ALUfree)//, 
-      //.ALUfreeStatus(ALUfreeStatus)
+      .ALUfree(ALUfree)
   );
 
   ALU ALU(
@@ -395,13 +381,13 @@ module cpu(
       .LSdata(LSROBdata),
     //input from dispatcher
       .BranchEn(BranchRsEn), 
-      .BranchOperandO(BranchRsOperandO), 
-      .BranchOperandT(BranchRsOperandT), 
-      .BranchTagO(BranchRsTagO), 
-      .BranchTagT(BranchRsTagT), 
-      .BranchOp(BranchRsOp), 
-      .BranchImm(BranchRsImm), 
-      .BranchPC(BranchRsAddr),
+      .BranchOperandO(rsOperandO), 
+      .BranchOperandT(rsOperandT), 
+      .BranchTagO(rsTagO), 
+      .BranchTagT(rsTagT), 
+      .BranchOp(rsOp), 
+      .BranchImm(rsImm), 
+      .BranchPC(rsAddr),
     //to branchEx
       .BranchWorkEn(BranchWorkEn), 
       .operandO(BranchOperandO), 
@@ -438,14 +424,14 @@ module cpu(
       .LSdata(LSROBdata),
     //input from dispatcher
       .LSen(LSbufEn), 
-      .LSoperandO(LSbufOperandO), 
-      .LSoperandT(LSbufOperandT), 
-      .LStagO(LSbufTagO), 
-      .LStagT(LSbufTagT), 
-      .LStagW(LSbufTagW), 
-      .LSnameW(LSbufNameW), 
-      .LSop(LSbufOp), 
-      .LSimm(LSbufImm), 
+      .LSoperandO(rsOperandO), 
+      .LSoperandT(rsOperandT), 
+      .LStagO(rsTagO), 
+      .LStagT(rsTagT), 
+      .LStagW(rsTagW), 
+      .LSnameW(rsNameW), 
+      .LSop(rsOp), 
+      .LSimm(rsImm), 
     //from the LS
     .LSreadEn(LSunwork), 
     .LSdone(LSoutEn),
@@ -503,11 +489,11 @@ module cpu(
     .WrtTagO(ALUROBtagW), 
     .WrtDataO(ALUROBdataW), 
     .WrtNameO(ALUROBnameW), 
-    //input from LS for precise exception, but not now
-    // input wire enWrtT, 
-    // input wire[`TagBus] WrtTagT,
-    // input wire[`DataBus] WrtDataT,
-    // input wire[`NameBus] WrtNameT, 
+    //input from LS for precise exception
+    .enWrtO(LSROBen), 
+    .WrtTagO(LSROBtagW), 
+    .WrtDataO(LSROBdataW), 
+    .WrtNameO(LSROBnameW), 
     //communicate with dispatcher: about write out
     .ReadTagO(regTagO), 
     .ReadTagT(regTagT), 
@@ -521,12 +507,8 @@ module cpu(
     .ComTagO(ROBComTagO), 
     .ComDataO(ROBComDataO), 
     .ComNameO(ROBComNameO), 
-    // output reg enComT, 
-    // output reg[`TagBus]     ComTagT, 
-    // output reg[`DataBus]    ComDataT, 
-    // output reg[`NameBus]    ComNameT, 
     //communicate with Dispatcher: about tagW
     .dispatchEn(dispatchEn), 
-    .freeTag(freeTagALUroot)
+    .freeTag(ROBfreeTag)
   );
 endmodule

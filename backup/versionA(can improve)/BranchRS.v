@@ -3,6 +3,7 @@
 module BRsLine(
     input clk, 
     input rst, 
+    input rdy, 
     //
     input wire enWrtO, 
     input wire[`TagBus] WrtTagO, 
@@ -79,19 +80,21 @@ module BRsLine(
         rsPC    <= `addrFree;
         rsImm   <= `dataFree;
         rsOp    <= `NOP;
-      end else if (allocEn == `Enable) begin
-        rsTagO  <= allocTagO;
-        rsTagT  <= allocTagT;
-        rsDataO <= allocOperandO;
-        rsDataT <= allocOperandT;
-        rsPC    <= allocPC;
-        rsImm   <= allocImm;
-        rsOp    <= allocOp;
-      end else begin
-        rsTagO  <= nxtPosTagO;
-        rsTagT  <= nxtPosTagT;
-        rsDataO <= nxtPosDataO;
-        rsDataT <= nxtPosDataT;
+      end else if (rdy) begin
+        if (allocEn) begin
+          rsTagO  <= allocTagO;
+          rsTagT  <= allocTagT;
+          rsDataO <= allocOperandO;
+          rsDataT <= allocOperandT;
+          rsPC    <= allocPC;
+          rsImm   <= allocImm;
+          rsOp    <= allocOp;
+        end else begin
+          rsTagO  <= nxtPosTagO;
+          rsTagT  <= nxtPosTagT;
+          rsDataO <= nxtPosDataO;
+          rsDataT <= nxtPosDataT;
+        end
       end
     end
 endmodule
@@ -99,6 +102,7 @@ endmodule
 module BranchRS(
     input rst, 
     input clk, 
+    input rdy, 
     //from ALU and LS
     input wire enALUwrt, 
     input wire[`TagBus] ALUtag, 
@@ -153,6 +157,7 @@ module BranchRS(
         BRsLine BrsLine(
           .clk(clk), 
           .rst(rst), 
+          .rdy(rdy), 
           //
           .enWrtO(enALUwrt), 
           .WrtTagO(ALUtag), 
@@ -202,7 +207,7 @@ module BranchRS(
         opCode <= `NOP; 
         PC <= `addrFree;
         bNum <= 0;
-      end else begin
+      end else if (rdy) begin
         bNum <= head;
         if (BranchEn) begin
           empty[tail] <= 0;
@@ -219,11 +224,6 @@ module BranchRS(
           head <= (head == `branchRsSize - 1) ? 0 : head + 1;
         end else begin
           BranchWorkEn <= `Disable;
-          operandO <= `dataFree;
-          operandT <= `dataFree;
-          opCode <= `NOP;
-          PC <= `addrFree;
-          imm <= `dataFree;
         end
       end
     end

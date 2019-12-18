@@ -2,6 +2,7 @@
 module regfileLine(
   input wire clk, 
   input wire rst, 
+  input wire rdy, 
   input wire branchDeeper, 
   input wire branchFree, 
   input wire misTaken, 
@@ -57,7 +58,7 @@ module regfileLine(
       end
       head <= 0;
       tail <= 0;
-    end else begin
+    end else if (rdy) begin
       for (i = 0; i < 4;i = i + 1) begin
         allTag[i] <= (renamEn && (i == tail)) ? renamTag : nxtPosTag[i];
         allData[i] <= nxtPosData[i];
@@ -71,20 +72,11 @@ module regfileLine(
     end
   end
   //notice that the branch tag can only be a continuous set of 1:000//001,010,100//011,110,101//111//
-  /*
-   * head records the latest and reliable data and tag, (so head+1 is the next to be free)
-   * tail records the latest but maybe not reliable data and tag. 
-   * When read: returns the tag[tail] and data[tail], judge the enwrt at the same time;(done)
-   * When write: check the tag with each one, if any one fits, replace the tag and data with the input one(done)
-   * When free: head+1(done)
-   * When mistaken: tail=head(done)
-   * When a new branch tag is used: tail+1(done)
-   * When rename: change tag[tail](done)
-  */
 endmodule
 module Regfile(
     input wire clk, 
     input wire rst, 
+    input wire rdy, 
     //ALU is actually from the ROB. 
     input wire ALUwrtEn, 
     input wire [`TagBus] ALUwrtTag,
@@ -128,6 +120,7 @@ module Regfile(
         regfileLine regfileLine(
           .clk(clk), 
           .rst(rst), 
+          .rdy(rdy), 
           .branchDeeper(branchDeeper), 
           .branchFree(bFreeEn), 
           .misTaken(misTaken), 

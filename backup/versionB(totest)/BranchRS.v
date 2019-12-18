@@ -144,7 +144,6 @@ module BranchRS(
     wire[`InstAddrBus] issuePC;
 
     assign canIssue = ready;
-    assign BranchFreeStatus = empty;
 
     BRsLine ALUrsLine(
       .clk(clk), 

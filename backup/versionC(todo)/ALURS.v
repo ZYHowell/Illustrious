@@ -160,7 +160,7 @@ module ALUrs(
 
     wire [`rsSize - 1 : 0] issueRS;
 
-    reg allocEn[`rsSize - 1 : 0];
+    reg[`rsSize - 1 : 0] allocEn;
     reg[`DataBus]    AllocPostOperandO; 
     reg[`DataBus]    AllocPostOperandT; 
     reg[`TagBus]     AllocPostTagO; 
@@ -181,7 +181,7 @@ module ALUrs(
 
     assign issueRS = ready & -ready;
     //assign ALUfreeStatus = empty;
-    assign ALUfree = num + ALUen + 1 < `rsSize;
+    assign ALUfree = (num + ALUen) < `rsSize;
 
     generate
       genvar j;
@@ -220,9 +220,8 @@ module ALUrs(
     endgenerate
 
     always @(*) begin
-      for (i = 0; i < `rsSize;i = i + 1) begin
-        allocEn[i] = (ALUen && (ALUtagW[`TagRootBus] == i)) ? `Enable : `Disable;
-      end
+      allocEn = 0;
+      //todo: allocEn[allocpos]=ALUen;
       AllocPostAddr = ALUaddr;
       AllocPostOp = ALUop;
       AllocPostOperandO = ALUoperandO;

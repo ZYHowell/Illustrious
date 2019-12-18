@@ -35,10 +35,10 @@ module lsBuffer(
     output wire[`TagRootBus] LSfreeTag, 
     output wire LSbufFree
 );
-    reg [`rsSize - 1 : 0] empty;
-    wire[`rsSize - 1 : 0] ready;
+    reg [`LSbufSize - 1 : 0] empty;
+    wire[`LSbufSize - 1 : 0] ready;
 
-    reg[`rsSize - 1 : 0] allocEn;
+    reg[`LSbufSize - 1 : 0] allocEn;
     reg[`DataBus]     AllocPostOperandO; 
     reg[`DataBus]     AllocPostOperandT; 
     reg[`TagBus]      AllocPostTagO; 
@@ -48,26 +48,24 @@ module lsBuffer(
     reg[`OpBus]       AllocPostOp; 
     reg[`DataBus]     AllocPostImm; 
 
-    wire[`DataBus] issueOperandO[`rsSize - 1 : 0];
-    wire[`DataBus] issueOperandT[`rsSize - 1 : 0];
-    wire[`OpBus]   issueOp[`rsSize - 1 : 0]; 
-    wire[`NameBus] issueNameW[`rsSize - 1 : 0];
-    wire[`TagBus] issueTagW[`rsSize - 1 : 0];
-    wire[`DataBus] issueImm[`rsSize - 1 : 0];
+    wire[`DataBus] issueOperandO[`LSbufSize - 1 : 0];
+    wire[`DataBus] issueOperandT[`LSbufSize - 1 : 0];
+    wire[`OpBus]   issueOp[`LSbufSize - 1 : 0]; 
+    wire[`NameBus] issueNameW[`LSbufSize - 1 : 0];
+    wire[`TagBus] issueTagW[`LSbufSize - 1 : 0];
+    wire[`DataBus] issueImm[`LSbufSize - 1 : 0];
 
-    reg [`TagRootBus]   head, tail, num, judgeIssue;
-    wire canIssue;
+    reg [`TagRootBus] head, tail, num, judgeIssue;
     //the head is the head while the tail is the next;
     integer i;
 
-    assign canIssue = ready[judgeIssue];
     assign LSfreeTag = (tail != head) ? tail : 
                         num ? `NoFreeTag : tail;
-    assign LSbufFree = (num + LSen + 1) < `rsSize ? 1 : 0;
+    assign LSbufFree = (num + LSen) < `LSbufSize ? 1 : 0;
 
     generate
       genvar j;
-      for (j = 0; j < `rsSize;j = j + 1) begin: LSbufLine
+      for (j = 0; j < `LSbufSize;j = j + 1) begin: LSbufLine
         RsLine LSbufLine(
           .clk(clk), 
           .rst(rst), 
@@ -103,7 +101,7 @@ module lsBuffer(
 
     always @(*) begin
       allocEn = 0;
-      allocEn[tail] = LSen ? `Enable : `Disable;
+      allocEn[tail] = LSen;
       AllocPostImm = LSimm;
       AllocPostOp = LSop;
       AllocPostOperandO = LSoperandO;
@@ -120,7 +118,7 @@ module lsBuffer(
         head <= 0;
         tail <= 0;
         num <= 0;
-        empty <= {`rsSize{1'b1}};
+        empty <= {`LSbufSize{1'b1}};
         LSworkEn <= `Disable; 
         operandO <= `dataFree; 
         operandT <= `dataFree;
@@ -131,7 +129,7 @@ module lsBuffer(
       end else begin
         if (LSen) begin
           empty[tail]   <= 0;
-          tail <= (tail == `rsSize - 1) ? 0 : tail + 1;
+          tail <= (tail == `LSbufSize - 1) ? 0 : tail + 1;
         end
         if (LSdone) begin
           head <= judgeIssue;
@@ -140,7 +138,7 @@ module lsBuffer(
         end else begin
           num <= LSen ? num + 1 : num;
         end
-        if ((LSreadEn == `Enable) && canIssue) begin
+        if ((LSreadEn == `Enable) && ready[judgeIssue]) begin
           LSworkEn <= `Enable;
           operandO <= issueOperandO[judgeIssue];
           operandT <= issueOperandT[judgeIssue];
@@ -148,7 +146,7 @@ module lsBuffer(
           wrtName <= issueNameW[judgeIssue];
           wrtTag <= issueTagW[judgeIssue];
           imm <= issueImm[judgeIssue];
-          judgeIssue <= (judgeIssue == `rsSize - 1) ? 0 : judgeIssue + 1;
+          judgeIssue <= (judgeIssue == `LSbufSize - 1) ? 0 : judgeIssue + 1;
         end else begin
           LSworkEn <= `Disable;
           operandO <= `dataFree;

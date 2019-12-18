@@ -2,6 +2,7 @@
 module LS(
     input wire clk, 
     input wire rst, 
+    input wire rdy, 
 
     //from lsbuffer
     input wire  LSworkEn, 
@@ -45,7 +46,7 @@ module LS(
         LSROBdata <= `dataFree;
         LSROBtag <= `tagFree;
         LSdone <= 0;
-      end else begin
+      end else if (rdy) begin
         LSdone <= 0;
         case(status)
           `IsFree: begin

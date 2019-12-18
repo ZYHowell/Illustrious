@@ -5,10 +5,11 @@
 `include "defines.v"
 
 module decoder(
-    input wire                  clk, 
-    input wire                  rst,
-    input wire                  stall, 
-    input wire                  DecEn, 
+    input clk, 
+    input rst,
+    input rdy, 
+    input stall, 
+    input DecEn, 
     input wire[`InstAddrBus]    instPC,
     input wire[`InstBus]        inst,
 
@@ -81,7 +82,7 @@ module decoder(
         bTag <= 0;
         BranchNum <= 0;
         BranchTail <= 0;
-      end else begin
+      end else if (rdy) begin
         //if mistaken, clear all. (branch is executed in order, ovo)
         bTag <= nxtPosBranchTag;
         if (misTaken) begin

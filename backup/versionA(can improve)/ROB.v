@@ -6,14 +6,11 @@
 module ROB(
     input wire clk, 
     input wire rst, 
+    input wire rdy, 
     //input from alu
     input wire enWrtO, 
     input wire[`TagBus]     WrtTagO, 
     input wire[`DataBus]    WrtDataO, 
-    //input from LS for precise exception, but not now
-    // input wire enWrtT, 
-    // input wire[`TagBus] WrtTagT,
-    // input wire[`DataBus] WrtDataT,
     //communicate with dispatcher: about write out
     input wire[`TagBus] ReadTagO, 
     input wire[`TagBus] ReadTagT, 
@@ -26,9 +23,6 @@ module ROB(
     output reg enComO, 
     output reg[`TagBus]     ComTagO, 
     output reg[`DataBus]    ComDataO, 
-    // output reg enComT, 
-    // output reg[`TagBus]     ComTagT, 
-    // output reg[`DataBus]    ComDataT, 
     //communicate with Dispatcher: about tagW
     input wire dispatchEn, 
     input wire[`BranchTagBus] dispBranchTag, 
@@ -88,17 +82,20 @@ module ROB(
 
         always @(posedge clk) begin
           if (rst) begin
-            empty[j] <= 1'b1;
-          end else begin
-            if (headMove & (j == head)) empty[j] <= 1;
-            else empty[j] <= nxtPosEmpty[j];
-          end
-        end
-        always @(posedge clk) begin
-          if (rst) begin
             valid[j] <= 0;
             rsBranchTag[j] <= 0;
-          end else begin
+            rsData[j] <= `dataFree;
+            rsTagW[j] <= `tagFree;
+            empty[j] <= 1'b1;
+          end else if (rdy) begin
+            if (headMove & (j == head)) empty[j] <= 1;
+            else empty[j] <= nxtPosEmpty[j];
+            
+            if (allocEnO[j]) begin
+              rsData[j] <= WrtDataO;
+              rsTagW[j] <= WrtTagO;
+            end
+
             if (dispatchEn && (j == tail)) begin
               rsBranchTag[j] <= dispBranchTag;
               valid[j] <= 1;
@@ -112,27 +109,12 @@ module ROB(
             end
           end
         end
-        always @(posedge clk) begin
-          if (rst) begin
-            rsData[j] <= `dataFree;
-            rsTagW[j] <= `tagFree;
-          end else if (allocEnO[j]) begin
-            rsData[j] <= WrtDataO;
-            rsTagW[j] <= WrtTagO;
-          end
-          // end else if (allocEnT[j] == `Enable) begin
-          //   rsData[j] <= AllocPostDataT;
-          //   rsTagW[j] <= AllocPostTagT;
-          // end
-        end
       end
     endgenerate
 
     always @(*) begin
       allocEnO = 0;
-      //allocEnT = 0;
       allocEnO[WrtTagO[`TagRootBus]] = enWrtO;
-      //allocEnT[WrtTagT[`TagRootBus]] = 1;
     end
 
     always @ (posedge clk) begin
@@ -142,9 +124,7 @@ module ROB(
         enComO <= `Disable; 
         ComTagO<= `tagFree; 
         ComDataO <= `dataFree; 
-      end else begin
-        //if (enWrtT) empty[WrtTagT[`TagRootBus]] <= 0;
-        //give the dispatcher a tag(at post edge)
+      end else if (rdy) begin
         if (dispatchEn)
           tail <= (tail + 1 < `ROBsize) ? tail + 1 : 0;
         //commit below

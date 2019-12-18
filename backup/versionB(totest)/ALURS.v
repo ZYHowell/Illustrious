@@ -188,7 +188,7 @@ module ALUrs(
 
     assign issueRS = ready & -ready;
     assign ALUfreeStatus = empty;
-    assign ALUfree = num + ALUen + 1 < `rsSize;
+    assign ALUfree = (num + ALUen) < `rsSize;
 
     generate
       genvar j;

@@ -20,7 +20,7 @@ module ALU(
 );
 
     always @ (*) begin
-      if (ALUworkEn == `Enable) begin
+      if (ALUworkEn) begin
         ROBen = `Enable;
         ROBtagW = wrtTag;
         ROBnameW = wrtName;

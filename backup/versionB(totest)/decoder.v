@@ -4,6 +4,7 @@ module decoder(
     input wire clk, 
     input wire rst,
     input wire rdy, 
+    input wire stall, 
     input wire                  DecEn, 
     input wire[`InstAddrBus]    instPC,
     input wire[`InstBus]        inst,
@@ -19,9 +20,8 @@ module decoder(
     output reg[`DataBus]        Uimm, 
     output reg[`DataBus]        Jimm, 
     output reg[`DataBus]        Simm, 
-    output reg[`DataBus]        Bimm, 
+    output reg[`DataBus]        Bimm
     //Imm
-    input wire stall
 );
 
     wire[6:0] opType; 

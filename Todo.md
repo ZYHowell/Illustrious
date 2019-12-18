@@ -1,7 +1,7 @@
 #### stage 1:(week 12 or about)
 
 * add an icache(done)
-* make use of stall(done) and rdy**(todo)**
+* make use of stall(done) and rdy(done)
 * confirm the safety of the use of negedge(done)
 
 #### stage 2:(week 13)

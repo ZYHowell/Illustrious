@@ -1,15 +1,14 @@
-//module:   id
-//file:     id.v
-//decode instructions in this module
-
-//`include "defines.v"
+`include "defines.v"
 
 module decoder(
-    input wire                  clk, 
-    input wire                  rst,
-    input wire                  DecEn, 
+    input wire clk, 
+    input wire rst,
+    input wire rdy, 
+    input wire stall, 
+    input wire DecEn, 
     input wire[`InstAddrBus]    instPC,
     input wire[`InstBus]        inst,
+    input wire mistaken, 
 
     //simply output everything to the dispatcher
     output reg[`NameBus]        regNameO, 
@@ -23,7 +22,6 @@ module decoder(
     output reg[`DataBus]        Jimm, 
     output reg[`DataBus]        Simm, 
     output reg[`DataBus]        Bimm
-    //Imm
 );
 
     wire[6:0] opType; 
@@ -41,13 +39,13 @@ module decoder(
       Jimm <= {{`UimmFillLen{inst[31]}}, inst[19:12], inst[20], inst[30:21], 1'b0};
       Simm <= {{`immFillLen{inst[31]}}, inst[31:25], inst[11:7]};
       Bimm <= {{`immFillLen{inst[31]}}, inst[7], inst[30:25], inst[11:8], 1'b0};
-      if (rst == `Enable) begin
+      if (rst | mistaken) begin
         regNameO <= `nameFree;
         regNameT <= `nameFree;
         rdName <= `nameFree;
         opCode <= `NOP;
         opClass <= `ClassNOP;
-      end else if (DecEn) begin
+      end else if (DecEn & rdy & ~stall) begin
         opClass <= opType;
         regNameO = inst[19:15];
         regNameT <= inst[24:20];
@@ -134,9 +132,6 @@ module decoder(
             default:;
         endcase
       end else begin
-        // regNameO <= `nameFree;
-        // regNameT <= `nameFree;
-        // rdName <= `nameFree;
         opCode <= `NOP;
         opClass <= `ClassNOP;
       end

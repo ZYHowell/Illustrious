@@ -1,4 +1,4 @@
-//`include "defines.v"
+`include "defines.v"
 
 module Branch(
     //from the RS
@@ -19,9 +19,9 @@ module Branch(
     assign nxtAddr = PC + 4;
 
     always @ (*) begin
-      if (BranchWorkEn == `Enable) begin
-        BranchResultEn = `Enable;
-        BranchAddr = 0;
+      BranchAddr = `addrFree;
+      BranchResultEn = BranchWorkEn;
+      if (BranchWorkEn) begin
         case (opCode)
           `BEQ: BranchAddr = operandO == operandT ? jmpAddr : nxtAddr;
           `BNE: BranchAddr = operandO != operandT ? jmpAddr : nxtAddr;
@@ -30,10 +30,6 @@ module Branch(
           `BLTU:BranchAddr = operandO <  operandT ? jmpAddr : nxtAddr;
           `BGEU:BranchAddr = operandO >= operandT ? jmpAddr : nxtAddr;
         endcase
-      end
-      else begin
-        BranchResultEn = `Disable;
-        BranchAddr = `addrFree;
       end
     end
 endmodule

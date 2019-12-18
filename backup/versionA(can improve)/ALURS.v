@@ -24,6 +24,7 @@ endmodule
 module RsLine(
     input clk, 
     input rst, 
+    input rdy, 
     //
     input wire enWrtO, 
     input wire[`TagBus] WrtTagO, 
@@ -112,27 +113,30 @@ module RsLine(
         rsImm <= `dataFree;
         rsOp <= `NOP;
         BranchTag <= 0;
-      end else if (allocEn) begin
-        rsTagO <= allocTagO;
-        rsTagT <= allocTagT;
-        rsDataO <= allocOperandO;
-        rsDataT <= allocOperandT;
-        rsTagW <= allocTagW;
-        rsImm <= allocImm;
-        rsOp <= allocOp;
-        BranchTag <= allocBranchTag;
-      end else begin
-        rsTagO <= nxtPosTagO;
-        rsTagT <= nxtPosTagT;
-        rsDataO <= nxtPosDataO;
-        rsDataT <= nxtPosDataT;
-        BranchTag <= nxtPosBranchTag;
+      end else if (rdy) begin
+        if (allocEn) begin
+          rsTagO <= allocTagO;
+          rsTagT <= allocTagT;
+          rsDataO <= allocOperandO;
+          rsDataT <= allocOperandT;
+          rsTagW <= allocTagW;
+          rsImm <= allocImm;
+          rsOp <= allocOp;
+          BranchTag <= allocBranchTag;
+        end else begin
+          rsTagO <= nxtPosTagO;
+          rsTagT <= nxtPosTagT;
+          rsDataO <= nxtPosDataO;
+          rsDataT <= nxtPosDataT;
+          BranchTag <= nxtPosBranchTag;
+        end
       end
     end
 endmodule
 module ALUrs(
     input rst,
     input clk,
+    input rdy, 
     //from ALU and LS
     input wire enALUwrt, 
     input wire[`TagBus] ALUtag, 
@@ -195,6 +199,7 @@ module ALUrs(
         RsLine ALUrsLine(
           .clk(clk), 
           .rst(rst), 
+          .rdy(rdy), 
           //
           .enWrtO(enALUwrt), 
           .WrtTagO(ALUtag), 
@@ -239,7 +244,7 @@ module ALUrs(
       if (rst) begin
         empty <= {`rsSize{1'b1}};
         instBranchTag <= 0;
-      end else begin
+      end else if (rdy) begin
         if (ALUen) empty[ALUtagW[`TagRootBus]] <= 0;
         if (issueRS) begin
           for (i = 0;i < `rsSize;i = i + 1) begin

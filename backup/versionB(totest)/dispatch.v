@@ -1,10 +1,7 @@
 `include "defines.v"
-//CAUTION! not test if Status == 0, WHICH SHOULD BE IN CPU
 
 module dispatcher(
     //from decoder
-    // input wire[`NameBus]        regNameO, 
-    // input wire[`NameBus]        regNameT, 
     input wire[`NameBus]        rdName,
     input wire[`OpBus]          opCode,
     input wire[`OpClassBus]     opClass,

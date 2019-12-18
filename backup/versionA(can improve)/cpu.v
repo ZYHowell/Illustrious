@@ -151,6 +151,7 @@ module cpu(
   icache icache(
     .clk(clk_in),
     .rst(rst_in),
+    .rdy(rdy_in),
     .fetchEn(instEn), 
     .Addr(instAddr), 
     .addEn(instOutEn), 
@@ -164,7 +165,8 @@ module cpu(
 
   mem mcu(
     .clk(clk_in), 
-    .rst(rst_in), 
+    .rst(rst_in),
+    .rdy(rdy_in), 
     //with PC
       .fetchEn(memfetchEn), 
       .fetchAddr(memfetchAddr), 
@@ -195,6 +197,7 @@ module cpu(
   fetch fetcher(
       .clk(clk_in), 
       .rst(rst_in), 
+      .rdy(rdy_in),
       //.rdy(rdy_in),
       .stall(stall), 
 
@@ -226,6 +229,7 @@ module cpu(
   decoder decoder(
     .clk(clk_in), 
     .rst(rst_in),
+    .rdy(rdy_in),
     .stall(stall),
     .DecEn(DecEn), 
     .instPC(ToDecAddr),
@@ -319,6 +323,7 @@ module cpu(
   Regfile regf(
     .clk(clk_in), 
     .rst(rst_in), 
+    .rdy(rdy_in),
     .ALUwrtEn(enROBComO), 
     .ALUwrtData(ROBComDataO),
     .ALUwrtTag(ROBComTagO),
@@ -350,6 +355,7 @@ module cpu(
   ALUrs ALUrs(
     .rst(rst_in),
     .clk(clk_in),
+    .rdy(rdy_in),
     //from ALU and LS
       .enALUwrt(ALUROBen),
       .ALUtag(ALUROBtagW),
@@ -409,6 +415,7 @@ module cpu(
   BranchRS BranchRS(
     .rst(rst_in), 
     .clk(clk_in), 
+    .rdy(rdy_in),
     //from ALU and LS
       .enALUwrt(ALUROBen),
       .ALUtag(ALUROBtagW),
@@ -457,6 +464,7 @@ module cpu(
   lsBuffer lsBuffer(
     .rst(rst_in), 
     .clk(clk_in), 
+    .rdy(rdy_in),
     //from ALU and LS
       .enALUwrt(ALUROBen),
       .ALUtag(ALUROBtagW),
@@ -496,7 +504,7 @@ module cpu(
   LS LS(
     .clk(clk_in), 
     .rst(rst_in), 
-
+    .rdy(rdy_in),
     //from lsbuffer
       .LSworkEn(LSworkEn), 
       .operandO(LSoperandO), 
@@ -529,14 +537,11 @@ module cpu(
   ROB rob(
     .clk(clk_in), 
     .rst(rst_in), 
+    .rdy(rdy_in),
     //input from alu
     .enWrtO(ALUROBen), 
     .WrtTagO(ALUROBtagW), 
     .WrtDataO(ALUROBdataW), 
-    //input from LS for precise exception, but not now
-    // input wire enWrtT, 
-    // input wire[`TagBus] WrtTagT,
-    // input wire[`DataBus] WrtDataT,
     //communicate with dispatcher: about write out
     .ReadTagO(regTagO), 
     .ReadTagT(regTagT), 
