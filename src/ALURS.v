@@ -161,13 +161,13 @@ module ALUrs(
     output wire[`rsSize - 1 : 0] ALUfreeStatus
 );
 
-    wire [`rsSize - 1 : 0] ready;
-    reg [`rsSize - 1 : 0] empty;
+    wire[`rsSize - 1 : 0] ready;
+    reg[`rsSize - 1 : 0] empty;
     reg[3:0] num;
 
     wire [`rsSize - 1 : 0] issueRS;
 
-    reg allocEn[`rsSize - 1 : 0];
+    reg[`rsSize - 1 : 0] allocEn;
     reg[`DataBus]    AllocPostOperandO; 
     reg[`DataBus]    AllocPostOperandT; 
     reg[`TagBus]     AllocPostTagO; 
@@ -176,6 +176,7 @@ module ALUrs(
     reg[`NameBus]    AllocPostNameW;  
     reg[`OpBus]      AllocPostOp; 
     reg[`InstAddrBus]AllocPostAddr; 
+    wire[`rsSize - 1 : 0] nxtPosEmpty;
 
     wire[`DataBus] issueOperandO[`rsSize - 1 : 0];
     wire[`DataBus] issueOperandT[`rsSize - 1 : 0];
@@ -188,7 +189,7 @@ module ALUrs(
 
     assign issueRS = ready & -ready;
     assign ALUfreeStatus = empty;
-    assign ALUfree = (num + ALUen) < `rsSize;
+    assign ALUfree = nxtPosEmpty != 0;
 
     generate
       genvar j;
@@ -222,15 +223,18 @@ module ALUrs(
           .issueOp(issueOp[j]), 
           .issueNameW(issueNameW[j]), 
           .issueTagW(issueTagW[j]), 
-          .issueImm(issuePC[j])
+          .issueImm(issuePC[j]),
+          .nxtPosEmpty(nxtPosEmpty[j])
         );
       end
     endgenerate
 
     always @(*) begin
-      for (i = 0; i < `rsSize;i = i + 1) begin
-        allocEn[i] = (ALUen && (ALUtagW[`TagRootBus] == i)) ? `Enable : `Disable;
-      end
+      allocEn = 0;
+      allocEn[ALUtagW[`TagRootBus]] = ALUen;
+      // for (i = 0; i < `rsSize;i = i + 1) begin
+      //   allocEn[i] = ALUen & (ALUtagW[`TagRootBus] == i);
+      // end
       AllocPostAddr = ALUaddr;
       AllocPostOp = ALUop;
       AllocPostOperandO = ALUoperandO;
@@ -260,9 +264,7 @@ module ALUrs(
               empty[i] <= 1;
             end
           end
-          num <= ALUen ? num : (num - 1);
         end else begin
-          num <= ALUen ? num + 1 : num;
           ALUworkEn <= `Disable;
           operandO <= `dataFree;
           operandT <= `dataFree;

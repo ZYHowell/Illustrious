@@ -6,7 +6,7 @@
 
 #### stage 2:(week 13)
 
-* add dcache with write through**(todo)**
+* add dcache(done) with write through
 
 #### stage 3:(week 14 and week 17~18)
 

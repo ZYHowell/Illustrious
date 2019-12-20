@@ -1,4 +1,4 @@
-This is XeTeX, Version 3.14159265-2.6-0.999991 (MiKTeX 2.9.7140 64-bit) (preloaded format=xelatex 2019.8.7)  18 DEC 2019 16:54
+This is XeTeX, Version 3.14159265-2.6-0.999991 (MiKTeX 2.9.7140 64-bit) (preloaded format=xelatex 2019.8.7)  19 DEC 2019 19:15
 entering extended mode
 **c:/code1/homework/CPU/doc/report.tex
 (c:/code1/homework/CPU/doc/report.tex
@@ -30,6 +30,10 @@ Package: preamble
 nt\fullpage.sty"
 Package: fullpage 1999/02/23 1.1 (PWD)
 \FP@margin=\skip43
+)
+("C:\Users\Howell.Y.H.Zhuang\AppData\Local\Programs\MiKTeX 2.9\tex/latex/tools\
+indentfirst.sty"
+Package: indentfirst 1995/11/23 v1.03 Indent first paragraph (DPC)
 )
 ("C:\Users\Howell.Y.H.Zhuang\AppData\Local\Programs\MiKTeX 2.9\tex/latex/geomet
 ry\geometry.sty"
@@ -536,38 +540,38 @@ Package textcomp Info: Setting ptmj sub-encoding to TS1/4 on input line 409.
 \sectionRuleOffset@mlpr=\skip63
 \toks@mlpr=\toks33
 )
-Package hyperref Info: Option `colorlinks' set `true' on input line 24.
-Package Listings Info: Made " a short reference for \lstinline on input line 27
+Package hyperref Info: Option `colorlinks' set `true' on input line 25.
+Package Listings Info: Made " a short reference for \lstinline on input line 28
 .
 ) (report.aux)
 \openout1 = `report.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 10.
-LaTeX Font Info:    ... okay on input line 10.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 10.
-LaTeX Font Info:    ... okay on input line 10.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 10.
-LaTeX Font Info:    ... okay on input line 10.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 10.
-LaTeX Font Info:    ... okay on input line 10.
-LaTeX Font Info:    Checking defaults for TU/lmr/m/n on input line 10.
-LaTeX Font Info:    ... okay on input line 10.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 10.
-LaTeX Font Info:    ... okay on input line 10.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 10.
-LaTeX Font Info:    ... okay on input line 10.
-LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 10.
-LaTeX Font Info:    ... okay on input line 10.
-LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 10.
-LaTeX Font Info:    ... okay on input line 10.
-LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 10.
-LaTeX Font Info:    Try loading font information for TS1+cmr on input line 10.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 7.
+LaTeX Font Info:    ... okay on input line 7.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 7.
+LaTeX Font Info:    ... okay on input line 7.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 7.
+LaTeX Font Info:    ... okay on input line 7.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 7.
+LaTeX Font Info:    ... okay on input line 7.
+LaTeX Font Info:    Checking defaults for TU/lmr/m/n on input line 7.
+LaTeX Font Info:    ... okay on input line 7.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 7.
+LaTeX Font Info:    ... okay on input line 7.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 7.
+LaTeX Font Info:    ... okay on input line 7.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 7.
+LaTeX Font Info:    ... okay on input line 7.
+LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 7.
+LaTeX Font Info:    ... okay on input line 7.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 7.
+LaTeX Font Info:    Try loading font information for TS1+cmr on input line 7.
 
 ("C:\Users\Howell.Y.H.Zhuang\AppData\Local\Programs\MiKTeX 2.9\tex/latex/base\t
 s1cmr.fd"
 File: ts1cmr.fd 2014/09/29 v2.5h Standard LaTeX font definitions
 )
-LaTeX Font Info:    ... okay on input line 10.
+LaTeX Font Info:    ... okay on input line 7.
 
 *geometry* detected driver: pdftex
 *geometry* verbose mode - [ preamble ] result:
@@ -604,10 +608,10 @@ LaTeX Font Info:    ... okay on input line 10.
 
 Package lastpage Info: Please have a look at the pageslts package at
 (lastpage)             https://www.ctan.org/pkg/pageslts
-(lastpage)             ! on input line 10.
+(lastpage)             ! on input line 7.
 \c@lstlisting=\count132
 \AtBeginShipoutBox=\box36
-Package hyperref Info: Link coloring ON on input line 10.
+Package hyperref Info: Link coloring ON on input line 7.
 
 ("C:\Users\Howell.Y.H.Zhuang\AppData\Local\Programs\MiKTeX 2.9\tex/latex/hyperr
 ef\nameref.sty"
@@ -619,9 +623,9 @@ Package: gettitlestring 2016/05/16 v1.5 Cleanup title references (HO)
 )
 \c@section@level=\count133
 )
-LaTeX Info: Redefining \ref on input line 10.
-LaTeX Info: Redefining \pageref on input line 10.
-LaTeX Info: Redefining \nameref on input line 10.
+LaTeX Info: Redefining \ref on input line 7.
+LaTeX Info: Redefining \pageref on input line 7.
+LaTeX Info: Redefining \nameref on input line 7.
  (report.out) (report.out)
 \@outlinefile=\write4
 \openout4 = `report.out'.
@@ -633,24 +637,48 @@ File: se-ascii-print.def 2016/05/16 v1.11 stringenc: Printable ASCII characters
 
 ) [1
 
-] 
+]
+LaTeX Font Info:    Try loading font information for T1+lmtt on input line 50.
+
+("C:\Users\Howell.Y.H.Zhuang\AppData\Local\Programs\MiKTeX 2.9\tex/latex/lm\t1l
+mtt.fd"
+File: t1lmtt.fd 2009/10/30 v1.6 Font defs for Latin Modern
+)
+LaTeX Font Info:    Try loading font information for U+msa on input line 50.
+
+("C:\Users\Howell.Y.H.Zhuang\AppData\Local\Programs\MiKTeX 2.9\tex/latex/amsfon
+ts\umsa.fd"
+File: umsa.fd 2013/01/14 v3.01 AMS symbols A
+)
+LaTeX Font Info:    Try loading font information for U+msb on input line 50.
+
+("C:\Users\Howell.Y.H.Zhuang\AppData\Local\Programs\MiKTeX 2.9\tex/latex/amsfon
+ts\umsb.fd"
+File: umsb.fd 2013/01/14 v3.01 AMS symbols B
+)
+LaTeX Font Info:    Try loading font information for U+rsfs on input line 50.
+
+("C:\Users\Howell.Y.H.Zhuang\AppData\Local\Programs\MiKTeX 2.9\tex/latex/jknapp
+en\ursfs.fd"
+File: ursfs.fd 1998/03/24 rsfs font definition file (jk)
+) 
 AED: lastpage setting LastPage
 [2]
-Package atveryend Info: Empty hook `BeforeClearDocument' on input line 55.
-Package atveryend Info: Empty hook `AfterLastShipout' on input line 55.
+Package atveryend Info: Empty hook `BeforeClearDocument' on input line 53.
+Package atveryend Info: Empty hook `AfterLastShipout' on input line 53.
  (report.aux)
-Package atveryend Info: Empty hook `AtVeryEndDocument' on input line 55.
-Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 55.
+Package atveryend Info: Empty hook `AtVeryEndDocument' on input line 53.
+Package atveryend Info: Executing hook `AtEndAfterFileList' on input line 53.
 Package rerunfilecheck Info: File `report.out' has not changed.
 (rerunfilecheck)             Checksum: 3AC73F1B2B32D4CB2E34E6DE0D71B05D.
-Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 55.
+Package atveryend Info: Empty hook `AtVeryVeryEnd' on input line 53.
  ) 
 Here is how much of TeX's memory you used:
- 12552 strings out of 427669
- 175272 string characters out of 3142517
- 272277 words of memory out of 3000000
- 16514 multiletter control sequences out of 15000+200000
- 25005 words of font info for 23 fonts, out of 3000000 for 9000
+ 12648 strings out of 427669
+ 176823 string characters out of 3142517
+ 273337 words of memory out of 3000000
+ 16578 multiletter control sequences out of 15000+200000
+ 30462 words of font info for 45 fonts, out of 3000000 for 9000
  1348 hyphenation exceptions out of 8191
  41i,11n,56p,260b,330s stack positions out of 5000i,500n,10000p,200000b,50000s
 

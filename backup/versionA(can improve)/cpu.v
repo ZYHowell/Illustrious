@@ -165,8 +165,8 @@ module cpu(
 
   mem mcu(
     .clk(clk_in), 
-    .rst(rst_in),
-    .rdy(rdy_in), 
+    .rst(rst_in), 
+    .rdy(rdy_in),
     //with PC
       .fetchEn(memfetchEn), 
       .fetchAddr(memfetchAddr), 
@@ -432,6 +432,7 @@ module cpu(
       .BranchOp(BranchRsOp), 
       .BranchImm(BranchRsImm), 
       .BranchPC(BranchRsAddr),
+      .BranchTag(DispBranchTag), 
     //to branchEx
       .BranchWorkEn(BranchWorkEn), 
       .operandO(BranchOperandO), 
@@ -505,6 +506,7 @@ module cpu(
     .clk(clk_in), 
     .rst(rst_in), 
     .rdy(rdy_in),
+
     //from lsbuffer
       .LSworkEn(LSworkEn), 
       .operandO(LSoperandO), 
@@ -554,9 +556,6 @@ module cpu(
     .enComO(enROBComO), 
     .ComTagO(ROBComTagO), 
     .ComDataO(ROBComDataO), 
-    // output reg enComT, 
-    // output reg[`TagBus]     ComTagT, 
-    // output reg[`DataBus]    ComDataT, 
     //communicate with Dispatcher: about tagW
     .dispatchEn(dispatchEn), 
     .dispBranchTag(DispBranchTag), 

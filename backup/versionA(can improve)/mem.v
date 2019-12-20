@@ -28,14 +28,10 @@ module icache(
 
     integer i;
     always @ (posedge clk or posedge rst) begin
-      if (rst == `Enable) begin
-        for (i = 0; i < `memCacheSize;i = i + 1) begin
-          memInst[i] <= `dataFree;
-          memTag[i] <= `memTagFree;
-          memValid[i] <= `Invalid;
-        end
+      if (rst) begin
+        memValid <= 0;
       end else if (rdy) begin
-        if ((addEn == `Enable) && (addAddr[17:16] != 2'b11)) begin
+        if (addEn && (addAddr[17:16] != 2'b11)) begin
           memInst[addAddr[`memAddrIndexBus]] <= addInst;
           memTag[addAddr[`memAddrIndexBus]] <= addAddr[`memAddrTagBus];
           memValid[addAddr[`memAddrIndexBus]] <= `Valid;
@@ -99,7 +95,12 @@ module mem(
     always @ (posedge clk) begin
       if (rst) begin
         status <= `IsFree;
-        Waiting <= 0;
+        for (i = 0;i < 2;i = i + 1) begin
+          Waiting[i] <= `NotUsing;
+          WaitingRW[i] <= `Read;
+          WaitingAddr[i] <= `addrFree;
+          WaitingLen[i] <= `ZeroLen;
+        end
         WaitingData <= `dataFree;
         RW <= `Read;
         stage <= `ZeroLen;

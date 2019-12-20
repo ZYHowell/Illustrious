@@ -1,9 +1,6 @@
 \documentclass[12pt,letterpaper]{article}
 \usepackage{preamble}
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%% Edit These for yourself
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newcommand\course{MS108}
 \newcommand\userID{518030910440}
 \setcounter{section}{0}
@@ -26,7 +23,7 @@
 
     My 2-way associative cache is stored in /backup/Units. 
 \subsection{Branch Policy}
-    I first design a one without branch prediction and its policy is stall. Since branch instructions holds about sixth of all instructions, 
+    I first design a one without branch prediction and its policy is stall. Since branch instructions hold about sixth of all instructions, 
     it stalls frequently and is not so OOO. This one can run with respect to a frequency of 100MHz. 
 
     Then I finish a one with branch prediction. Like what BOOM(Berkeley Out-of-Order Machine) does, it uses shadow registers and branch bits. 
@@ -35,8 +32,9 @@
 
     This one can run with respect to a frequency of 70MHz. 
 
-    This sounds cool, but when I really implemented it, I found that the FPGA is almost full(99\% LUT used), since to deal with the 
-    boardcast of branch instruction, a large amount of logic units are in need. (let alone that the shadow registers are huge)
+    This sounds cool, but when I really implemented it, I found that the LUT uses much, making the delay high, 
+    since to deal with the boardcast of branch instruction, a large amount of logic units are in need. 
+    (let alone the shadow registers also use considerable sources)
 
     But it runs faster and is really cool. 
 \section{Summary}
@@ -49,7 +47,7 @@
     (the one whose branch policy is stall) makes sense. 
 \section{Reference}
 
-1. https://github.com/riscv-boom/riscv-boom, an out of order RISC-V CPU using chisel, with branch bits(named branch mask there)
+1. \url{https://github.com/riscv-boom/riscv-boom}, an out of order RISC-V CPU using chisel, with branch bits(named branch mask there)
 
-2. http://www.kroening.com/diplom/diplom/main003.html, details about the hardware of Tomasulo Architecture.
+2. \url{http://www.kroening.com/diplom/diplom/main003.html}, details about the hardware of Tomasulo Architecture.
 \end{document}

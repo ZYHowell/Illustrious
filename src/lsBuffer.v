@@ -106,7 +106,7 @@ module lsBuffer(
 
     always @(*) begin
       allocEn = 0;
-      allocEn[tail] = LSen ? `Enable : `Disable;
+      allocEn[tail] = LSen;
       AllocPostImm = LSimm;
       AllocPostOp = LSop;
       AllocPostOperandO = LSoperandO;
@@ -132,14 +132,14 @@ module lsBuffer(
         opCode <= `NOP; 
       end else if (rdy) begin
         if (LSen) begin
-          empty[tail]   <= 0;
+          empty[tail] <= 0;
           tail <= (tail == `LSrsSize - 1) ? 0 : tail + 1;
         end
         if (LSdone) begin
           head <= judgeIssue;
           empty[head] <= 1;
         end 
-        if ((LSreadEn == `Enable) && canIssue) begin
+        if (LSreadEn & canIssue) begin
           LSworkEn <= `Enable;
           operandO <= issueOperandO[judgeIssue];
           operandT <= issueOperandT[judgeIssue];

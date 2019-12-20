@@ -59,23 +59,16 @@ module cpu(
     wire [`TagBus]  RegWrtTag;
 
     wire ALUrsEn;
-    wire [`DataBus] ALUrsOperandO, ALUrsOperandT;
-    wire [`TagBus]  ALUrsTagO, ALUrsTagT, ALUrsTagW;
-    wire [`NameBus] ALUrsNameW;
-    wire [`OpBus]   ALUrsOp;
-    wire [`InstAddrBus] ALUrsAddr;
+    wire [`DataBus] rsOperandO, rsOperandT;
+    wire [`TagBus]  rsTagO, rsTagT, rsTagW;
+    wire [`NameBus] rsNameW;
+    wire [`OpBus]   rsOp;
+    wire [`InstAddrBus] rsAddr;
 
     wire BranchRsEn;
-    wire [`DataBus] BranchRsOperandO, BranchRsOperandT, BranchRsImm;
-    wire [`TagBus]  BranchRsTagO, BranchRsTagT;
-    wire [`OpBus]   BranchRsOp;
-    wire [`InstAddrBus] BranchRsAddr;
+    wire [`DataBus] rsImm;
 
     wire LSbufEn;
-    wire [`DataBus] LSbufOperandO, LSbufOperandT, LSbufImm;
-    wire [`TagBus]  LSbufTagO, LSbufTagT, LSbufTagW;
-    wire [`NameBus] LSbufNameW;
-    wire [`OpBus]   LSbufOp;
 
     //output of regf
     wire [`DataBus] regDataO, regDataT;
@@ -261,33 +254,19 @@ module cpu(
       .wrtName(RegWrtName), 
     //to ALUrs
       .ALUen(ALUrsEn), 
-      .ALUoperandO(ALUrsOperandO), 
-      .ALUoperandT(ALUrsOperandT), 
-      .ALUtagO(ALUrsTagO), 
-      .ALUtagT(ALUrsTagT),
-      .ALUtagW(ALUrsTagW), 
-      .ALUnameW(ALUrsNameW), 
-      .ALUop(ALUrsOp), 
-      .ALUaddr(ALUrsAddr), 
+      .operandO(rsOperandO), 
+      .operandT(rsOperandT), 
+      .tagO(rsTagO), 
+      .tagT(rsTagT),
+      .tagW(rsTagW), 
+      .nameW(rsNameW), 
+      .op(rsOp), 
+      .addr(rsAddr), 
     //to BranchRS
       .BranchEn(BranchRsEn), 
-      .BranchOperandO(BranchRsOperandO), 
-      .BranchOperandT(BranchRsOperandT), 
-      .BranchTagO(BranchRsTagO), 
-      .BranchTagT(BranchRsTagT), 
-      .BranchOp(BranchRsOp), 
-      .BranchImm(BranchRsImm),
-      .BranchAddr(BranchRsAddr),  
+      .Imm(rsImm),
     //to LSbuffer
-      .LSen(LSbufEn), 
-      .LSoperandO(LSbufOperandO), 
-      .LSoperandT(LSbufOperandT), 
-      .LStagO(LSbufTagO), 
-      .LStagT(LSbufTagT),
-      .LStagW(LSbufTagW), 
-      .LSnameW(LSbufNameW), 
-      .LSimm(LSbufImm), 
-      .LSop(LSbufOp)
+      .LSen(LSbufEn)
   );
 
   Regfile regf(
@@ -330,14 +309,14 @@ module cpu(
       .LSdata(LSROBdata), 
     //from dispatcher
       .ALUen(ALUrsEn), 
-      .ALUoperandO(ALUrsOperandO), 
-      .ALUoperandT(ALUrsOperandT), 
-      .ALUtagO(ALUrsTagO), 
-      .ALUtagT(ALUrsTagT),
-      .ALUtagW(ALUrsTagW),
-      .ALUnameW(ALUrsNameW), 
-      .ALUop(ALUrsOp), 
-      .ALUaddr(ALUrsAddr), 
+      .ALUoperandO(rsOperandO), 
+      .ALUoperandT(rsOperandT), 
+      .ALUtagO(rsTagO), 
+      .ALUtagT(rsTagT),
+      .ALUtagW(rsTagW),
+      .ALUnameW(rsNameW), 
+      .ALUop(rsOp), 
+      .ALUaddr(rsAddr), 
 
     //to ALU
       .ALUworkEn(ALUworkEn), 
@@ -384,13 +363,13 @@ module cpu(
       .LSdata(LSROBdata),
     //input from dispatcher
       .BranchEn(BranchRsEn), 
-      .BranchOperandO(BranchRsOperandO), 
-      .BranchOperandT(BranchRsOperandT), 
-      .BranchTagO(BranchRsTagO), 
-      .BranchTagT(BranchRsTagT), 
-      .BranchOp(BranchRsOp), 
-      .BranchImm(BranchRsImm), 
-      .BranchPC(BranchRsAddr),
+      .BranchOperandO(rsOperandO), 
+      .BranchOperandT(rsOperandT), 
+      .BranchTagO(rsTagO), 
+      .BranchTagT(rsTagT), 
+      .BranchOp(rsOp), 
+      .BranchImm(rsImm), 
+      .BranchPC(rsAddr),
     //to branchEx
       .BranchWorkEn(BranchWorkEn), 
       .operandO(BranchOperandO), 
@@ -426,14 +405,14 @@ module cpu(
       .LSdata(LSROBdata),
     //input from dispatcher
       .LSen(LSbufEn), 
-      .LSoperandO(LSbufOperandO), 
-      .LSoperandT(LSbufOperandT), 
-      .LStagO(LSbufTagO), 
-      .LStagT(LSbufTagT), 
-      .LStagW(LSbufTagW), 
-      .LSnameW(LSbufNameW), 
-      .LSop(LSbufOp), 
-      .LSimm(LSbufImm), 
+      .LSoperandO(rsOperandO), 
+      .LSoperandT(rsOperandT), 
+      .LStagO(rsTagO), 
+      .LStagT(rsTagT), 
+      .LStagW(rsTagW), 
+      .LSnameW(rsNameW), 
+      .LSop(rsOp), 
+      .LSimm(rsImm), 
     //from the LS
     .LSreadEn(LSunwork), 
     .LSdone(LSoutEn),

@@ -20,6 +20,7 @@ module BRsLine(
     input wire[`OpBus]      allocOp, 
     input wire[`DataBus]    allocImm, 
     input wire[`InstAddrBus]allocPC, 
+    input wire[`BranchTagBus] allocBranchTag, 
     //
     input wire empty, 
     output wire ready, 
@@ -37,15 +38,18 @@ module BRsLine(
     reg[`InstAddrBus] rsPC;
     reg[`OpBus]   rsOp;
     reg[`DataBus] rsImm;
+    reg[`BranchTagBus] BranchTag;
     wire[`TagBus] nxtPosTagO, nxtPosTagT;
     wire[`DataBus] nxtPosDataO, nxtPosDataT;
+    wire[`BranchTagBus] nxtPosBranchTag;
 
-    assign ready = ~empty & (nxtPosTagO == `tagFree) & (nxtPosTagT == `tagFree);
+    assign ready = (~empty & (nxtPosTagO == `tagFree) & (nxtPosTagT == `tagFree)) && !(nxtPosBranchTag);
     assign issueOperandO = (nxtPosTagO == `tagFree) ? nxtPosDataO : rsDataO;
     assign issueOperandT = (nxtPosTagT == `tagFree) ? nxtPosDataT : rsDataT;
     assign issueOp = rsOp;
     assign issueImm = rsImm;
     assign issuePC = rsPC;
+    assign nxtPosBranchTag = (bFreeEn & BranchTag[bFreeNum]) ? (BranchTag ^ (1 << bFreeNum)) : BranchTag;
 
     nxtPosCal nxtPosCalO(
       .enWrtO(enWrtO), 
@@ -80,6 +84,7 @@ module BRsLine(
         rsPC    <= `addrFree;
         rsImm   <= `dataFree;
         rsOp    <= `NOP;
+        BranchTag <= 0;
       end else if (rdy) begin
         if (allocEn) begin
           rsTagO  <= allocTagO;
@@ -89,11 +94,13 @@ module BRsLine(
           rsPC    <= allocPC;
           rsImm   <= allocImm;
           rsOp    <= allocOp;
+          BranchTag <= allocBranchTag;
         end else begin
           rsTagO  <= nxtPosTagO;
           rsTagT  <= nxtPosTagT;
           rsDataO <= nxtPosDataO;
           rsDataT <= nxtPosDataT;
+          BranchTag <= nxtPosBranchTag;
         end
       end
     end
@@ -119,6 +126,7 @@ module BranchRS(
     input wire[`OpBus]          BranchOp, 
     input wire[`DataBus]        BranchImm, 
     input wire[`InstAddrBus]    BranchPC, 
+    input wire[`BranchTagBus]   BranchTag, 
     //to branchEx
     output reg BranchWorkEn, 
     output reg[`DataBus]        operandO, 
@@ -136,6 +144,14 @@ module BranchRS(
     reg [`branchRsSize - 1 : 0] empty;
 
     reg[`branchRsSize - 1 : 0] allocEn;
+    reg[`DataBus]    AllocPostOperandO; 
+    reg[`DataBus]    AllocPostOperandT; 
+    reg[`TagBus]     AllocPostTagO; 
+    reg[`TagBus]     AllocPostTagT; 
+    reg[`OpBus]      AllocPostOp; 
+    reg[`DataBus]    AllocPostImm; 
+    reg[`InstAddrBus]AllocPostAddr; 
+    reg[`BranchTagBus] AllocBranchTag;
 
     wire[`DataBus] issueOperandO[`branchRsSize - 1 : 0];
     wire[`DataBus] issueOperandT[`branchRsSize - 1 : 0];
@@ -167,13 +183,14 @@ module BranchRS(
           .WrtDataT(LSdata), 
           //
           .allocEn(allocEn[j]), 
-          .allocOperandO(BranchOperandO), 
-          .allocOperandT(BranchOperandT), 
-          .allocTagO(BranchTagO), 
-          .allocTagT(BranchTagT),
-          .allocOp(BranchOp), 
-          .allocImm(BranchImm),
-          .allocPC(BranchPC), 
+          .allocOperandO(AllocPostOperandO), 
+          .allocOperandT(AllocPostOperandT), 
+          .allocTagO(AllocPostTagO), 
+          .allocTagT(AllocPostTagT),
+          .allocOp(AllocPostOp), 
+          .allocImm(AllocPostImm),
+          .allocPC(AllocPostAddr), 
+          .allocBranchTag(AllocBranchTag), 
           //
           .empty(empty[j]), 
           .ready(ready[j]), 
@@ -193,6 +210,14 @@ module BranchRS(
     always @(*) begin
       allocEn = 0;
       allocEn[tail] = BranchEn;
+      AllocPostImm = BranchImm;
+      AllocPostAddr = BranchPC;
+      AllocPostOp = BranchOp;
+      AllocPostOperandO = BranchOperandO;
+      AllocPostOperandT = BranchOperandT;
+      AllocPostTagO = BranchTagO;
+      AllocPostTagT = BranchTagT;
+      AllocBranchTag = BranchTag;
     end
 
     always @ (posedge clk) begin
@@ -207,7 +232,7 @@ module BranchRS(
         opCode <= `NOP; 
         PC <= `addrFree;
         bNum <= 0;
-      end else if (rdy) begin
+      end else begin
         bNum <= head;
         if (BranchEn) begin
           empty[tail] <= 0;
@@ -224,6 +249,11 @@ module BranchRS(
           head <= (head == `branchRsSize - 1) ? 0 : head + 1;
         end else begin
           BranchWorkEn <= `Disable;
+          operandO <= `dataFree;
+          operandT <= `dataFree;
+          opCode <= `NOP;
+          PC <= `addrFree;
+          imm <= `dataFree;
         end
       end
     end

@@ -197,9 +197,7 @@ module BranchRS(
         opCode <= `NOP; 
         PC <= `addrFree;
       end else if (rdy) begin
-        if (BranchEn) begin
-          empty <= 0;
-        end
+        empty <= ~BranchEn;
         if (canIssue) begin
           BranchWorkEn <= `Enable;
           operandO <= issueOperandO;

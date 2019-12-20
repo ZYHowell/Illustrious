@@ -1,8 +1,5 @@
 `include "defines.v"
-//I notice that the ROB does not need to receive those from LS, 
-//since my LS executes in order. 
-//The only problem is that precise exception is not supported in such version, 
-//maybe I will fix it in few generations later. 
+
 module ROB(
     input wire clk, 
     input wire rst, 
@@ -44,6 +41,8 @@ module ROB(
     reg[`ROBsize - 1 : 0] valid;
 
     reg[`rsSize - 1 : 0] allocEnO;//, allocEnT;
+    reg[`DataBus]     AllocPostDataO;//,AllocPostDataT; 
+    reg[`TagBus]      AllocPostTagO;//,AllocPostTagT; 
 
     reg [`TagRootBus]   head, tail;
     wire canIssue;
@@ -82,19 +81,16 @@ module ROB(
 
         always @(posedge clk) begin
           if (rst) begin
+            empty[j] <= 1'b1;
+
             valid[j] <= 0;
             rsBranchTag[j] <= 0;
+
             rsData[j] <= `dataFree;
             rsTagW[j] <= `tagFree;
-            empty[j] <= 1'b1;
           end else if (rdy) begin
             if (headMove & (j == head)) empty[j] <= 1;
             else empty[j] <= nxtPosEmpty[j];
-            
-            if (allocEnO[j]) begin
-              rsData[j] <= WrtDataO;
-              rsTagW[j] <= WrtTagO;
-            end
 
             if (dispatchEn && (j == tail)) begin
               rsBranchTag[j] <= dispBranchTag;
@@ -107,14 +103,22 @@ module ROB(
                 valid[j] <= valid[j] & ~discard[j];
               end
             end
+
+            if (allocEnO[j]) begin
+              rsData[j] <= AllocPostDataO;
+              rsTagW[j] <= AllocPostTagO;
+            end
           end
         end
+
       end
     endgenerate
 
     always @(*) begin
       allocEnO = 0;
       allocEnO[WrtTagO[`TagRootBus]] = enWrtO;
+      AllocPostDataO = WrtDataO;
+      AllocPostTagO = WrtTagO;
     end
 
     always @ (posedge clk) begin
@@ -125,6 +129,8 @@ module ROB(
         ComTagO<= `tagFree; 
         ComDataO <= `dataFree; 
       end else if (rdy) begin
+        //if (enWrtT) empty[WrtTagT[`TagRootBus]] <= 0;
+        //give the dispatcher a tag(at post edge)
         if (dispatchEn)
           tail <= (tail + 1 < `ROBsize) ? tail + 1 : 0;
         //commit below

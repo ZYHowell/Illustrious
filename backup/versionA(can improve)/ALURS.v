@@ -178,6 +178,14 @@ module ALUrs(
     wire [`rsSize - 1 : 0] issueRS;
 
     reg[`rsSize - 1 : 0] allocEn;
+    reg[`DataBus]    AllocPostOperandO; 
+    reg[`DataBus]    AllocPostOperandT; 
+    reg[`TagBus]     AllocPostTagO; 
+    reg[`TagBus]     AllocPostTagT;
+    reg[`TagBus]     AllocPostTagW;
+    reg[`OpBus]      AllocPostOp; 
+    reg[`InstAddrBus]AllocPostAddr; 
+    reg[`BranchTagBus] AllocBranchTag;
 
     wire[`DataBus] issueOperandO[`rsSize - 1 : 0];
     wire[`DataBus] issueOperandT[`rsSize - 1 : 0];
@@ -209,14 +217,14 @@ module ALUrs(
           .WrtDataT(LSdata), 
           //
           .allocEn(allocEn[j]), 
-          .allocOperandO(ALUoperandO), 
-          .allocOperandT(ALUoperandT), 
-          .allocTagO(ALUtagO), 
-          .allocTagT(ALUtagT),
-          .allocTagW(ALUtagW),
-          .allocOp(ALUop), 
-          .allocImm(ALUaddr), 
-          .allocBranchTag(BranchTag), 
+          .allocOperandO(AllocPostOperandO), 
+          .allocOperandT(AllocPostOperandT), 
+          .allocTagO(AllocPostTagO), 
+          .allocTagT(AllocPostTagT),
+          .allocTagW(AllocPostTagW),
+          .allocOp(AllocPostOp), 
+          .allocImm(AllocPostAddr), 
+          .allocBranchTag(AllocBranchTag), 
           //
           .empty(empty[j]), 
           .ready(ready[j]), 
@@ -238,13 +246,21 @@ module ALUrs(
     always @(*) begin
       allocEn = 0;
       allocEn[ALUtagW[`TagRootBus]] = ALUen;
+      AllocPostAddr = ALUaddr;
+      AllocPostOp = ALUop;
+      AllocPostOperandO = ALUoperandO;
+      AllocPostOperandT = ALUoperandT;
+      AllocPostTagO = ALUtagO;
+      AllocPostTagT = ALUtagT;
+      AllocPostTagW = ALUtagW;
+      AllocBranchTag = BranchTag;
     end
 
     always @ (posedge clk) begin
       if (rst) begin
         empty <= {`rsSize{1'b1}};
         instBranchTag <= 0;
-      end else if (rdy) begin
+      end else begin
         if (ALUen) empty[ALUtagW[`TagRootBus]] <= 0;
         if (issueRS) begin
           for (i = 0;i < `rsSize;i = i + 1) begin

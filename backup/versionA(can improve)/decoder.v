@@ -5,11 +5,11 @@
 `include "defines.v"
 
 module decoder(
-    input clk, 
-    input rst,
-    input rdy, 
-    input stall, 
-    input DecEn, 
+    input wire clk, 
+    input wire rst,
+    input wire rdy, 
+    input wire stall, 
+    input wire DecEn, 
     input wire[`InstAddrBus]    instPC,
     input wire[`InstBus]        inst,
 
@@ -27,7 +27,7 @@ module decoder(
     output reg[`DataBus]        Simm, 
     output reg[`DataBus]        Bimm, 
     //about branch, I control it in decoder rather than BranchRS, maybe this is useful to deal with LS too. 
-    input wire                  bFreeEn, 
+    input wire bFreeEn, 
     input wire[1:0]             bFreeNum, 
 
     //notice that the BranchTag of output here does not consider the result of the Branch FU

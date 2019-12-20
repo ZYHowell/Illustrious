@@ -6,10 +6,10 @@ MS108, Computer Architecture project in ACM class
 * (modified) Tomasulo algorithm (with ROB and branch bits)
 * Pipeline: 4 stages
 * A 512B I-cache, directly mapped
-* Branch Prediction supported
+* Branch prediction supported and Virtual regfile to support it. 
 * Precise Interruption unsupported
-* Pass Implementation with respect to 50MHz
-* The aim of this version is to explore how conditional execution and branch bits work in modern CPU(which becomes condition code in modern instruction sets), and the organization is **really really too complex.** <font size=1>I've found that some reg are not needed, which the vivado opt can often notice too, but it is deceived by the codes in chaos. </font>
+* Pass Implementation with respect to 70MHz
+* The aim of this version is to explore how branch bits work.Though BOOM has already taped out a CPU with such branch bits, the organization is **really complex for a homework.** <font size=1>I've found that some reg are not needed, which the vivado opt can often notice too, but it is deceived by the codes in chaos. </font>
 
 ##### Version B: (need to speed up)
 

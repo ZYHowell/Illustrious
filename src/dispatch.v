@@ -23,36 +23,18 @@ module dispatcher(
     output reg enWrt, 
     output reg[`TagBus]         wrtTag, 
     output reg[`NameBus]        wrtName, 
-    //to ALUrs
-    output reg                  ALUen, 
-    output reg[`DataBus]        ALUoperandO, 
-    output reg[`DataBus]        ALUoperandT, 
-    output reg[`TagBus]         ALUtagO, 
-    output reg[`TagBus]         ALUtagT,
-    output reg[`TagBus]         ALUtagW, 
-    output reg[`NameBus]        ALUnameW, 
-    output reg[`OpBus]          ALUop, 
-    output reg[`InstAddrBus]    ALUaddr, 
-    //to BranchRS
+    output reg ALUen, 
     output reg BranchEn, 
-    output reg[`DataBus]        BranchOperandO, 
-    output reg[`DataBus]        BranchOperandT, 
-    output reg[`TagBus]         BranchTagO, 
-    output reg[`TagBus]         BranchTagT, 
-    output reg[`OpBus]          BranchOp, 
-    output reg[`DataBus]        BranchImm, 
-    output reg[`InstAddrBus]    BranchAddr, 
-    //to LSbuffer
     output reg LSen, 
-    output reg[`DataBus]        LSoperandO, 
-    output reg[`DataBus]        LSoperandT, 
-    output reg[`TagBus]         LStagO, 
-    output reg[`TagBus]         LStagT,
-    output reg[`TagBus]         LStagW, 
-    output reg[`NameBus]        LSnameW, 
-    output reg[`DataBus]        LSimm, 
-    output reg[`OpBus]          LSop
-
+    output reg[`DataBus] operandO, 
+    output reg[`DataBus] operandT, 
+    output reg[`TagBus]  tagO, 
+    output reg[`TagBus]  tagT,
+    output reg[`TagBus]  tagW, 
+    output reg[`NameBus] nameW, 
+    output reg[`OpBus]   op, 
+    output reg[`InstAddrBus] addr, 
+    output reg[`DataBus] Imm
 );
 
     wire [`TagBus]      finalTag;
@@ -69,130 +51,117 @@ module dispatcher(
 
     //assign the tag and acquire required datas.
     always @ (*) begin
-      ALUaddr = instAddr;
-      BranchAddr = instAddr;
+      addr = instAddr;
       ALUen = `Disable;
-      ALUop = `NOP;
-      ALUoperandO = `dataFree;
-      ALUoperandT = `dataFree;
-      ALUtagO = `tagFree;
-      ALUtagT = `tagFree;
-      ALUtagW = `tagFree;
-      ALUnameW = `nameFree;
       BranchEn = `Disable;
-      BranchOperandO = `dataFree;
-      BranchOperandT = `dataFree;
-      BranchTagO = `tagFree;
-      BranchTagT = `tagFree;
-      BranchOp = `NOP;
-      BranchImm = `dataFree;
+      op = `NOP;
+      operandO = `dataFree;
+      operandT = `dataFree;
+      tagO = `tagFree;
+      tagT = `tagFree;
+      tagW = `tagFree;
+      nameW = `nameFree;
+      Imm = `dataFree;
       LSen = `Disable;
-      LSoperandO = `dataFree;
-      LSoperandT = `dataFree;
-      LStagO = `tagFree;
-      LStagT = `tagFree;
-      LStagW = `tagFree;
-      LSnameW = `nameFree;
-      LSimm = `dataFree;
-      LSop = `NOP;
+      
       enWrt = `Disable;
       case(opClass)
         `ClassLUI: begin
           ALUen = `Enable;
-          ALUop = opCode;
-          ALUoperandO = regDataO;
-          ALUoperandT = Uimm;
-          ALUtagO = regTagO;
-          ALUtagT = `tagFree;
-          ALUtagW = finalTag;
-          ALUnameW = rdName;
+          op = opCode;
+          operandO = regDataO;
+          operandT = Uimm;
+          tagO = regTagO;
+          tagT = `tagFree;
+          tagW = finalTag;
+          nameW = rdName;
           enWrt = `Enable;
         end
         `ClassAUIPC: begin
           ALUen = `Enable;
-          ALUop = opCode;
-          ALUoperandO = regDataO;
-          ALUoperandT = Uimm;
-          ALUtagO = regTagO;
-          ALUtagT = `tagFree;
-          ALUtagW = finalTag;
-          ALUnameW = rdName;
+          op = opCode;
+          operandO = regDataO;
+          operandT = Uimm;
+          tagO = regTagO;
+          tagT = `tagFree;
+          tagW = finalTag;
+          nameW = rdName;
           enWrt = `Enable;
         end
         `ClassJAL: begin
           ALUen = `Enable;
-          ALUop = opCode;
-          ALUoperandO = instAddr;
-          ALUoperandT = Jimm;
-          ALUtagO = `tagFree;
-          ALUtagT = `tagFree;
-          ALUtagW = finalTag;
-          ALUnameW = rdName;
+          op = opCode;
+          operandO = instAddr;
+          operandT = Jimm;
+          tagO = `tagFree;
+          tagT = `tagFree;
+          tagW = finalTag;
+          nameW = rdName;
           enWrt = `Enable;
         end
         `ClassJALR: begin
           ALUen = `Enable;
-          ALUop = opCode;
-          ALUoperandO = regDataO;
-          ALUoperandT = imm;
-          ALUtagO = regTagO;
-          ALUtagT = `tagFree;
-          ALUtagW = finalTag;
-          ALUnameW = rdName;
+          op = opCode;
+          operandO = regDataO;
+          operandT = imm;
+          tagO = regTagO;
+          tagT = `tagFree;
+          tagW = finalTag;
+          nameW = rdName;
           enWrt = `Enable;
         end
         `ClassB:    begin
           BranchEn = `Enable;
-          BranchOperandO = regDataO;
-          BranchOperandT = regDataT;
-          BranchTagO = regTagO;
-          BranchTagT = regTagT;
-          BranchOp = opCode;
-          BranchImm = Bimm;
+          operandO = regDataO;
+          operandT = regDataT;
+          tagO = regTagO;
+          tagT = regTagT;
+          op = opCode;
+          Imm = Bimm;
         end
         `ClassLD:   begin
           LSen = `Enable;
-          LSoperandO = regDataO;
-          LSoperandT = `dataFree;
-          LStagO = regTagO;
-          LStagT = `tagFree;
-          LStagW = finalTag;
-          LSnameW = rdName;
-          LSimm = imm;
-          LSop = opCode;
+          operandO = regDataO;
+          operandT = `dataFree;
+          tagO = regTagO;
+          tagT = `tagFree;
+          tagW = finalTag;
+          nameW = rdName;
+          Imm = imm;
+          op = opCode;
           enWrt = `Enable;
         end
         `ClassST:   begin
           LSen = `Enable;
-          LSoperandO = regDataO;
-          LSoperandT = regDataT;
-          LStagO = regTagO;
-          LStagT = regTagT;
-          LStagW = finalTag;
-          LSnameW = `nameFree;
-          LSimm = Simm;
-          LSop = opCode;
+          operandO = regDataO;
+          operandT = regDataT;
+          tagO = regTagO;
+          tagT = regTagT;
+          tagW = finalTag;
+          nameW = `nameFree;
+          Imm = Simm;
+          op = opCode;
         end
         `ClassRI:   begin
           ALUen = `Enable;
-          ALUop = opCode;
-          ALUoperandO = regDataO;
-          ALUoperandT = imm;
-          ALUtagO = regTagO;
-          ALUtagT = `tagFree;
-          ALUtagW = finalTag;
-          ALUnameW = rdName;
+          op = opCode;
+          operandO = regDataO;
+          operandT = imm;
+          tagO = regTagO;
+          tagT = `tagFree;
+          tagW = finalTag;
+          nameW = rdName;
           enWrt = `Enable;
         end
         `ClassRR:   begin
           ALUen = `Enable;
-          ALUop = opCode;
-          ALUoperandO = regDataO;
-          ALUoperandT = regDataT;
-          ALUtagO = regTagO;
-          ALUtagT = regTagT;
-          ALUtagW = finalTag;
-          ALUnameW = rdName;
+          op = opCode;
+          operandO = regDataO;
+          operandT = regDataT;
+          tagO = regTagO;
+          tagT = regTagT;
+          tagW = finalTag;
+          nameW = rdName;
           enWrt = `Enable;
         end
         default:;

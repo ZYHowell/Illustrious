@@ -20,58 +20,58 @@ module regfileLine(
   output wire[`TagBus] tagS
 );
   reg[`TagBus] allTag[3:0];
-  reg[`DataBus] allData[3:0];
+  reg[`DataBus] Data;
   wire[`TagBus] nxtPosTag[3:0];
-  wire[`DataBus] nxtPosData[3:0];
+  wire[`DataBus] nxtPosData;
   reg[1:0] head, tail;
   wire[1:0] nxtHead, nxtTail;
 
   assign nxtHead = head < 3 ? head + 1 : 0;
   assign nxtTail = tail < 3 ? tail + 1 : 0;
 
-  assign dataS = nxtPosData[tail];
+  assign dataS = nxtPosData;
   assign tagS = nxtPosTag[tail];
   generate
     genvar j;
     for(j = 0;j < 4;j = j + 1) begin: nxtPosCounter
-      nxtPosCal nxtPosCal(
-        .enWrtO(enWrtO), 
-        .WrtTagO(WrtTagO), 
-        .WrtDataO(WrtDataO), 
-        .enWrtT(enWrtT), 
-        .WrtTagT(WrtTagT), 
-        .WrtDataT(WrtDataT), 
-        .dataNow(allData[j]), 
-        .tagNow(allTag[j]), 
-        .dataNxtPos(nxtPosData[j]),
-        .tagNxtPos(nxtPosTag[j])
-      );
+      assign nxtPosTag[j] = (enWrtO & (allTag[j] == WrtTagO)) ? `tagFree : 
+                            (enWrtT & (allTag[j] == WrtTagT)) ? `tagFree :
+                            allTag[j];
     end
   endgenerate
+  assign nxtPosData = (enWrtO & (allTag[head] == WrtTagO)) ? WrtDataO : 
+                      (enWrtT & (allTag[head] == WrtTagT)) ? WrtDataT :
+                      Data;
 
   integer i;
   always @(posedge clk) begin
     if (rst) begin
       for(i = 0;i < 4;i = i + 1) begin
         allTag[i] <= `tagFree;
-        allData[i] <= `dataFree;
       end
       head <= 0;
       tail <= 0;
+      Data <= `dataFree;
     end else if (rdy) begin
       for (i = 0; i < 4;i = i + 1) begin
         allTag[i] <= (renamEn && (i == tail)) ? renamTag : nxtPosTag[i];
-        allData[i] <= nxtPosData[i];
       end
+      Data <= nxtPosData;
       
-      if (~misTaken & branchDeeper) begin
+      if (branchFree & ~misTaken) begin
+        head <= nxtHead;
+      end
+      if (misTaken) begin
+        tail <= head;
+      end else if (branchDeeper) begin
+        tail <= nxtTail;
         allTag[nxtTail] <= nxtPosTag[tail];
-        allData[nxtTail] <= nxtPosData[tail];
       end
       //if the inst is a branchInst, it will send branchDeeper without renamEn, so the nxtTail can just copy the current Tag and data. 
     end
   end
   //notice that the branch tag can only be a continuous set of 1:000//001,010,100//011,110,101//111//
+
 endmodule
 module Regfile(
     input wire clk, 
