@@ -5,46 +5,49 @@
 \newcommand\userID{518030910440}
 \setcounter{section}{0}
 \begin{document}
-\textbf{\Large RISC-V Report}
+%\textbf{\Large RISC-V Report}
 \section{Abstract}
-    This is a report of the project of MS108, computer architecture homework implementing a simplified CPU supporting some of the RISC-V 
-    A extension instruction sets, and my solution is based on Tomasulo algorithm. 
+    This is a report of the project of MS108 homework implementing a simplified CPU supporting some of the RISC-V instruction sets. 
+    My solution is based on Tomasulo algorithm. 
 \section{Feature}
-\subsection{Tomasulo architecture}
-    The Tomasulo architecture aims to make the execution be Out-of-Order(abbreviated by OOO), 
-    and solves the problem triggered by OOO, such as WAR, WAW, and precise execution. The key is to use renaming, 
-    reservation station(abbreviated by RS) and ROB to deal with those problem. 
+\subsection{Tomasulo}
+    The Tomasulo algorithm aims to execute Out-of-Order(abbreviated OoO), 
+    and solve problems triggered by OoO, such as WAR, WAW, and precise execution. The key is to use renaming, 
+    reservation station(abbreviated RS) and ROB. 
 
-    In my design, each FU has its own RS, and the size of each RS is different, since some instructions 
-    take longer time to execute. Renaming is based on the line where the instruction is in ROB. 
+    In my design, each FU has its own RS, and the size of each RS is different. 
+    Renaming is based on where the instruction is in ROB. 
 \subsection{Cache}
-    I implemented a 512B I-cache in my project, and later I tried to make it a 2-way associative one, but there is almost no improvement. 
-    I guess this is because the testbench only contains short codes, and a 512B I-cache can almost cover the total program. 
+    I implemented a 512B I-cache in my project, then I made it a 2-way associative one, but there is little improvement. 
+    I guess this is because the testbench only contains short codes. 
 
-    My 2-way associative cache is stored in /backup/Units. 
+    My 2-way associative cache is in /backup/Units. 
 \subsection{Branch Policy}
-    I first design a one without branch prediction and its policy is stall. Since branch instructions hold about sixth of all instructions, 
-    it stalls frequently and is not so OOO. This one can run with respect to a frequency of 100MHz. 
+    I first designed a one without branch prediction and its policy is stall. Since branch instructions hold about sixth of all instructions, 
+    it stalls frequently and is not so OoO. This one can run with a frequency of 100MHz. 
 
-    Then I finish a one with branch prediction. Like what BOOM(Berkeley Out-of-Order Machine) does, it uses shadow registers and branch bits. 
-    Each instruction is given a branch mask to evidence if it follows an in-flight branch instruction. If a branch instruction is executed, 
-    it boardcasts to update other instructions' branch mask. A Load/Store instruction can execute only when its branch mask is cleared. 
+    Then I made one with branch prediction. Like what BOOM(Berkeley Out-of-Order Machine) does, it uses shadow registers and branch bits. 
+    Each instruction is given a branch mask to evidence if it follows in-flight branch instructions. If a branch instruction is executed, 
+    it boardcasts to update others' branch masks. Only Execute load/store instructions with cleared branch mask. 
+    This one can run with a frequency of 70MHz. 
 
-    This one can run with respect to a frequency of 70MHz. 
+    This sounds cool, but when I implemented it, I found the delay high, since to deal with the boardcast of branch instructions, 
+    a large amount of logic units are in need. (let alone the shadow registers use considerable sources too)
 
-    This sounds cool, but when I really implemented it, I found that the LUT uses much, making the delay high, 
-    since to deal with the boardcast of branch instruction, a large amount of logic units are in need. 
-    (let alone the shadow registers also use considerable sources)
-
-    But it runs faster and is really cool. 
+    But it runs faster and is really COOOOOOOOL. 
 \section{Summary}
-    The main problem I face is that I do not understand how to make improvement in organization level. Once I notice that I repeat 
-    calculating one same thing in each RS, so I pick it out: calculate it outside and send the result to each RS. 
+    1. The main problem I face is that I do not understand how to make improvement in organization level. Once I noticed that I had repeated 
+    calculating one same thing in each RS, so I picked it out: calculate it outside and send the result to each RS. 
 
-    The result is crazy: the number of LUT increases considerably. 
+    The result was crazy: the number of LUT increased considerably. 
 
-    The Tomasulo is efficient especially there is a set of Load/Store instructions. In such tests, even the naive version
-    (the one whose branch policy is stall) makes sense. 
+    2. The Tomasulo is efficient in handling a set of load/store instructions. Even the naive version (stall when branch) makes sense in such cases. 
+
+    3. The biggest drawbck is unsupporting precise exceptions, as it does not handle branch misprediction in ROB. 
+    Other can-be improvements include superscalar and superpipeline. 
+
+    *. At first, I wanted a CPU able to run an OS written by myself, later I just wanted to write something new instead of copying 
+    seniors' designs. Hope I achieve it. May it be. 
 \section{Reference}
 
 1. \url{https://github.com/riscv-boom/riscv-boom}, an out of order RISC-V CPU using chisel, with branch bits(named branch mask there)

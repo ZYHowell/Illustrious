@@ -177,28 +177,27 @@ module ALUrs(
 
     wire [`rsSize - 1 : 0] issueRS;
 
-    reg[`rsSize - 1 : 0] allocEn;
-    reg[`DataBus]    AllocPostOperandO; 
-    reg[`DataBus]    AllocPostOperandT; 
-    reg[`TagBus]     AllocPostTagO; 
-    reg[`TagBus]     AllocPostTagT;
-    reg[`TagBus]     AllocPostTagW;
-    reg[`OpBus]      AllocPostOp; 
-    reg[`InstAddrBus]AllocPostAddr; 
-    reg[`BranchTagBus] AllocBranchTag;
+    reg[`rsSize - 1 : 0]  allocEn;
+    reg[`DataBus]         AllocPostOperandO; 
+    reg[`DataBus]         AllocPostOperandT; 
+    reg[`TagBus]          AllocPostTagO; 
+    reg[`TagBus]          AllocPostTagT;
+    reg[`TagBus]          AllocPostTagW;
+    reg[`OpBus]           AllocPostOp; 
+    reg[`InstAddrBus]     AllocPostAddr; 
+    reg[`BranchTagBus]    AllocBranchTag;
 
-    wire[`DataBus] issueOperandO[`rsSize - 1 : 0];
-    wire[`DataBus] issueOperandT[`rsSize - 1 : 0];
-    wire[`OpBus]   issueOp[`rsSize - 1 : 0]; 
-    wire[`TagBus]   issueTagW[`rsSize - 1 : 0];
-    wire[`InstAddrBus] issuePC[`rsSize - 1 : 0];
-    wire[`BranchTagBus]issueBranchTag[`rsSize - 1 : 0];
+    wire[`DataBus]        issueOperandO [`rsSize - 1 : 0];
+    wire[`DataBus]        issueOperandT [`rsSize - 1 : 0];
+    wire[`OpBus]          issueOp       [`rsSize - 1 : 0]; 
+    wire[`TagBus]         issueTagW     [`rsSize - 1 : 0];
+    wire[`InstAddrBus]    issuePC       [`rsSize - 1 : 0];
+    wire[`BranchTagBus]   issueBranchTag[`rsSize - 1 : 0];
     wire[`rsSize - 1 : 0] nxtPosEmpty;
 
     integer i;
 
     assign issueRS = ready & -ready;
-    //assign ALUfreeStatus = empty;
     assign ALUfree = (nxtPosEmpty != 0);
 
     generate
@@ -246,14 +245,15 @@ module ALUrs(
     always @(*) begin
       allocEn = 0;
       allocEn[ALUtagW[`TagRootBus]] = ALUen;
-      AllocPostAddr = ALUaddr;
-      AllocPostOp = ALUop;
+
+      AllocPostAddr     = ALUaddr;
+      AllocPostOp       = ALUop;
       AllocPostOperandO = ALUoperandO;
       AllocPostOperandT = ALUoperandT;
-      AllocPostTagO = ALUtagO;
-      AllocPostTagT = ALUtagT;
-      AllocPostTagW = ALUtagW;
-      AllocBranchTag = BranchTag;
+      AllocPostTagO     = ALUtagO;
+      AllocPostTagT     = ALUtagT;
+      AllocPostTagW     = ALUtagW;
+      AllocBranchTag    = BranchTag;
     end
 
     always @ (posedge clk) begin
@@ -265,12 +265,12 @@ module ALUrs(
         if (issueRS) begin
           for (i = 0;i < `rsSize;i = i + 1) begin
             if (issueRS == (1'b1 << (`rsSize - 1)) >> (`rsSize - i - 1)) begin
-              ALUworkEn <= `Enable;
-              operandO <= issueOperandO[i];
-              operandT <= issueOperandT[i];
-              opCode <= issueOp[i];
-              wrtTag <= {`ALUtagPrefix,i};
-              instAddr <= issuePC[i];
+              ALUworkEn     <= `Enable;
+              operandO      <= issueOperandO[i];
+              operandT      <= issueOperandT[i];
+              opCode        <= issueOp[i];
+              wrtTag        <= {`ALUtagPrefix,i};
+              instAddr      <= issuePC[i];
               instBranchTag <= issueBranchTag[i];
               empty[i] <= 1;
             end else begin
@@ -278,11 +278,11 @@ module ALUrs(
             end
           end
         end else begin
-          ALUworkEn <= `Disable;
-          operandO <= `dataFree;
-          operandT <= `dataFree;
-          opCode <= `NOP;
-          wrtTag <= `tagFree;
+          ALUworkEn     <= `Disable;
+          operandO      <= `dataFree;
+          operandT      <= `dataFree;
+          opCode        <= `NOP;
+          wrtTag        <= `tagFree;
           instBranchTag <= 0;
           empty <= nxtPosEmpty;
         end

@@ -147,6 +147,7 @@ module ALUrs(
     input wire[`NameBus]    ALUnameW,  
     input wire[`OpBus]      ALUop, 
     input wire[`InstAddrBus]ALUaddr, 
+    input wire alreadyRdy, 
 
     //to ALU
     output reg ALUworkEn, 
@@ -184,12 +185,14 @@ module ALUrs(
     wire[`NameBus] issueNameW[`rsSize - 1 : 0];
     wire[`TagBus]   issueTagW[`rsSize - 1 : 0];
     wire[`InstAddrBus] issuePC[`rsSize - 1 : 0];
+    wire issueStraightly;
 
     integer i;
 
     assign issueRS = ready & -ready;
     assign ALUfreeStatus = empty;
     assign ALUfree = nxtPosEmpty != 0;
+    assign issueStraightly = alreadyRdy && (empty == {`rsSize{1'b1}});
 
     generate
       genvar j;
@@ -231,10 +234,7 @@ module ALUrs(
 
     always @(*) begin
       allocEn = 0;
-      allocEn[ALUtagW[`TagRootBus]] = ALUen;
-      // for (i = 0; i < `rsSize;i = i + 1) begin
-      //   allocEn[i] = ALUen & (ALUtagW[`TagRootBus] == i);
-      // end
+      allocEn[ALUtagW[`TagRootBus]] = ALUen & ~issueStraightly;
       AllocPostAddr = ALUaddr;
       AllocPostOp = ALUop;
       AllocPostOperandO = ALUoperandO;
@@ -264,6 +264,14 @@ module ALUrs(
               empty[i] <= 1;
             end
           end
+        end else if (issueStraightly) begin
+          ALUworkEn <= `Enable;
+          operandO <= ALUoperandO;
+          operandT <= ALUoperandT;
+          opCode <= ALUop;
+          wrtName <= ALUnameW;
+          wrtTag <= ALUtagW; 
+          instAddr <= ALUaddr;
         end else begin
           ALUworkEn <= `Disable;
           operandO <= `dataFree;

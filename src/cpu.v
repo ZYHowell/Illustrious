@@ -70,6 +70,8 @@ module cpu(
 
     wire LSbufEn;
 
+    wire aleadyRdy;
+
     //output of regf
     wire [`DataBus] regDataO, regDataT;
     wire [`TagBus] regTagO, regTagT;
@@ -262,6 +264,7 @@ module cpu(
       .nameW(rsNameW), 
       .op(rsOp), 
       .addr(rsAddr), 
+      .aleadyRdy(aleadyRdy), 
     //to BranchRS
       .BranchEn(BranchRsEn), 
       .Imm(rsImm),
@@ -317,6 +320,7 @@ module cpu(
       .ALUnameW(rsNameW), 
       .ALUop(rsOp), 
       .ALUaddr(rsAddr), 
+      .aleadyRdy(aleadyRdy), 
 
     //to ALU
       .ALUworkEn(ALUworkEn), 
@@ -370,6 +374,7 @@ module cpu(
       .BranchOp(rsOp), 
       .BranchImm(rsImm), 
       .BranchPC(rsAddr),
+      .aleadyRdy(aleadyRdy), 
     //to branchEx
       .BranchWorkEn(BranchWorkEn), 
       .operandO(BranchOperandO), 

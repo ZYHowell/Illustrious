@@ -34,7 +34,8 @@ module dispatcher(
     output reg[`NameBus] nameW, 
     output reg[`OpBus]   op, 
     output reg[`InstAddrBus] addr, 
-    output reg[`DataBus] Imm
+    output reg[`DataBus] Imm, 
+    output wire alreadyRdy
 );
 
     wire [`TagBus]      finalTag;
@@ -43,6 +44,7 @@ module dispatcher(
     //choose the correct and avaliable tag
     assign prefix   = ((opClass == `ClassLD) || (opClass == `ClassST)) ? `LStagPrefix : `ALUtagPrefix;
     assign finalTag = {prefix, prefix == `ALUtagPrefix ? ALUfreeTag : LSfreeTag};
+    assign alreadyRdy = (tagO == `tagFree) & (tagT == `tagFree);
 
     always @(*) begin
       wrtTag = finalTag;

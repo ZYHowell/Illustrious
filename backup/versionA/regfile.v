@@ -35,13 +35,11 @@ module regfileLine(
     genvar j;
     for(j = 0;j < 4;j = j + 1) begin: nxtPosCounter
       assign nxtPosTag[j] = (enWrtO & (allTag[j] == WrtTagO)) ? `tagFree : 
-                            (enWrtT & (allTag[j] == WrtTagT)) ? `tagFree :
-                            allTag[j];
+                            (enWrtT & (allTag[j] == WrtTagT)) ? `tagFree : allTag[j];
     end
   endgenerate
   assign nxtPosData = (enWrtO & (allTag[head] == WrtTagO)) ? WrtDataO : 
-                      (enWrtT & (allTag[head] == WrtTagT)) ? WrtDataT :
-                      Data;
+                      (enWrtT & (allTag[head] == WrtTagT)) ? WrtDataT : Data;
 
   integer i;
   always @(posedge clk) begin

@@ -1,3 +1,5 @@
 /ideas.md
 /backup/stash/*
-/backup/Units/*
+/backup/Units/dcache/*
+/backup/Units/defines.v
+/backup/Units/BTB.v

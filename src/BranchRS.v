@@ -116,6 +116,7 @@ module BranchRS(
     input wire[`OpBus]          BranchOp, 
     input wire[`DataBus]        BranchImm, 
     input wire[`InstAddrBus]    BranchPC, 
+    input wire alreadyRdy, 
     //to branchEx
     output reg BranchWorkEn, 
     output reg[`DataBus]        operandO, 
@@ -142,8 +143,10 @@ module BranchRS(
     wire[`NameBus] issueNameW;
     wire[`DataBus] issueImm;
     wire[`InstAddrBus] issuePC;
+    wire issueStraightly;
 
     assign canIssue = ready;
+    assign issueStraightly = alreadyRdy && (empty == {`rsSize{1'b1}});
 
     BRsLine ALUrsLine(
       .clk(clk), 
@@ -177,7 +180,7 @@ module BranchRS(
 
     //push inst to RS, each tag can be assigned to an RS
     always @(*) begin
-      allocEn = BranchEn;
+      allocEn = BranchEn & ~issueStraightly;
       AllocPostImm = BranchImm;
       AllocPostAddr = BranchPC;
       AllocPostOp = BranchOp;
@@ -206,6 +209,13 @@ module BranchRS(
           imm <= issueImm;
           PC <= issuePC;
           empty <= 1;
+        end else if (issueStraightly) begin
+          BranchWorkEn <= `Enable;
+          operandO <= BranchOperandO;
+          operandT <= BranchOperandT;
+          opCode <= BranchOp;
+          imm <= BranchImm;
+          PC <= BranchPC;
         end else begin
           BranchWorkEn <= `Disable;
           operandO <= `dataFree;

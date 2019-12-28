@@ -14,8 +14,4 @@
 
 * add branch prediction(done)
 * pass FPGA test **(todo)**
-* speed up**(todo)**
-
-##### step optional: 
-
-make it superscalar
+* speed up **(todo)**
