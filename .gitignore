@@ -3,3 +3,8 @@
 /backup/Units/dcache/*
 /backup/Units/defines.v
 /backup/Units/BTB.v
+/doc/report.aux
+/doc/report.log
+/doc/report.out
+/doc/report.synctex.gz
+/doc/report.pdf
