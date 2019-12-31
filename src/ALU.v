@@ -50,8 +50,8 @@ module ALU(
           `AND: ROBdataW = operandO & operandT;
           `LUI: ROBdataW = operandT;
           `JAL: begin
-            jumpEn = `Enable;
-            jumpAddr = $signed(operandO) + $signed(operandT);
+            //jumpEn = `Enable;
+            //jumpAddr = $signed(operandO) + $signed(operandT);
             ROBdataW = $signed(operandO) + `PCnext;
           end
           `JALR: begin

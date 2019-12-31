@@ -1,7 +1,3 @@
-//module:   id
-//file:     id.v
-//decode instructions in this module
-
 `include "defines.v"
 
 module decoder(
@@ -173,9 +169,6 @@ module decoder(
                 end
             endcase
         end else begin
-            // regNameO <= `nameFree;
-            // regNameT <= `nameFree;
-            // rdName <= `nameFree;
             opCode <= `NOP;
             opClass <= `ClassNOP;
         end

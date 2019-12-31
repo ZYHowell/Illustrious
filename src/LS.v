@@ -33,7 +33,7 @@ module LS(
     reg status, sign; 
 
     assign LSunwork = (status == `IsFree) ? ~LSworkEn : LSoutEn;
-    always @ (posedge clk or posedge rst) begin
+    always @ (posedge clk) begin
       if (rst) begin
         status <= `IsFree;
         sign <= `SignEx;
@@ -129,12 +129,12 @@ module LS(
             if (LSoutEn) begin
               LSdone <= 1;
               LSRW <= `Read;
-              LSROBen <= (LSRW == `Read) ? `Enable : `Disable;
+              LSROBen <= ~LSRW;
               status <= `IsFree;
               LSlen <= `ZeroLen;
               Sdata <= `dataFree;
               dataAddr <= `addrFree;
-              if (sign == `SignEx) begin
+              if (sign) begin
                 case (LSlen)
                   `ByteLen: LSROBdata <= {{24{Ldata[7]}}, Ldata[7:0]};
                   `HexLen:  LSROBdata <= {{16{Ldata[15]}}, Ldata[15:0]};

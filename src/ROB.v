@@ -38,6 +38,7 @@ module ROB(
     wire[`BranchTagBus] nxtBranchTag[`ROBsize - 1 : 0];
     wire[`ROBsize - 1 : 0] nxtPosEmpty;
     wire[`ROBsize - 1 : 0] discard;
+    reg[`ROBsize - 1 : 0] nxtPosValid;
     reg[`ROBsize - 1 : 0] valid;
 
     reg[`rsSize - 1 : 0] allocEnO;
@@ -45,13 +46,13 @@ module ROB(
     reg[`TagBus]      AllocPostTagO;
 
     reg [`TagRootBus]   head, tail;
-    wire [`TagRootBus]  nxtPosTail;
+    wire [`TagRootBus]  nxtTail;
     wire canIssue;
     wire headMove;
     //the head is the head while the tail is the next;
 
-    assign nxtPosTail = (tail + 1 < `ROBsize) ? tail + 1 : 0;
-    assign ROBfree = dispatchEn ? (head == nxtPosTail) : (head == tail);
+    assign nxtTail = (tail + 1 < `ROBsize) ? tail + 1 : 0;
+    assign ROBfree = ~((valid == {`ROBsize{1'b1}}) || (dispatchEn && head == nxtTail));
     assign freeTag = tail;//0 is the prefix
     assign headMove = (~valid[head] & (head != tail)) | ready[head] | discard[head];
 
@@ -129,7 +130,7 @@ module ROB(
       end else if (rdy) begin
         //give the dispatcher a tag(at post edge)
         if (dispatchEn)
-          tail <= nxtPosTail;
+          tail <= (tail + 1 < `ROBsize) ? tail + 1 : 0;
         //commit below
         if (headMove) 
           head <= (head + 1 < `ROBsize) ? head + 1 : 0;

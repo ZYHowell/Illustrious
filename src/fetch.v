@@ -38,9 +38,11 @@ module fetch(
     reg[`InstBus] _DecInst;
     reg[`InstAddrBus] _DecPC;
     wire isJ, cacheIsJ;
+    wire[`DataBus] Jimm;
 
     assign isJ = memInst[6] & memInst[2];
     assign cacheIsJ = cacheInst[6] & cacheInst[2];
+    assign Jimm = {{`UimmFillLen{DecInst[31]}}, DecInst[19:12], DecInst[20], DecInst[30:21], 1'b0};
 
     always @(*) begin
       DecEn = `Disable;
@@ -119,7 +121,12 @@ module fetch(
               end
             end
             StatusWaitJ: begin
-              if (enJump) begin
+              if (DecInst[3]) begin
+                instEn <= `Enable;
+                instAddr <= $signed(Jimm) + $signed(DecPC);
+                status <= StatusWork;
+                //deal with JAL: jump straightly
+              end else if (enJump) begin
                 instEn <= `Enable;
                 instAddr <= JumpAddr;
                 status <= StatusWork;
