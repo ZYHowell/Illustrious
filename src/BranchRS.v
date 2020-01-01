@@ -20,36 +20,24 @@ module BRsLine(
     input wire[`OpBus]        allocOp, 
     input wire[`DataBus]      allocImm, 
     input wire[`InstAddrBus]  allocPC, 
-    input wire[`BranchTagBus] allocBranchTag, 
     //
     input wire empty, 
     output wire ready, 
     output wire[`DataBus]     issueOperandO, 
     output wire[`DataBus]     issueOperandT, 
-    output wire[`OpBus]       issueOp, 
-    output wire[`DataBus]     issueImm, 
-    output wire[`InstAddrBus] issuePC,
+    output reg[`OpBus]       issueOp, 
+    output reg[`DataBus]     issueImm, 
+    output reg[`InstAddrBus] issuePC
     //the imm is pc in alu, is imm in ls; so bucket branchRS for it contains both
-    input wire                  bFreeEn, 
-    input wire[1:0]             bFreeNum
 );
     reg[`TagBus]  rsTagO, rsTagT;
     reg[`DataBus] rsDataO, rsDataT;
-    reg[`InstAddrBus] rsPC;
-    reg[`OpBus]   rsOp;
-    reg[`DataBus] rsImm;
-    reg[`BranchTagBus] BranchTag;
     wire[`TagBus] nxtPosTagO, nxtPosTagT;
     wire[`DataBus] nxtPosDataO, nxtPosDataT;
-    wire[`BranchTagBus] nxtPosBranchTag;
 
-    assign ready = (~empty & (nxtPosTagO == `tagFree) & (nxtPosTagT == `tagFree)) && !(nxtPosBranchTag);
+    assign ready = ~empty & (nxtPosTagO == `tagFree) & (nxtPosTagT == `tagFree);
     assign issueOperandO = (nxtPosTagO == `tagFree) ? nxtPosDataO : rsDataO;
     assign issueOperandT = (nxtPosTagT == `tagFree) ? nxtPosDataT : rsDataT;
-    assign issueOp = rsOp;
-    assign issueImm = rsImm;
-    assign issuePC = rsPC;
-    assign nxtPosBranchTag = (bFreeEn & BranchTag[bFreeNum]) ? (BranchTag ^ (1 << bFreeNum)) : BranchTag;
 
     nxtPosCal nxtPosCalO(
       .enWrtO(enWrtO), 
@@ -81,26 +69,23 @@ module BRsLine(
         rsTagT  <= `tagFree;
         rsDataO <= `dataFree;
         rsDataT <= `dataFree;
-        rsPC    <= `addrFree;
-        rsImm   <= `dataFree;
-        rsOp    <= `NOP;
-        BranchTag <= 0;
+        issuePC    <= `addrFree;
+        issueImm   <= `dataFree;
+        issueOp    <= `NOP;
       end else if (rdy) begin
         if (allocEn) begin
           rsTagO  <= allocTagO;
           rsTagT  <= allocTagT;
           rsDataO <= allocOperandO;
           rsDataT <= allocOperandT;
-          rsPC    <= allocPC;
-          rsImm   <= allocImm;
-          rsOp    <= allocOp;
-          BranchTag <= allocBranchTag;
+          issuePC    <= allocPC;
+          issueImm   <= allocImm;
+          issueOp    <= allocOp;
         end else begin
           rsTagO  <= nxtPosTagO;
           rsTagT  <= nxtPosTagT;
           rsDataO <= nxtPosDataO;
           rsDataT <= nxtPosDataT;
-          BranchTag <= nxtPosBranchTag;
         end
       end
     end
@@ -126,7 +111,6 @@ module BranchRS(
     input wire[`OpBus]          BranchOp, 
     input wire[`DataBus]        BranchImm, 
     input wire[`InstAddrBus]    BranchPC, 
-    input wire[`BranchTagBus]   BranchTag, 
     //to branchEx
     output reg BranchWorkEn, 
     output reg[`DataBus]        operandO, 
@@ -136,8 +120,6 @@ module BranchRS(
     output reg[`InstAddrBus]    PC,
     output reg[1:0]             bNum, 
     //from branch
-    input wire                  bFreeEn, 
-    input wire[1:0]             bFreeNum, 
     input wire misTaken
 );
     wire [`branchRsSize - 1 : 0] ready;
@@ -151,7 +133,6 @@ module BranchRS(
     reg[`OpBus]      AllocPostOp; 
     reg[`DataBus]    AllocPostImm; 
     reg[`InstAddrBus]AllocPostAddr; 
-    reg[`BranchTagBus] AllocBranchTag;
 
     wire[`DataBus] issueOperandO[`branchRsSize - 1 : 0];
     wire[`DataBus] issueOperandT[`branchRsSize - 1 : 0];
@@ -190,7 +171,6 @@ module BranchRS(
           .allocOp(AllocPostOp), 
           .allocImm(AllocPostImm),
           .allocPC(AllocPostAddr), 
-          .allocBranchTag(AllocBranchTag), 
           //
           .empty(empty[j]), 
           .ready(ready[j]), 
@@ -198,10 +178,7 @@ module BranchRS(
           .issueOperandT(issueOperandT[j]), 
           .issueOp(issueOp[j]), 
           .issueImm(issueImm[j]), 
-          .issuePC(issuePC[j]),
-          //
-          .bFreeEn(bFreeEn), 
-          .bFreeNum(bFreeNum) 
+          .issuePC(issuePC[j])
         );
       end
     endgenerate
@@ -217,7 +194,6 @@ module BranchRS(
       AllocPostOperandT = BranchOperandT;
       AllocPostTagO = BranchTagO;
       AllocPostTagT = BranchTagT;
-      AllocBranchTag = BranchTag;
     end
 
     always @ (posedge clk) begin

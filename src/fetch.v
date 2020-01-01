@@ -25,7 +25,7 @@ module fetch(
     input wire[`InstBus] cacheInst, 
     //branch
     input wire misTaken, 
-    input wire enBranch, 
+    //input wire enBranch, 
     input wire[`InstAddrBus] BranchAddr
 );
     localparam StatusFree = 2'b00;

@@ -59,9 +59,9 @@
 `define regSize 32
 
 `define rsWidth 128
-`define rsSize 7
+`define rsSize 6
 `define branchRsSize 3
-`define ROBsize 7
+`define ROBsize 6
 `define memCacheSize 128
 
 `define tagFree     4'b0111

@@ -36,8 +36,7 @@ module ROB(
     reg[`TagBus]  rsTagW[`ROBsize - 1 : 0];
     reg[`BranchTagBus] rsBranchTag[`ROBsize - 1 : 0];
     wire[`BranchTagBus] nxtBranchTag[`ROBsize - 1 : 0];
-    wire[`ROBsize - 1 : 0] nxtPosEmpty;
-    wire[`ROBsize - 1 : 0] discard;
+    wire[`ROBsize : 0] discard;
     reg[`ROBsize - 1 : 0] nxtPosValid;
     reg[`ROBsize - 1 : 0] valid;
 
@@ -45,7 +44,7 @@ module ROB(
     reg[`DataBus]     AllocPostDataO;
     reg[`TagBus]      AllocPostTagO;
 
-    reg [`TagRootBus]   head, tail;
+    reg [`TagRootBus]   head, tail, disNewTail;
     wire [`TagRootBus]  nxtTail;
     wire canIssue;
     wire headMove;
@@ -59,16 +58,12 @@ module ROB(
     assign enReadO = (ReadTagO == `tagFree) ? `Disable : 
                      (ReadTagO == WrtTagO) ? `Enable : 
                      (~empty[ReadTagO[`TagRootBus]] & ~ReadTagO[3]) ? `Enable : `Disable;
-    assign ReadDataO = (ReadTagO == `tagFree) ? `dataFree : 
-                       (ReadTagO == WrtTagO) ? WrtDataO : 
-                       (~empty[ReadTagO[`TagRootBus]]) ? rsData[ReadTagO[`TagRootBus]] : `dataFree;
+    assign ReadDataO = (ReadTagO == WrtTagO) ? WrtDataO :  rsData[ReadTagO[`TagRootBus]];
     
     assign enReadT = (ReadTagT == `tagFree) ? `Disable : 
                      (ReadTagT == WrtTagO) ? `Enable : 
                      (~empty[ReadTagT[`TagRootBus]] & ~ReadTagT[3]) ? `Enable : `Disable;
-    assign ReadDataT = (ReadTagT == `tagFree) ? `dataFree : 
-                       (ReadTagT == WrtTagO) ? WrtDataO : 
-                       (~empty[ReadTagT[`TagRootBus]]) ? rsData[ReadTagT[`TagRootBus]] : `dataFree;
+    assign ReadDataT = (ReadTagT == WrtTagO) ? WrtDataO : rsData[ReadTagT[`TagRootBus]];
 
     generate
       genvar j;
@@ -76,7 +71,6 @@ module ROB(
         assign discard[j] = misTaken & rsBranchTag[j][bFreeNum];
         assign ready[j] = (~empty[j]) & (!nxtBranchTag[j]) & ~discard[j];
         assign nxtBranchTag[j] = (bFreeEn & rsBranchTag[j][bFreeNum]) ? (rsBranchTag[j] ^ (1 << bFreeNum)) : rsBranchTag[j];
-        assign nxtPosEmpty[j] = (empty[j] & ~allocEnO[j]) | discard[j];
 
         always @(posedge clk) begin
           if (rst) begin
@@ -89,7 +83,7 @@ module ROB(
             rsTagW[j] <= `tagFree;
           end else if (rdy) begin
             if (headMove & (j == head)) empty[j] <= 1;
-            else empty[j] <= nxtPosEmpty[j];
+            else empty[j] <= (empty[j] & ~allocEnO[j]) | discard[j];
 
             if (dispatchEn && (j == tail)) begin
               rsBranchTag[j] <= dispBranchTag;
@@ -120,6 +114,15 @@ module ROB(
       AllocPostTagO = WrtTagO;
     end
 
+    integer i;
+    assign discard[`ROBsize] = discard[0];
+    always @(*)begin
+      disNewTail = tail;
+      for (i = 0; i < `ROBsize;i = i + 1)
+        if (~discard[i] & discard[i + 1]) 
+          disNewTail = i + 1;
+    end
+
     always @ (posedge clk) begin
       if (rst) begin
         head <= 0;
@@ -131,6 +134,8 @@ module ROB(
         //give the dispatcher a tag(at post edge)
         if (dispatchEn)
           tail <= (tail + 1 < `ROBsize) ? tail + 1 : 0;
+        else if (misTaken)
+          tail <= (disNewTail < `ROBsize) ? disNewTail : 0;
         //commit below
         if (headMove) 
           head <= (head + 1 < `ROBsize) ? head + 1 : 0;

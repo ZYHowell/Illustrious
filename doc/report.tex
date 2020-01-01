@@ -12,8 +12,8 @@
 \section{Feature}
 \subsection{Tomasulo}
     The Tomasulo algorithm aims to execute Out-of-Order(abbreviated OoO), 
-    and solve problems triggered by OoO, such as WAR, WAW, and precise execution. The key is to use renaming, 
-    reservation station(abbreviated RS) and ROB. 
+    and solve problems triggered by OoO, such as WAR, WAW, and so on. The key is renaming, 
+    RS and ROB. 
 
     In my design, each FU has its own RS, and the size of each RS is different. 
     Renaming is based on where the instruction is in ROB. 
@@ -23,34 +23,36 @@
 
     My 2-way associative cache is in /backup/Units. 
 \subsection{Branch Policy}
-    I first designed a one without branch prediction and its policy is stall. Since branch instructions hold about sixth of all instructions, 
-    it stalls frequently and is not so OoO. This one can run with a frequency of 100MHz. 
+    I first designed one without branch prediction and its policy is stall. Since branch instructions hold about sixth of instructions, 
+    this one stalls frequently and is not so OoO. 
 
-    Then I made one with branch prediction. Like what BOOM(Berkeley Out-of-Order Machine) does, it uses shadow registers and branch bits. 
-    Each instruction is given a branch mask to evidence if it follows in-flight branch instructions. If a branch instruction is executed, 
+    Then I made one with branch prediction. Like what BOOM(Berkeley Out-of-Order Machine) does, it uses shadow registers and branch masks. 
+    Each instruction has a branch mask to evidence if it follows in-flight branch instructions. After executing a branch instruction, 
     it boardcasts to update others' branch masks. Only Execute load/store instructions with cleared branch mask. 
+    
     This one can run with a frequency of 70MHz. 
 
     This sounds cool, but when I implemented it, I found the delay high, since to deal with the boardcast of branch instructions, 
-    a large amount of logic units are in need. (let alone the shadow registers use considerable sources too)
+    a large number of logic units are needed. (let alone the shadow registers cost considerable sources too)
 
     But it runs faster and is really COOOOOOOOL. 
 \section{Summary}
-    1. The main problem I face is that I do not understand how to make improvement in organization level. Once I noticed that I had repeated 
-    calculating one same thing in each RS, so I picked it out: calculate it outside and send the result to each RS. 
+    1. The main problem I face is not understanding how to make improvement in organization and hardware level. 
+    Once I noticed that I had repeated calculating one same thing in each RS, so I picked it out: 
+    calculate it outside and send the result to each RS. 
 
     The result was crazy: the number of LUT increased considerably. 
 
-    2. The Tomasulo is efficient in handling a set of load/store instructions. Even the naive version (stall when branch) makes sense in such cases. 
+    2. The Tomasulo is significantly efficient when handling a set of load/store instructions. 
 
     3. The biggest drawbck is unsupporting precise exceptions, as it does not handle branch misprediction in ROB. 
     Other can-be improvements include superscalar and superpipeline. 
 
-    *. At first, I wanted a CPU able to run an OS written by myself, later I just wanted to write something new instead of copying 
-    seniors' designs. Hope I achieve it. May it be. 
-\section{Reference}
+    4.1 Pitfall: sometimes bigger and dumber is better. (CAAQA, ed.6, charpter three)
 
-1. \url{https://github.com/riscv-boom/riscv-boom}, an out of order RISC-V CPU using chisel, with branch bits(named branch mask there)
+    4.2 Pitfall: and sometimes smarter is better than bigger and dumber. (from ditto)
+\section{Reference}
+1. \url{https://docs.boom-core.org/en/latest/}, an out of order RISC-V CPU using chisel, with branch bits(named branch mask there)
 
 2. \url{http://www.kroening.com/diplom/diplom/main003.html}, details about the hardware of Tomasulo Architecture.
 \end{document}

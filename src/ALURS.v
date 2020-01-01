@@ -47,9 +47,9 @@ module RsLine(
     output wire ready, 
     output wire[`DataBus] issueOperandO, 
     output wire[`DataBus] issueOperandT, 
-    output wire[`OpBus]   issueOp,  
-    output wire[`TagBus]  issueTagW,
-    output wire[`DataBus] issueImm, 
+    output reg[`OpBus]   issueOp,  
+    output reg[`TagBus]  issueTagW,
+    output reg[`DataBus] issueImm, 
     output wire[`BranchTagBus]  issueBranchTag, 
     //the imm is pc in alu, is imm in ls; so bucket branchRS for it contains both
     input wire                  bFreeEn, 
@@ -59,9 +59,6 @@ module RsLine(
 );
     reg[`TagBus]  rsTagO, rsTagT;
     reg[`DataBus] rsDataO, rsDataT;
-    reg[`TagBus]  rsTagW;
-    reg[`DataBus] rsImm;
-    reg[`OpBus]   rsOp;
     reg[`BranchTagBus] BranchTag;
     wire[`TagBus] nxtPosTagO, nxtPosTagT;
     wire[`DataBus] nxtPosDataO, nxtPosDataT;
@@ -73,9 +70,6 @@ module RsLine(
     assign ready = ~empty & (nxtPosTagO == `tagFree) & (nxtPosTagT == `tagFree) & ~discard;
     assign issueOperandO = (nxtPosTagO == `tagFree) ? nxtPosDataO : rsDataO;
     assign issueOperandT = (nxtPosTagT == `tagFree) ? nxtPosDataT : rsDataT;
-    assign issueOp = rsOp;
-    assign issueImm = rsImm;
-    assign issueTagW = rsTagW;
     assign nxtPosBranchTag = (bFreeEn & BranchTag[bFreeNum]) ? (BranchTag ^ (1 << bFreeNum)) : BranchTag;
     assign issueBranchTag = nxtPosBranchTag;
 
@@ -109,9 +103,9 @@ module RsLine(
         rsTagT <= `tagFree;
         rsDataO <= `dataFree;
         rsDataT <= `dataFree;
-        rsTagW <= `tagFree;
-        rsImm <= `dataFree;
-        rsOp <= `NOP;
+        issueTagW <= `tagFree;
+        issueImm <= `dataFree;
+        issueOp <= `NOP;
         BranchTag <= 0;
       end else if (rdy) begin
         if (allocEn) begin
@@ -119,9 +113,9 @@ module RsLine(
           rsTagT <= allocTagT;
           rsDataO <= allocOperandO;
           rsDataT <= allocOperandT;
-          rsTagW <= allocTagW;
-          rsImm <= allocImm;
-          rsOp <= allocOp;
+          issueTagW <= allocTagW;
+          issueImm <= allocImm;
+          issueOp <= allocOp;
           BranchTag <= allocBranchTag;
         end else begin
           rsTagO <= nxtPosTagO;

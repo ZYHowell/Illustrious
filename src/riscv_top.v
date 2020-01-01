@@ -13,7 +13,7 @@ module riscv_top
 	output wire			led
 );
 
-localparam SYS_CLK_FREQ = 70000000;
+localparam SYS_CLK_FREQ = 80000000;
 localparam UART_BAUD_RATE = 115200;
 localparam RAM_ADDR_WIDTH = 17; 			// 128KiB ram, should not be modified
 
@@ -21,11 +21,11 @@ reg rst;
 reg rst_delay;
 
 wire clk;
+wire locked;
 
 //assign EXCLK (or your own clock module) to clk
 // assign clk = EXCLK;
-clk_wiz_0 clock(.clk_out1(clk), .reset(RST), .clk_in1(EXCLK));
-wire locked;
+clk_wiz_0 clock(.clk_out1(clk), .reset(btnC), .clk_in1(EXCLK), .locked(locked));
 always @(posedge clk or posedge btnC)
 begin
 	if (btnC)

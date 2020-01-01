@@ -12,31 +12,26 @@ module way(
     output wire hit, 
     output wire [`DataBus]  foundInst
 );
-    reg[`DataBus]   memInst[`memCacheSize - 1 : 0];
-    reg[`memTagBus] memTag[`memCacheSize - 1:0];
-    reg[`memCacheSize - 1 : 0] memValid;
+    reg[`DataBus]   memInst[63 : 0];
+    reg[8 : 0] memTag[63 : 0];
+    reg[63 : 0] memValid;
 
-    wire[`memCacheSize - 1 : 0] index;
-    wire[`memTagBus]  tag;
+    wire[5 : 0] index;
+    wire[8 : 0]  tag;
 
-    assign tag = Addr[`memTagBus];
-    assign index = Addr[`memAddrIndexBus];
+    assign tag = Addr[16 : 8];
+    assign index = Addr[7 : 2];
 
     assign hit = (memTag[index] == tag) & (memValid[index]);
-    assign foundInstO = (hit & memValid[index]) ? (memInst[index]) : `dataFree;
+    assign foundInst = memInst[index];
 
-    integer i;
     always @ (posedge clk or posedge rst) begin
       if (rst) begin
-        for (i = 0; i < `memCacheSize;i = i + 1) begin
-          memInst[i] <= `dataFree;
-          memTag[i] <= `memTagFree;
-          memValid[i] <= `Invalid;
-        end
+        memValid <= 0;
       end else if (addEn) begin
-        memInst[addAddr[`memAddrIndexBus]] <= addInst;
-        memTag[addAddr[`memAddrIndexBus]] <= addAddr[`memAddrTagBus];
-        memValid[addAddr[`memAddrIndexBus]] <= `Valid;
+        memInst[addAddr[7 : 2]] <= addInst;
+        memTag[addAddr[7 : 2]] <= addAddr[16 : 8];
+        memValid[addAddr[7 : 2]] <= `Valid;
       end
     end
 endmodule
@@ -62,10 +57,13 @@ module icache(
     wire [`InstBus] instL, instR; 
     wire mux;
     wire[5:0] index;
-    reg[127:0] lru;
+    reg[63:0] lru;
       
-    assign index = addInst[`memAddrIndexBus];
+    assign index = addAddr[7 : 2];
     assign mux   = lru[index];
+
+    assign memfetchEn = ~hit & fetchEn;
+    assign memfetchAddr = Addr;
     
     way wayL(
         .clk(clk), 
@@ -84,7 +82,7 @@ module icache(
         .clk(clk), 
         .rst(rst), 
         .rdy(rdy), 
-        .AddrO(Addr), 
+        .Addr(Addr), 
         .addEn(addEnable[1]), 
         .addInst(addInst),
         .addAddr(addAddr), 
@@ -93,7 +91,7 @@ module icache(
         .foundInst(instR)
     );
     
-    assign hit = hitL | hitR;
+    assign hit = (hitL | hitR) & fetchEn;
     assign foundInst = hitL ? instL : instR;
 
     always @ (*) begin
@@ -110,5 +108,4 @@ module icache(
             end
         end
     end
-    
 endmodule

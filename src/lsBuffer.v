@@ -25,9 +25,9 @@ module LSbufLine(
     output wire ready, 
     output wire[`DataBus] issueOperandO, 
     output wire[`DataBus] issueOperandT, 
-    output wire[`OpBus]   issueOp, 
-    output wire[`TagBus]  issueTagW,
-    output wire[`DataBus] issueImm,
+    output reg[`OpBus]   issueOp, 
+    output reg[`TagBus]  issueTagW,
+    output reg[`DataBus] issueImm,
     //the imm is pc in alu, is imm in ls; but ls needs to clear branchTag before issuing
     input wire        bFreeEn, 
     input wire[1:0]   bFreeNum, 
@@ -37,9 +37,6 @@ module LSbufLine(
 );
     reg[`TagBus]  rsTagO, rsTagT;
     reg[`DataBus] rsDataO, rsDataT;
-    reg[`TagBus]  rsTagW;
-    reg[`DataBus] rsImm;
-    reg[`OpBus]   rsOp;
     reg[`BranchTagBus] BranchTag;
     wire[`TagBus] nxtPosTagO, nxtPosTagT;
     wire[`DataBus] nxtPosDataO, nxtPosDataT;
@@ -51,9 +48,6 @@ module LSbufLine(
     assign ready = (~empty & (nxtPosTagO == `tagFree) & (nxtPosTagT == `tagFree) & ~discard) && (!nxtPosBranchTag);
     assign issueOperandO = (nxtPosTagO == `tagFree) ? nxtPosDataO : rsDataO;
     assign issueOperandT = (nxtPosTagT == `tagFree) ? nxtPosDataT : rsDataT;
-    assign issueOp = rsOp;
-    assign issueImm = rsImm;
-    assign issueTagW = rsTagW;
     assign nxtPosBranchTag = (bFreeEn & BranchTag[bFreeNum]) ? (BranchTag ^ (1 << bFreeNum)) : BranchTag;
 
     nxtPosCal nxtPosCalO(
@@ -86,9 +80,9 @@ module LSbufLine(
         rsTagT <= `tagFree;
         rsDataO <= `dataFree;
         rsDataT <= `dataFree;
-        rsTagW <= `tagFree;
-        rsImm <= `dataFree;
-        rsOp <= `NOP;
+        issueTagW <= `tagFree;
+        issueImm <= `dataFree;
+        issueOp <= `NOP;
         BranchTag <= 0;
       end else if (rdy) begin
         if (allocEn) begin
@@ -96,9 +90,9 @@ module LSbufLine(
           rsTagT <= allocTagT;
           rsDataO <= allocOperandO;
           rsDataT <= allocOperandT;
-          rsTagW <= allocTagW;
-          rsImm <= allocImm;
-          rsOp <= allocOp;
+          issueTagW <= allocTagW;
+          issueImm <= allocImm;
+          issueOp <= allocOp;
           BranchTag <= allocBranchTag;
         end else begin
           rsTagO <= nxtPosTagO;

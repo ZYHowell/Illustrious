@@ -193,6 +193,7 @@ module cpu(
   );
 
   assign stall = ~(ALUfree & LSbufFree & ROBfree & BranchFree);
+  assign dbgreg_dout = 0;
 
   fetch fetcher(
       .clk(clk_in), 
@@ -204,7 +205,7 @@ module cpu(
       .enJump(jumpEn), 
       .JumpAddr(jumpAddr), 
 
-      .enBranch(BranchEn), 
+      //.enBranch(BranchEn), 
       .BranchAddr(BranchAddr),
 
     //to decoder
@@ -432,7 +433,6 @@ module cpu(
       .BranchOp(BranchRsOp), 
       .BranchImm(BranchRsImm), 
       .BranchPC(BranchRsAddr),
-      .BranchTag(DispBranchTag), 
     //to branchEx
       .BranchWorkEn(BranchWorkEn), 
       .operandO(BranchOperandO), 
@@ -441,8 +441,6 @@ module cpu(
       .opCode(BranchOp), 
       .PC(BranchPC), 
       .bNum(BranchTagExNum), 
-      .bFreeEn(BranchEn), 
-      .bFreeNum(bFreeNum), 
       .misTaken(misTaken)
   );
 
