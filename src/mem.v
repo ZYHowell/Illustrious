@@ -78,7 +78,9 @@ module mem(
         LSdone <= `Disable;
         addAddr <= addAddr;
         //input and fill in
-        if (fetchEn & ~misTaken) begin
+        if (misTaken) begin
+          Waiting[`instPort] <= `NotUsing;
+        end else if (fetchEn) begin
           Waiting[`instPort] <= `IsUsing;
           WaitingAddr[`instPort] <= fetchAddr;
           WaitingRW[`instPort] <= `Read;
