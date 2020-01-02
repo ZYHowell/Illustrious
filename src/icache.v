@@ -19,10 +19,10 @@ module icache(
     reg[`memTagBus] memTag[`memCacheSize - 1:0];
     reg[`memCacheSize - 1 : 0] memValid;
 
-    wire [`memTagBus] tag;
-    wire [7:0] index;
-    assign tag = Addr[`memAddrTagBus];
-    assign index = Addr[`memAddrIndexBus];
+    wire [`memTagBus]   tag;
+    wire [`memIndexBus] index;
+    assign tag    = Addr[`memAddrTagBus];
+    assign index  = Addr[`memAddrIndexBus];
 
     assign hit = fetchEn & (memTag[index] == tag) & (memValid[index]);
     assign foundInst = memInst[index];
@@ -34,8 +34,8 @@ module icache(
       if (rst) begin
         memValid <= `Invalid;
       end else if (addEn && rdy) begin
-        memInst[addAddr[`memAddrIndexBus]] <= addInst;
-        memTag[addAddr[`memAddrIndexBus]] <= addAddr[`memAddrTagBus];
+        memInst[addAddr[`memAddrIndexBus]]  <= addInst;
+        memTag[addAddr[`memAddrIndexBus]]   <= addAddr[`memAddrTagBus];
         memValid[addAddr[`memAddrIndexBus]] <= `Valid;
       end
     end

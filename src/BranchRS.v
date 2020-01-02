@@ -6,11 +6,11 @@ module BRsLine(
     input rdy, 
     //
     input wire enWrtO, 
-    input wire[`TagBus] WrtTagO, 
+    input wire[`TagBus]   WrtTagO, 
     input wire[`DataBus]  WrtDataO, 
     input wire enWrtT, 
-    input wire[`TagBus] WrtTagT,
-    input wire[`DataBus] WrtDataT, 
+    input wire[`TagBus]   WrtTagT,
+    input wire[`DataBus]  WrtDataT, 
     //
     input wire allocEn, 
     input wire[`DataBus]      allocOperandO, 
@@ -26,16 +26,16 @@ module BRsLine(
     output wire ready, 
     output wire[`DataBus]     issueOperandO, 
     output wire[`DataBus]     issueOperandT, 
-    output reg[`OpBus]       issueOp, 
-    output reg[`DataBus]     issueImm, 
-    output reg[`InstAddrBus] issuePC, 
+    output reg[`OpBus]        issueOp, 
+    output reg[`DataBus]      issueImm, 
+    output reg[`InstAddrBus]  issuePC, 
     output reg issuePred
     //the imm is pc in alu, is imm in ls; so bucket branchRS for it contains both
 );
     reg[`TagBus]  rsTagO, rsTagT;
     reg[`DataBus] rsDataO, rsDataT;
-    wire[`TagBus] nxtPosTagO, nxtPosTagT;
-    wire[`DataBus] nxtPosDataO, nxtPosDataT;
+    wire[`TagBus]   nxtPosTagO, nxtPosTagT;
+    wire[`DataBus]  nxtPosDataO, nxtPosDataT;
 
     assign ready = ~empty & (nxtPosTagO == `tagFree) & (nxtPosTagT == `tagFree);
     assign issueOperandO = (nxtPosTagO == `tagFree) ? nxtPosDataO : rsDataO;
@@ -67,23 +67,23 @@ module BRsLine(
     );
     always @(posedge clk or posedge rst) begin
       if (rst) begin
-        rsTagO  <= `tagFree;
-        rsTagT  <= `tagFree;
-        rsDataO <= `dataFree;
-        rsDataT <= `dataFree;
-        issuePC    <= `addrFree;
-        issueImm   <= `dataFree;
-        issueOp    <= `NOP;
+        rsTagO    <= `tagFree;
+        rsTagT    <= `tagFree;
+        rsDataO   <= `dataFree;
+        rsDataT   <= `dataFree;
+        issuePC   <= `addrFree;
+        issueImm  <= `dataFree;
+        issueOp   <= `NOP;
         issuePred <= 0;
       end else if (rdy) begin
         if (allocEn) begin
-          rsTagO  <= allocTagO;
-          rsTagT  <= allocTagT;
-          rsDataO <= allocOperandO;
-          rsDataT <= allocOperandT;
-          issuePC    <= allocPC;
-          issueImm   <= allocImm;
-          issueOp    <= allocOp;
+          rsTagO    <= allocTagO;
+          rsTagT    <= allocTagT;
+          rsDataO   <= allocOperandO;
+          rsDataT   <= allocOperandT;
+          issuePC   <= allocPC;
+          issueImm  <= allocImm;
+          issueOp   <= allocOp;
           issuePred <= allocPred;
         end else begin
           rsTagO  <= nxtPosTagO;
@@ -101,11 +101,11 @@ module BranchRS(
     input rdy, 
     //from ALU and LS
     input wire enALUwrt, 
-    input wire[`TagBus] ALUtag, 
+    input wire[`TagBus]   ALUtag, 
     input wire[`DataBus]  ALUdata, 
     input wire enLSwrt, 
-    input wire[`TagBus] LStag,
-    input wire[`DataBus] LSdata, 
+    input wire[`TagBus]   LStag,
+    input wire[`DataBus]  LSdata, 
     //input from dispatcher
     input wire BranchEn, 
     input wire[`DataBus]        BranchOperandO, 
@@ -140,12 +140,12 @@ module BranchRS(
     reg[`DataBus]    AllocPostImm; 
     reg[`InstAddrBus]AllocPostAddr; 
 
-    wire[`DataBus] issueOperandO[`branchRsSize - 1 : 0];
-    wire[`DataBus] issueOperandT[`branchRsSize - 1 : 0];
-    wire[`OpBus]   issueOp[`branchRsSize - 1 : 0]; 
-    wire[`NameBus] issueNameW[`branchRsSize - 1 : 0];
-    wire[`DataBus] issueImm[`branchRsSize - 1 : 0];
-    wire[`InstAddrBus] issuePC[`branchRsSize - 1 : 0];
+    wire[`DataBus]      issueOperandO[`branchRsSize - 1 : 0];
+    wire[`DataBus]      issueOperandT[`branchRsSize - 1 : 0];
+    wire[`OpBus]        issueOp[`branchRsSize - 1 : 0]; 
+    wire[`NameBus]      issueNameW[`branchRsSize - 1 : 0];
+    wire[`DataBus]      issueImm[`branchRsSize - 1 : 0];
+    wire[`InstAddrBus]  issuePC[`branchRsSize - 1 : 0];
     wire issuePred[`branchRsSize - 1 : 0];
 
     reg [1:0]   head, tail;

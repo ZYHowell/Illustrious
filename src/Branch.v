@@ -31,28 +31,28 @@ module Branch(
       if (BranchWorkEn) begin
         case (opCode)
           `BEQ: begin
-            BranchAddr = operandO == operandT ? jmpAddr : nxtAddr;
-            misTaken = (operandO == operandT) ^ pred;
+            BranchAddr  = operandO == operandT ? jmpAddr : nxtAddr;
+            misTaken    = (operandO == operandT) ^ pred;
           end
           `BNE: begin
-            BranchAddr = operandO != operandT ? jmpAddr : nxtAddr;
-            misTaken = (operandO != operandT) ^ pred;
+            BranchAddr  = operandO != operandT ? jmpAddr : nxtAddr;
+            misTaken    = (operandO != operandT) ^ pred;
           end
           `BLT: begin
-            BranchAddr = $signed(operandO) <  $signed(operandT) ? jmpAddr : nxtAddr;
-            misTaken = ($signed(operandO) <  $signed(operandT)) ^ pred;
+            BranchAddr  = $signed(operandO) <  $signed(operandT) ? jmpAddr : nxtAddr;
+            misTaken    = ($signed(operandO) <  $signed(operandT)) ^ pred;
           end
           `BGE: begin
-            BranchAddr = $signed(operandO) >= $signed(operandT) ? jmpAddr : nxtAddr;
-            misTaken = (operandO >= operandT) ^ pred;
+            BranchAddr  = $signed(operandO) >= $signed(operandT) ? jmpAddr : nxtAddr;
+            misTaken    = ($signed(operandO) >= $signed(operandT)) ^ pred;
           end
           `BLTU: begin
-            BranchAddr = operandO <  operandT ? jmpAddr : nxtAddr;
-            misTaken = (operandO < operandT) ^ pred;
+            BranchAddr  = operandO <  operandT ? jmpAddr : nxtAddr;
+            misTaken    = (operandO < operandT) ^ pred;
           end
           `BGEU: begin
-            BranchAddr = operandO >= operandT ? jmpAddr : nxtAddr;
-            misTaken = (operandO >= operandT) ^ pred;
+            BranchAddr  = operandO >= operandT ? jmpAddr : nxtAddr;
+            misTaken    = (operandO >= operandT) ^ pred;
           end
         endcase
       end

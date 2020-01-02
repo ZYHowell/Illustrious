@@ -12,22 +12,22 @@ module LSbufLine(
     input wire[`DataBus] WrtDataT, 
     //
     input wire allocEn, 
-    input wire[`DataBus]    allocOperandO, 
-    input wire[`DataBus]    allocOperandT, 
-    input wire[`TagBus]     allocTagO, 
-    input wire[`TagBus]     allocTagT,
-    input wire[`TagBus]     allocTagW,
-    input wire[`OpBus]      allocOp, 
-    input wire[`InstAddrBus]allocImm, 
+    input wire[`DataBus]      allocOperandO, 
+    input wire[`DataBus]      allocOperandT, 
+    input wire[`TagBus]       allocTagO, 
+    input wire[`TagBus]       allocTagT,
+    input wire[`TagBus]       allocTagW,
+    input wire[`OpBus]        allocOp, 
+    input wire[`InstAddrBus]  allocImm, 
     input wire[`BranchTagBus] allocBranchTag, 
     //
     input wire empty, 
     output wire ready, 
     output wire[`DataBus] issueOperandO, 
     output wire[`DataBus] issueOperandT, 
-    output reg[`OpBus]   issueOp, 
-    output reg[`TagBus]  issueTagW,
-    output reg[`DataBus] issueImm,
+    output reg[`OpBus]    issueOp, 
+    output reg[`TagBus]   issueTagW,
+    output reg[`DataBus]  issueImm,
     //the imm is pc in alu, is imm in ls; but ls needs to clear branchTag before issuing
     input wire        bFreeEn, 
     input wire[1:0]   bFreeNum, 
@@ -38,16 +38,18 @@ module LSbufLine(
     reg[`TagBus]  rsTagO, rsTagT;
     reg[`DataBus] rsDataO, rsDataT;
     reg[`BranchTagBus] BranchTag;
-    wire[`TagBus] nxtPosTagO, nxtPosTagT;
-    wire[`DataBus] nxtPosDataO, nxtPosDataT;
+    wire[`TagBus]   nxtPosTagO, nxtPosTagT;
+    wire[`DataBus]  nxtPosDataO, nxtPosDataT;
     wire[`BranchTagBus] nxtPosBranchTag;
     wire discard;
 
     assign discard = ~empty & misTaken & BranchTag[bFreeNum];
     assign nxtPosEmpty = (~allocEn & empty) | discard | freeEn;
     assign ready = (~empty & (nxtPosTagO == `tagFree) & (nxtPosTagT == `tagFree) & ~discard) && (!nxtPosBranchTag);
+    
     assign issueOperandO = (nxtPosTagO == `tagFree) ? nxtPosDataO : rsDataO;
     assign issueOperandT = (nxtPosTagT == `tagFree) ? nxtPosDataT : rsDataT;
+
     assign nxtPosBranchTag = (bFreeEn & BranchTag[bFreeNum]) ? (BranchTag ^ (1 << bFreeNum)) : BranchTag;
 
     nxtPosCal nxtPosCalO(
@@ -76,29 +78,29 @@ module LSbufLine(
     );
     always @(posedge clk or posedge rst) begin
       if (rst) begin
-        rsTagO <= `tagFree;
-        rsTagT <= `tagFree;
-        rsDataO <= `dataFree;
-        rsDataT <= `dataFree;
+        rsTagO    <= `tagFree;
+        rsTagT    <= `tagFree;
+        rsDataO   <= `dataFree;
+        rsDataT   <= `dataFree;
         issueTagW <= `tagFree;
-        issueImm <= `dataFree;
-        issueOp <= `NOP;
+        issueImm  <= `dataFree;
+        issueOp   <= `NOP;
         BranchTag <= 0;
       end else if (rdy) begin
         if (allocEn) begin
-          rsTagO <= allocTagO;
-          rsTagT <= allocTagT;
-          rsDataO <= allocOperandO;
-          rsDataT <= allocOperandT;
+          rsTagO    <= allocTagO;
+          rsTagT    <= allocTagT;
+          rsDataO   <= allocOperandO;
+          rsDataT   <= allocOperandT;
           issueTagW <= allocTagW;
-          issueImm <= allocImm;
-          issueOp <= allocOp;
+          issueImm  <= allocImm;
+          issueOp   <= allocOp;
           BranchTag <= allocBranchTag;
         end else begin
-          rsTagO <= nxtPosTagO;
-          rsTagT <= nxtPosTagT;
-          rsDataO <= nxtPosDataO;
-          rsDataT <= nxtPosDataT;
+          rsTagO    <= nxtPosTagO;
+          rsTagT    <= nxtPosTagT;
+          rsDataO   <= nxtPosDataO;
+          rsDataT   <= nxtPosDataT;
           BranchTag <= nxtPosBranchTag;
         end
       end
@@ -136,7 +138,7 @@ module lsBuffer(
     output reg[`TagBus]         wrtTag, 
     output reg[`OpBus]          opCode, 
     //to dispatcher
-    output wire[`TagRootBus] LSfreeTag, 
+    output wire[`TagRootBus]    LSfreeTag, 
     output wire LSbufFree, 
     //
     input wire                  bFreeEn, 
@@ -147,24 +149,24 @@ module lsBuffer(
     wire[`rsSize - 1 : 0] ready;
 
     reg[`rsSize - 1 : 0] allocEn;
-    reg[`DataBus]     AllocPostOperandO; 
-    reg[`DataBus]     AllocPostOperandT; 
-    reg[`TagBus]      AllocPostTagO; 
-    reg[`TagBus]      AllocPostTagT;
-    reg[`TagBus]      AllocPostTagW;
-    reg[`OpBus]       AllocPostOp; 
-    reg[`DataBus]     AllocPostImm; 
-    reg[`BranchTagBus] AllocBranchTag;
+    reg[`DataBus]       AllocPostOperandO; 
+    reg[`DataBus]       AllocPostOperandT; 
+    reg[`TagBus]        AllocPostTagO; 
+    reg[`TagBus]        AllocPostTagT;
+    reg[`TagBus]        AllocPostTagW;
+    reg[`OpBus]         AllocPostOp; 
+    reg[`DataBus]       AllocPostImm; 
+    reg[`BranchTagBus]  AllocBranchTag;
     reg[`rsSize - 1 : 0] freeEn;
 
-    wire[`DataBus] issueOperandO[`rsSize - 1 : 0];
-    wire[`DataBus] issueOperandT[`rsSize - 1 : 0];
-    wire[`OpBus]   issueOp[`rsSize - 1 : 0]; 
-    wire[`TagBus] issueTagW[`rsSize - 1 : 0];
-    wire[`DataBus] issueImm[`rsSize - 1 : 0];
+    wire[`DataBus]  issueOperandO[`rsSize - 1 : 0];
+    wire[`DataBus]  issueOperandT[`rsSize - 1 : 0];
+    wire[`OpBus]    issueOp[`rsSize - 1 : 0]; 
+    wire[`TagBus]   issueTagW[`rsSize - 1 : 0];
+    wire[`DataBus]  issueImm[`rsSize - 1 : 0];
     wire[`rsSize : 0] nxtPosEmpty;
 
-    reg [`TagRootBus]   head, tail, judgeIssue, nxtPosTail;
+    reg [`TagRootBus] head, tail, judgeIssue, nxtPosTail;
     reg [`rsSize - 1 : 0] valid;
     wire canIssue;
     //the head is the head while the tail is the next;
@@ -236,14 +238,14 @@ module lsBuffer(
       allocEn[tail] = LSen;
       freeEn = 0;
       freeEn[head] = LSdone;
-      AllocPostImm = LSimm;
-      AllocPostOp = LSop;
+      AllocPostImm      = LSimm;
+      AllocPostOp       = LSop;
       AllocPostOperandO = LSoperandO;
       AllocPostOperandT = LSoperandT;
-      AllocPostTagO = LStagO;
-      AllocPostTagT = LStagT;
-      AllocPostTagW = LStagW;
-      AllocBranchTag = BranchTag;
+      AllocPostTagO     = LStagO;
+      AllocPostTagT     = LStagT;
+      AllocPostTagW     = LStagW;
+      AllocBranchTag    = BranchTag;
     end
 
     always @ (posedge clk) begin
@@ -251,12 +253,12 @@ module lsBuffer(
         judgeIssue <= 0;
         head <= 0;
         tail <= 0;
-        LSworkEn <= `Disable; 
-        operandO <= `dataFree; 
-        operandT <= `dataFree;
-        imm <= `dataFree;
-        wrtTag <= `tagFree; 
-        opCode <= `NOP; 
+        LSworkEn  <= `Disable; 
+        operandO  <= `dataFree; 
+        operandT  <= `dataFree;
+        imm       <= `dataFree;
+        wrtTag    <= `tagFree; 
+        opCode    <= `NOP; 
       end else begin
         tail <= nxtPosTail;
         //needs to improve
@@ -265,19 +267,19 @@ module lsBuffer(
         end 
         if (LSreadEn && canIssue) begin
           LSworkEn <= `Enable;
-          operandO <= issueOperandO[judgeIssue];
-          operandT <= issueOperandT[judgeIssue];
-          opCode <= issueOp[judgeIssue];
-          wrtTag <= issueTagW[judgeIssue];
-          imm <= issueImm[judgeIssue];
-          judgeIssue <= (judgeIssue == `rsSize - 1) ? 0 : judgeIssue + 1;
+          operandO    <= issueOperandO[judgeIssue];
+          operandT    <= issueOperandT[judgeIssue];
+          opCode      <= issueOp[judgeIssue];
+          wrtTag      <= issueTagW[judgeIssue];
+          imm         <= issueImm[judgeIssue];
+          judgeIssue  <= (judgeIssue == `rsSize - 1) ? 0 : judgeIssue + 1;
         end else begin
           LSworkEn <= `Disable;
-          operandO <= `dataFree;
-          operandT <= `dataFree;
-          opCode <= `NOP;
-          wrtTag <= `tagFree;
-          imm <= `dataFree;
+          operandO  <= `dataFree;
+          operandT  <= `dataFree;
+          opCode    <= `NOP;
+          wrtTag    <= `tagFree;
+          imm       <= `dataFree;
         end
       end
     end

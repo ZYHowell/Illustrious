@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 prefix='/opt/riscv'
-rpath=$prefix/bin/
+rpath=$prefix/bin/ 
 # clearing test dir
 rm -rf ./test
 mkdir ./test

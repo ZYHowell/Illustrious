@@ -4,8 +4,8 @@ module BP(
   input rst, 
   input rdy, 
   input wire predEn, 
-  input wire[`InstAddrBus] predPC, 
-  input wire[`InstBus] predInst, 
+  input wire[`InstAddrBus]  predPC, 
+  input wire[`InstBus]      predInst, 
   output reg predOutEn, 
   output reg pred, //0 for not taken and 1 for taken
   output reg[`InstAddrBus] predAddr, 
@@ -27,9 +27,7 @@ module BP(
             misG[1] <= 2'b10;
             corG[0] <= 2'b00;
             corG[1] <= 2'b11;
-            gshare <= 2'b00;
-            //miss: 00,10->01, 01,11->10
-            //corr: 00,01=>00, 10,11->11
+            gshare  <= 2'b00;
         end else if (rdy) begin
             predOutEn <= predEn;
             pred <= gshare[1];

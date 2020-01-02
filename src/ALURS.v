@@ -2,13 +2,13 @@
 //caution! not test if Status == 0
 module nxtPosCal(
   input wire enWrtO, 
-  input wire[`TagBus] WrtTagO, 
+  input wire[`TagBus]   WrtTagO, 
   input wire[`DataBus]  WrtDataO, 
   input wire enWrtT, 
-  input wire[`TagBus] WrtTagT,
-  input wire[`DataBus] WrtDataT, 
+  input wire[`TagBus]   WrtTagT,
+  input wire[`DataBus]  WrtDataT, 
 
-  input wire[`DataBus] dataNow,
+  input wire[`DataBus]  dataNow,
   input wire[`TagBus]   tagNow,
 
   output wire[`DataBus] dataNxtPos, 
@@ -17,7 +17,7 @@ module nxtPosCal(
   assign dataNxtPos = (enWrtO & (tagNow == WrtTagO)) ? WrtDataO : 
                       (enWrtT & (tagNow == WrtTagT)) ? WrtDataT :
                       dataNow;
-  assign tagNxtPos = (enWrtO & (tagNow == WrtTagO)) ? `tagFree : 
+  assign tagNxtPos  = (enWrtO & (tagNow == WrtTagO)) ? `tagFree : 
                       (enWrtT & (tagNow == WrtTagT)) ? `tagFree :
                       tagNow;
 endmodule
@@ -27,11 +27,11 @@ module RsLine(
     input rdy, 
     //
     input wire enWrtO, 
-    input wire[`TagBus] WrtTagO, 
+    input wire[`TagBus]   WrtTagO, 
     input wire[`DataBus]  WrtDataO, 
     input wire enWrtT, 
-    input wire[`TagBus] WrtTagT,
-    input wire[`DataBus] WrtDataT, 
+    input wire[`TagBus]   WrtTagT,
+    input wire[`DataBus]  WrtDataT, 
     //
     input wire allocEn, 
     input wire[`DataBus]    allocOperandO, 
@@ -47,21 +47,21 @@ module RsLine(
     output wire ready, 
     output wire[`DataBus] issueOperandO, 
     output wire[`DataBus] issueOperandT, 
-    output reg[`OpBus]   issueOp,  
-    output reg[`TagBus]  issueTagW,
-    output reg[`DataBus] issueImm, 
+    output reg[`OpBus]    issueOp,  
+    output reg[`TagBus]   issueTagW,
+    output reg[`DataBus]  issueImm, 
     output wire[`BranchTagBus]  issueBranchTag, 
     //the imm is pc in alu, is imm in ls; so bucket branchRS for it contains both
-    input wire                  bFreeEn, 
+    input wire bFreeEn, 
     input wire[1:0]             bFreeNum, 
     input wire misTaken, 
     output wire nxtPosEmpty
 );
-    reg[`TagBus]  rsTagO, rsTagT;
-    reg[`DataBus] rsDataO, rsDataT;
-    reg[`BranchTagBus] BranchTag;
-    wire[`TagBus] nxtPosTagO, nxtPosTagT;
-    wire[`DataBus] nxtPosDataO, nxtPosDataT;
+    reg[`TagBus]        rsTagO, rsTagT;
+    reg[`DataBus]       rsDataO, rsDataT;
+    reg[`BranchTagBus]  BranchTag;
+    wire[`TagBus]       nxtPosTagO, nxtPosTagT;
+    wire[`DataBus]      nxtPosDataO, nxtPosDataT;
     wire[`BranchTagBus] nxtPosBranchTag;
     wire discard;
 
@@ -166,8 +166,8 @@ module ALUrs(
     input wire misTaken
 );
 
-    wire [`rsSize - 1 : 0] ready;
-    reg [`rsSize - 1 : 0] empty;
+    wire [`rsSize - 1 : 0]  ready;
+    reg [`rsSize - 1 : 0]   empty;
 
     wire [`rsSize - 1 : 0] issueRS;
 

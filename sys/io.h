@@ -10,7 +10,7 @@
 
 #define CPU_CLK_FREQ 70000000       // clock frequency of the cpu on FPGA
 
-static inline unsigned char inb()
+static inline unsigned char inb() 
 {
 	return *((volatile unsigned char *)BYTE_PORT_IN);
 }

@@ -11,4 +11,5 @@
 /doc/*.log
 /doc/*.out
 /doc/*.synctex.gz
+/doc/*.pptx
 /src/dcache_bk.v

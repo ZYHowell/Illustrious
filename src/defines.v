@@ -1,21 +1,13 @@
 `define Enable  1'b1
 `define Disable 1'b0
-`define InstValid   1'b0
-`define InstInvalid 1'b1
 `define NotFree 1'b0
 `define IsFree  1'b1
 `define NotUsing    1'b0
 `define IsUsing     1'b1
-`define MemRead     1'b1
-`define MemWrite    1'b0
 `define Valid   1'b1
 `define Invalid 1'b0
 //should mem discard PC/LS in waiting
-`define Discard 1'b1
-`define Keep    1'b0
 
-`define MemReceive 1'b1
-`define MemNotReceive 1'b0
 `define NoFreeTag 3'b111
 `define ALUtagPrefix 1'b0
 `define LStagPrefix 1'b1
@@ -49,8 +41,9 @@
 `define RAMBus      7:0
 `define StageBus    1:0
 `define OpClassBus  6:0
-`define memTagBus   6:0
-`define memAddrTagBus   16:10
+`define memTagBus   7:0
+`define memIndexBus 7:0
+`define memAddrTagBus   17:10
 `define memAddrIndexBus 9:2
 `define BranchTagBus 2:0
 

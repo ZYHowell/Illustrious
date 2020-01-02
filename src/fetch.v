@@ -71,19 +71,19 @@ module fetch(
     end
 
     always @(posedge clk) begin
-      _DecPC <= DecPC;
-      _DecInst <= DecInst;
+      _DecPC    <= DecPC;
+      _DecInst  <= DecInst;
       if (rst) begin //| ~rdy) begin
         StallToWaitJ <= 0;
         status <= StatusFree;
-        instEn <= `Disable;
-        instAddr <= `addrFree;
+        instEn    <= `Disable;
+        instAddr  <= `addrFree;
       end else if (rdy) begin
         if (misTaken) begin
           //only when not hit, the mem receives and needs to discard
-          instEn <= `Enable;
-          instAddr <= BranchAddr;
-          status <= StatusWork;
+          instEn    <= `Enable;
+          instAddr  <= BranchAddr;
+          status    <= StatusWork;
         end else begin
           case(status)
             StatusFree: begin
@@ -98,12 +98,12 @@ module fetch(
                     status <= StatusWaitJ;
                   end else begin
                     instEn <= `Enable;
-                    instAddr <= instAddr + `PCnext;
+                    instAddr  <= instAddr + `PCnext;
                   end
                 end else begin
                   instEn <= `Disable;
-                  StallToWaitJ <= cacheInst[6];
-                  status <= StatusStall;
+                  StallToWaitJ  <= cacheInst[6];
+                  status        <= StatusStall;
                 end
               end else if (memInstOutEn) begin
                 if (~stall) begin
@@ -116,8 +116,8 @@ module fetch(
                   end
                 end else begin
                   instEn <= `Disable;
-                  StallToWaitJ <= memInst[6];
-                  status <= StatusStall;
+                  StallToWaitJ  <= memInst[6];
+                  status        <= StatusStall;
                 end
               end else begin
                 instEn <= `Disable;
@@ -127,18 +127,18 @@ module fetch(
               if (~DecInst[2]) begin
                 if (predOutEn) begin
                   instEn <= `Enable;
-                  instAddr <= predAddr;
-                  status <= StatusWork;
+                  instAddr  <= predAddr;
+                  status    <= StatusWork;
                 end
               end else if (DecInst[3]) begin
                 instEn <= `Enable;
-                instAddr <= $signed(Jimm) + $signed(DecPC);
-                status <= StatusWork;
+                instAddr  <= $signed(Jimm) + $signed(DecPC);
+                status    <= StatusWork;
                 //deal with JAL: jump straightly
               end else if (enJump) begin
                 instEn <= `Enable;
-                instAddr <= JumpAddr;
-                status <= StatusWork;
+                instAddr  <= JumpAddr;
+                status    <= StatusWork;
               end else begin
                 instEn <= `Disable;
               end
@@ -147,9 +147,9 @@ module fetch(
               if (stall) begin
                 instEn <= `Disable;
               end else begin
-                status <= StallToWaitJ ? StatusWaitJ : StatusWork;
-                instEn <= StallToWaitJ ? `Disable : `Enable;
-                instAddr <= StallToWaitJ ? instAddr : instAddr + 4;
+                status    <= StallToWaitJ ? StatusWaitJ : StatusWork;
+                instEn    <= StallToWaitJ ? `Disable : `Enable;
+                instAddr  <= StallToWaitJ ? instAddr : instAddr + 4;
               end
             end
           endcase

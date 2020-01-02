@@ -9,8 +9,8 @@ module LS(
     input wire[`DataBus]  operandO, 
     input wire[`DataBus]  operandT,  
     input wire[`DataBus]  imm, 
-    input wire[`TagBus] wrtTag, 
-    input wire[`OpBus]  opCode, 
+    input wire[`TagBus]   wrtTag, 
+    input wire[`OpBus]    opCode, 
 
     //to lsbuffer
     output wire LSunwork, 
@@ -22,12 +22,12 @@ module LS(
     output reg dataEn, 
     output reg LSRW, 
     output reg[`DataAddrBus]  dataAddr,
-    output reg[`LenBus] LSlen, 
-    output reg[`DataBus] Sdata,
+    output reg[`LenBus]       LSlen, 
+    output reg[`DataBus]      Sdata,
     //to ROB
     output reg LSROBen, 
-    output reg[`DataBus] LSROBdata, 
-    output reg[`TagBus] LSROBtag, 
+    output reg[`DataBus]  LSROBdata, 
+    output reg[`TagBus]   LSROBtag, 
     output reg LSdone
   );
     reg status, sign; 
@@ -35,105 +35,105 @@ module LS(
     assign LSunwork = (status == `IsFree) ? ~LSworkEn : LSoutEn;
     always @ (posedge clk) begin
       if (rst) begin
-        status <= `IsFree;
-        sign <= `SignEx;
-        dataEn <= `Disable;
-        LSRW <= `Read;
-        dataAddr <= `addrFree;
-        LSlen <= `ZeroLen;
-        Sdata <= `dataFree;
-        LSROBen <= `Disable;
+        status    <= `IsFree;
+        sign      <= `SignEx;
+        dataEn    <= `Disable;
+        LSRW      <= `Read;
+        dataAddr  <= `addrFree;
+        LSlen     <= `ZeroLen;
+        Sdata     <= `dataFree;
+        LSROBen   <= `Disable;
         LSROBdata <= `dataFree;
-        LSROBtag <= `tagFree;
-        LSdone <= 0;
+        LSROBtag  <= `tagFree;
+        LSdone    <= `Invalid;
       end else if (rdy) begin
-        LSdone <= 0;
+        LSdone <= `Invalid;
         case(status)
           `IsFree: begin
             LSROBen <= `Disable;
             if (LSworkEn) begin
-              dataAddr <= operandO + imm;
-              status <= `NotFree;
-              dataEn <= `Enable;
+              dataAddr  <= operandO + imm;
+              status    <= `NotFree;
+              dataEn    <= `Enable;
               case (opCode) 
                 `LB: begin
-                  LSRW <= `Read;
+                  LSRW  <= `Read;
                   LSlen <= `ByteLen;
                   Sdata <= `dataFree;
                   LSROBtag <= wrtTag;
-                  sign <= `SignEx;
+                  sign  <= `SignEx;
                 end
                 `LH: begin
-                  LSRW <= `Read;
+                  LSRW  <= `Read;
                   LSlen <= `HexLen;
                   Sdata <= `dataFree;
                   LSROBtag <= wrtTag;
-                  sign <= `SignEx;
+                  sign  <= `SignEx;
                 end
                 `LW: begin
-                  LSRW <= `Read;
+                  LSRW  <= `Read;
                   LSlen <= `WordLen;
                   Sdata <= `dataFree;
                   LSROBtag <= wrtTag;
-                  sign <= `SignEx;
+                  sign  <= `SignEx;
                 end
                 `LBU: begin
-                  LSRW <= `Read;
+                  LSRW  <= `Read;
                   LSlen <= `ByteLen;
                   Sdata <= `dataFree;
                   LSROBtag <= wrtTag;
-                  sign <= `UnsignEx;
+                  sign  <= `UnsignEx;
                 end
                 `LHU: begin
-                  LSRW <= `Read;
+                  LSRW  <= `Read;
                   LSlen <= `HexLen;
                   Sdata <= `dataFree;
                   LSROBtag <= wrtTag;
-                  sign <= `UnsignEx;
+                  sign  <= `UnsignEx;
                 end
                 `SB: begin
-                  LSRW <= `Write;
+                  LSRW  <= `Write;
                   LSlen <= 3'b000;
                   Sdata <= operandT;
                   LSROBtag <= `tagFree;
-                  sign <= `SignEx;
+                  sign  <= `SignEx;
                 end
                 `SH: begin
-                  LSRW <= `Write;
+                  LSRW  <= `Write;
                   LSlen <= 3'b001;
                   Sdata <= operandT;
                   LSROBtag <= `tagFree;
-                  sign <= `SignEx;
+                  sign  <= `SignEx;
                 end
                 `SW: begin
-                  LSRW <= `Write;
+                  LSRW  <= `Write;
                   LSlen <= 3'b011;
                   Sdata <= operandT;
                   LSROBtag <= `tagFree;
-                  sign <= `SignEx;
+                  sign  <= `SignEx;
                 end
               endcase
             end else begin
-              dataEn <= `Disable;
-              LSRW <= `Read;
-              dataAddr <= `addrFree;
-              LSlen <= `ZeroLen;
-              Sdata <= `dataFree;
-              LSROBen <= `Disable;
+              dataEn    <= `Disable;
+              LSRW      <= `Read;
+              dataAddr  <= `addrFree;
+              LSlen     <= `ZeroLen;
+              Sdata     <= `dataFree;
+              LSROBen   <= `Disable;
               LSROBdata <= `dataFree;
-              LSROBtag <= `tagFree;
+              LSROBtag  <= `tagFree;
             end
           end
           `NotFree: begin
             dataEn <= `Disable;
             if (LSoutEn) begin
-              LSdone <= 1;
-              LSRW <= `Read;
-              LSROBen <= ~LSRW;
-              status <= `IsFree;
-              LSlen <= `ZeroLen;
-              Sdata <= `dataFree;
-              dataAddr <= `addrFree;
+              LSdone    <= 1;
+              LSRW      <= `Read;
+              LSROBen   <= ~LSRW;
+              status    <= `IsFree;
+              LSlen     <= `ZeroLen;
+              Sdata     <= `dataFree;
+              dataAddr  <= `addrFree;
               if (sign) begin
                 case (LSlen)
                   `ByteLen: LSROBdata <= {{24{Ldata[7]}}, Ldata[7:0]};

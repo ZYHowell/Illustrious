@@ -50,23 +50,21 @@ module ALU(
           `AND: ROBdataW = operandO & operandT;
           `LUI: ROBdataW = operandT;
           `JAL: begin
-            //jumpEn = `Enable;
-            //jumpAddr = $signed(operandO) + $signed(operandT);
             ROBdataW = $signed(operandO) + `PCnext;
           end
           `JALR: begin
-            jumpEn = `Enable;
-            jumpAddr = ($signed(operandO) + $signed(operandT)) & `JALRnum;
-            ROBdataW = instAddr + `PCnext;
+            jumpEn    = `Enable;
+            jumpAddr  = ($signed(operandO) + $signed(operandT)) & `JALRnum;
+            ROBdataW  = instAddr + `PCnext;
           end
           `AUIPC:ROBdataW = $signed(operandO) + $signed(operandT);
           default:ROBdataW = `dataFree;
         endcase
       end else begin
-        ROBtagW = `tagFree;
-        ROBdataW = `dataFree;
-        jumpEn = `Disable;
-        jumpAddr = `addrFree;
+        ROBtagW   = `tagFree;
+        ROBdataW  = `dataFree;
+        jumpEn    = `Disable;
+        jumpAddr  = `addrFree;
       end
     end
 endmodule

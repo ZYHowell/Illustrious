@@ -60,7 +60,7 @@ module dispatcher(
     //branchtag
     input wire                  bFreeEn, 
     input wire[1:0]             bFreeNum, 
-    input wire[`BranchTagBus] DecBranchTag, 
+    input wire[`BranchTagBus]   DecBranchTag, 
     output wire[`BranchTagBus]  FinalBranchTag, 
     input wire misTaken
 );
@@ -95,122 +95,122 @@ module dispatcher(
     
     //assign the tag and acquire required datas.
     always @ (*) begin
-      ALUaddr = instAddr;
-      BranchAddr = instAddr;
-      ALUen = `Disable;
-      ALUop = `NOP;
-      ALUoperandO = `dataFree;
-      ALUoperandT = `dataFree;
-      ALUtagO = `tagFree;
-      ALUtagT = `tagFree;
-      ALUtagW = `tagFree;
-      BranchEn = `Disable;
-      BranchOperandO = `dataFree;
-      BranchOperandT = `dataFree;
-      BranchTagO = `tagFree;
-      BranchTagT = `tagFree;
-      BranchOp = `NOP;
-      BranchImm = `dataFree;
-      LSen = `Disable;
-      LSoperandO = `dataFree;
-      LSoperandT = `dataFree;
-      LStagO = `tagFree;
-      LStagT = `tagFree;
-      LStagW = `tagFree;
-      LSimm = `dataFree;
-      LSop = `NOP;
       enWrt = `Disable;
+      ALUaddr         = instAddr;
+      BranchAddr      = instAddr;
+      ALUen = `Disable;
+      ALUop           = `NOP;
+      ALUoperandO     = `dataFree;
+      ALUoperandT     = `dataFree;
+      ALUtagO         = `tagFree;
+      ALUtagT         = `tagFree;
+      ALUtagW         = `tagFree;
+      BranchEn = `Disable;
+      BranchOperandO  = `dataFree;
+      BranchOperandT  = `dataFree;
+      BranchTagO      = `tagFree;
+      BranchTagT      = `tagFree;
+      BranchOp        = `NOP;
+      BranchImm       = `dataFree;
+      LSen = `Disable;
+      LSoperandO      = `dataFree;
+      LSoperandT      = `dataFree;
+      LStagO          = `tagFree;
+      LStagT          = `tagFree;
+      LStagW          = `tagFree;
+      LSimm           = `dataFree;
+      LSop            = `NOP;
       if (~misTaken) begin
         case(opClass)
           `ClassLUI: begin
             ALUen = `Enable;
-            ALUop = opCode;
+            enWrt = `Enable;
+            ALUop       = opCode;
             ALUoperandO = rdFinalDataO;
             ALUoperandT = Uimm;
-            ALUtagO = rdFinalTagO;
-            ALUtagT = `tagFree;
-            ALUtagW = finalTag;
-            enWrt = `Enable;
+            ALUtagO     = rdFinalTagO;
+            ALUtagT     = `tagFree;
+            ALUtagW     = finalTag;
           end
           `ClassAUIPC: begin
             ALUen = `Enable;
-            ALUop = opCode;
+            enWrt = `Enable;
+            ALUop       = opCode;
             ALUoperandO = rdFinalDataO;
             ALUoperandT = Uimm;
-            ALUtagO = rdFinalTagO;
-            ALUtagT = `tagFree;
-            ALUtagW = finalTag;
-            enWrt = `Enable;
+            ALUtagO     = rdFinalTagO;
+            ALUtagT     = `tagFree;
+            ALUtagW     = finalTag;
           end
           `ClassJAL: begin
             ALUen = `Enable;
-            ALUop = opCode;
+            enWrt = `Enable;
+            ALUop       = opCode;
             ALUoperandO = instAddr;
             ALUoperandT = Jimm;
-            ALUtagO = `tagFree;
-            ALUtagT = `tagFree;
-            ALUtagW = finalTag;
-            enWrt = `Enable;
+            ALUtagO     = `tagFree;
+            ALUtagT     = `tagFree;
+            ALUtagW     = finalTag;
           end
           `ClassJALR: begin
             ALUen = `Enable;
-            ALUop = opCode;
+            enWrt = `Enable;
+            ALUop       = opCode;
             ALUoperandO = rdFinalDataO;
             ALUoperandT = imm;
-            ALUtagO = rdFinalTagO;
-            ALUtagT = `tagFree;
-            ALUtagW = finalTag;
-            enWrt = `Enable;
+            ALUtagO     = rdFinalTagO;
+            ALUtagT     = `tagFree;
+            ALUtagW     = finalTag;
           end
           `ClassB:    begin
             BranchEn = `Enable;
-            BranchOperandO = rdFinalDataO;
-            BranchOperandT = rdFinalDataT;
-            BranchTagO = rdFinalTagO;
-            BranchTagT = rdFinalTagT;
-            BranchOp = opCode;
-            BranchImm = Bimm;
+            BranchOperandO  = rdFinalDataO;
+            BranchOperandT  = rdFinalDataT;
+            BranchTagO      = rdFinalTagO;
+            BranchTagT      = rdFinalTagT;
+            BranchOp        = opCode;
+            BranchImm       = Bimm;
           end
           `ClassLD:   begin
             LSen = `Enable;
-            LSoperandO = rdFinalDataO;
-            LSoperandT = `dataFree;
-            LStagO = rdFinalTagO;
-            LStagT = `tagFree;
-            LStagW = finalTag;
-            LSimm = imm;
-            LSop = opCode;
             enWrt = `Enable;
+            LSoperandO  = rdFinalDataO;
+            LSoperandT  = `dataFree;
+            LStagO      = rdFinalTagO;
+            LStagT      = `tagFree;
+            LStagW      = finalTag;
+            LSimm       = imm;
+            LSop        = opCode;
           end
           `ClassST:   begin
             LSen = `Enable;
-            LSoperandO = rdFinalDataO;
-            LSoperandT = rdFinalDataT;
-            LStagO = rdFinalTagO;
-            LStagT = rdFinalTagT;
-            LStagW = finalTag;
-            LSimm = Simm;
-            LSop = opCode;
+            LSoperandO  = rdFinalDataO;
+            LSoperandT  = rdFinalDataT;
+            LStagO      = rdFinalTagO;
+            LStagT      = rdFinalTagT;
+            LStagW      = finalTag;
+            LSimm       = Simm;
+            LSop        = opCode;
           end
           `ClassRI:   begin
             ALUen = `Enable;
-            ALUop = opCode;
+            enWrt = `Enable;
+            ALUop       = opCode;
             ALUoperandO = rdFinalDataO;
             ALUoperandT = imm;
-            ALUtagO = rdFinalTagO;
-            ALUtagT = `tagFree;
-            ALUtagW = finalTag;
-            enWrt = `Enable;
+            ALUtagO     = rdFinalTagO;
+            ALUtagT     = `tagFree;
+            ALUtagW     = finalTag;
           end
           `ClassRR:   begin
             ALUen = `Enable;
-            ALUop = opCode;
+            enWrt = `Enable;
+            ALUop       = opCode;
             ALUoperandO = rdFinalDataO;
             ALUoperandT = rdFinalDataT;
-            ALUtagO = rdFinalTagO;
-            ALUtagT = rdFinalTagT;
-            ALUtagW = finalTag;
-            enWrt = `Enable;
+            ALUtagO     = rdFinalTagO;
+            ALUtagT     = rdFinalTagT;
+            ALUtagW     = finalTag;
           end
         endcase
       end

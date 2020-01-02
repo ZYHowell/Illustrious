@@ -73,24 +73,24 @@ module Regfile(
     input wire rdy, 
     //ALU is actually from the ROB. 
     input wire ALUwrtEn, 
-    input wire [`TagBus] ALUwrtTag,
+    input wire [`TagBus]  ALUwrtTag,
     input wire [`DataBus] ALUwrtData, 
 
     input wire LSwrtEn, 
-    input wire [`TagBus] LSwrtTag,
+    input wire [`TagBus]  LSwrtTag,
     input wire [`DataBus] LSwrtData,
     //from decoder
-    input wire [`NameBus]   regNameO, 
-    input wire [`NameBus]   regNameT, 
+    input wire [`NameBus] regNameO, 
+    input wire [`NameBus] regNameT, 
     //from dispatcher
     input wire enWrtDec, 
-    input wire [`TagBus]    wrtTagDec, 
-    input wire [`NameBus]   wrtNameDec, 
+    input wire [`TagBus]  wrtTagDec, 
+    input wire [`NameBus] wrtNameDec, 
 
-    output reg [`DataBus]   regDataO, 
-    output reg [`TagBus]    regTagO, 
-    output reg [`DataBus]   regDataT, 
-    output reg [`TagBus]    regTagT, 
+    output reg [`DataBus] regDataO, 
+    output reg [`TagBus]  regTagO, 
+    output reg [`DataBus] regDataT, 
+    output reg [`TagBus]  regTagT, 
     //
     input wire branchDeeper, 
     input wire bFreeEn, 
@@ -137,35 +137,35 @@ module Regfile(
 
     always @(*) begin
       if (regNameO) begin
-        regTagO = tag[regNameO];
-        regDataO = data[regNameO];
+        regTagO   = tag[regNameO];
+        regDataO  = data[regNameO];
         if (ALUwrtEn && regTagO == ALUwrtTag) begin
-          regTagO = `tagFree;
-          regDataO = ALUwrtData;
+          regTagO   = `tagFree;
+          regDataO  = ALUwrtData;
         end else if (LSwrtEn && regTagO == LSwrtTag) begin
-          regTagO = `tagFree;
-          regDataO = LSwrtData;
+          regTagO   = `tagFree;
+          regDataO  = LSwrtData;
         end
       end else begin
-        regTagO = `tagFree;
-        regDataO = `dataFree;
+        regTagO   = `tagFree;
+        regDataO  = `dataFree;
       end
     end
 
     always @(*) begin
       if (regNameT) begin
-        regTagT = tag[regNameT];
-        regDataT = data[regNameT];
+        regTagT   = tag[regNameT];
+        regDataT  = data[regNameT];
         if (ALUwrtEn && regTagT == ALUwrtTag) begin
-          regTagT = `tagFree;
-          regDataT = ALUwrtData;
+          regTagT   = `tagFree;
+          regDataT  = ALUwrtData;
         end else if (LSwrtEn && regTagT == LSwrtTag) begin
-          regTagT = `tagFree;
-          regDataT = LSwrtData;
+          regTagT   = `tagFree;
+          regDataT  = LSwrtData;
         end
       end else begin
-        regTagT = `tagFree;
-        regDataT = `dataFree;
+        regTagT   = `tagFree;
+        regDataT  = `dataFree;
       end
     end
 endmodule 

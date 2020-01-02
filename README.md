@@ -7,8 +7,8 @@ MS108, Computer Architecture project in ACM class. Just try something new instea
 
 #### Feature
 
-* (modified) Tomasulo algorithm (with ROB and branch bits)
-* Pipeline: 4 stages
+* Tomasulo algorithm (with ROB and branch bits)
+* Pipeline: 5 stages
 * A 1KiB I-cache, directly mapped
 * A write-back D-cache supported
 * Branch prediction supported and virtual regfile to support it. Branch prediction policy is Gshare
