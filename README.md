@@ -9,11 +9,12 @@ MS108, Computer Architecture project in ACM class. Just try something new instea
 
 * (modified) Tomasulo algorithm (with ROB and branch bits)
 * Pipeline: 4 stages
-* A 512B I-cache, directly mapped
-* Branch prediction supported and Virtual regfile to support it. 
+* A 1KiB I-cache, directly mapped
+* A write-back D-cache supported
+* Branch prediction supported and virtual regfile to support it. Branch prediction policy is Gshare
 * Precise Interruption unsupported
-* Pass Implementation with respect to 70MHz
-* The aim is to explore how branch bits work.Though BOOM has already taped out a CPU with such branch bits, the organization is **really complex for a homework.** <font size=1>I've found that some reg are not needed, which the vivado opt can often notice too, but it is deceived by the codes in chaos. </font>
+* Running on FPGA with 80MHz, and higher frequency is also supported
+* The aim is to explore how branch bits work. Though BOOM has already taped out a CPU with such branch bits, the organization is **really complex for a homework.** <font size=1>I've found that some reg are not needed, which the vivado opt can often notice too, but it is deceived by the codes in chaos. </font>
 
 #### Mention: 
 

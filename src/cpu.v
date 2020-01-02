@@ -179,7 +179,7 @@ module cpu(
     .LSRW(LSRW), //always 0 for read and 1 for write
     .LSaddr(dataAddr),
     .LSlen(LSlen), 
-    .Sdata(Sdata), //is DataFree when it is read
+    .Sdata(Sdata), 
     //output below
       .LSdone(LSoutEn), 
       .LdData(mcuLdata), 
@@ -194,6 +194,22 @@ module cpu(
 
   assign stall = ~(ALUfree & LSbufFree & ROBfree & BranchFree);
   assign dbgreg_dout = 0;
+
+  wire predOutEn, pred, predEn;
+  wire[`InstAddrBus] predAddr;
+  BP BP(
+    .clk(clk_in),
+    .rst(rst_in),
+    .rdy(rdy_in),
+    .predEn(predEn), 
+    .predPC(ToDecAddr), 
+    .predInst(ToDecInst), 
+    .predOutEn(predOutEn), 
+    .pred(pred), //0 for not taken and 1 for taken
+    .predAddr(predAddr), 
+    .BranchEn(BranchEn), 
+    .BranchMisTaken(misTaken)
+  );
 
   fetch fetcher(
       .clk(clk_in), 
@@ -221,7 +237,10 @@ module cpu(
       .hit(hit), 
       .cacheInst(cacheInst), 
     //branch
-      .misTaken(misTaken)
+      .misTaken(misTaken), 
+      .predOutEn(predOutEn),
+      .predAddr(predAddr), 
+      .predEn(predEn)
   );
   /*
    * decoder does not need to check if the current inst is mistaken, 
@@ -441,7 +460,10 @@ module cpu(
       .opCode(BranchOp), 
       .PC(BranchPC), 
       .bNum(BranchTagExNum), 
-      .misTaken(misTaken)
+      .misTaken(misTaken), 
+    //
+      .pred(BranchPred), 
+      .DecPred(pred)
   );
 
   Branch Branch(
@@ -453,6 +475,7 @@ module cpu(
       .opCode(BranchOp), 
       .PC(BranchPC), 
       .bNum(BranchTagExNum),
+      .pred(BranchPred), 
     //to the PC
       .BranchResultEn(BranchEn), 
       .BranchAddr(BranchAddr),

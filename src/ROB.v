@@ -145,8 +145,6 @@ module ROB(
           ComTagO <= rsTagW[head];
         end else begin
           enComO <= `Disable;
-          ComDataO <= `dataFree;
-          ComTagO <= `tagFree;
         end
       end
     end

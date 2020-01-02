@@ -26,7 +26,11 @@ module fetch(
     //branch
     input wire misTaken, 
     //input wire enBranch, 
-    input wire[`InstAddrBus] BranchAddr
+    input wire[`InstAddrBus] BranchAddr, 
+
+    input wire predOutEn, 
+    input wire[`InstAddrBus] predAddr, 
+    output wire predEn
 );
     localparam StatusFree = 2'b00;
     localparam StatusWork = 2'b01;
@@ -35,20 +39,19 @@ module fetch(
 
     reg[1:0] status;
     reg StallToWaitJ;
+    reg BJ;
     reg[`InstBus] _DecInst;
     reg[`InstAddrBus] _DecPC;
-    wire isJ, cacheIsJ;
     wire[`DataBus] Jimm;
 
-    assign isJ = memInst[6] & memInst[2];
-    assign cacheIsJ = cacheInst[6] & cacheInst[2];
+    assign predEn = DecEn & DecInst[6] & ~DecInst[2];
     assign Jimm = {{`UimmFillLen{DecInst[31]}}, DecInst[19:12], DecInst[20], DecInst[30:21], 1'b0};
 
     always @(*) begin
       DecEn = `Disable;
       DecInst = (~(hit | memInstOutEn)) ? _DecInst : 
                 (hit ? cacheInst : memInst);
-      if (rst == `Disable) begin
+      if (~rst) begin
         case(status)
           StatusFree: begin
             DecInst = `dataFree;
@@ -90,7 +93,7 @@ module fetch(
             StatusWork: begin
               if (hit) begin
                 if (~stall) begin
-                  if (cacheIsJ) begin
+                  if (cacheInst[6]) begin
                     instEn <= `Disable;
                     status <= StatusWaitJ;
                   end else begin
@@ -99,12 +102,12 @@ module fetch(
                   end
                 end else begin
                   instEn <= `Disable;
-                  StallToWaitJ <= cacheIsJ;
+                  StallToWaitJ <= cacheInst[6];
                   status <= StatusStall;
                 end
               end else if (memInstOutEn) begin
                 if (~stall) begin
-                  if (isJ) begin
+                  if (memInst[6]) begin
                     instEn <= `Disable;
                     status <= StatusWaitJ;
                   end else begin
@@ -113,7 +116,7 @@ module fetch(
                   end
                 end else begin
                   instEn <= `Disable;
-                  StallToWaitJ <= isJ;
+                  StallToWaitJ <= memInst[6];
                   status <= StatusStall;
                 end
               end else begin
@@ -121,7 +124,13 @@ module fetch(
               end
             end
             StatusWaitJ: begin
-              if (DecInst[3]) begin
+              if (~DecInst[2]) begin
+                if (predOutEn) begin
+                  instEn <= `Enable;
+                  instAddr <= predAddr;
+                  status <= StatusWork;
+                end
+              end else if (DecInst[3]) begin
                 instEn <= `Enable;
                 instAddr <= $signed(Jimm) + $signed(DecPC);
                 status <= StatusWork;

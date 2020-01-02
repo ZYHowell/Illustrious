@@ -49,9 +49,9 @@
 `define RAMBus      7:0
 `define StageBus    1:0
 `define OpClassBus  6:0
-`define memTagBus   7:0
-`define memAddrTagBus   16:9
-`define memAddrIndexBus 8:2
+`define memTagBus   6:0
+`define memAddrTagBus   16:10
+`define memAddrIndexBus 9:2
 `define BranchTagBus 2:0
 
 `define immFillLen 20
@@ -62,7 +62,7 @@
 `define rsSize 6
 `define branchRsSize 3
 `define ROBsize 6
-`define memCacheSize 128
+`define memCacheSize 256
 
 `define tagFree     4'b0111
 `define nameFree    5'b00000

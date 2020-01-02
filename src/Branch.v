@@ -9,6 +9,7 @@ module Branch(
     input wire[`DataBus]    imm, 
     input wire[`InstAddrBus]PC, 
     input wire[1:0]         bNum, 
+    input wire pred, 
     //to the PC
     //the bResultEn is also bFreeEn
     output wire               BranchResultEn, 
@@ -31,27 +32,27 @@ module Branch(
         case (opCode)
           `BEQ: begin
             BranchAddr = operandO == operandT ? jmpAddr : nxtAddr;
-            misTaken = operandO == operandT;
+            misTaken = (operandO == operandT) ^ pred;
           end
           `BNE: begin
             BranchAddr = operandO != operandT ? jmpAddr : nxtAddr;
-            misTaken = operandO != operandT;
+            misTaken = (operandO != operandT) ^ pred;
           end
           `BLT: begin
             BranchAddr = $signed(operandO) <  $signed(operandT) ? jmpAddr : nxtAddr;
-            misTaken = $signed(operandO) <  $signed(operandT);
+            misTaken = ($signed(operandO) <  $signed(operandT)) ^ pred;
           end
           `BGE: begin
             BranchAddr = $signed(operandO) >= $signed(operandT) ? jmpAddr : nxtAddr;
-            misTaken = operandO >= operandT;
+            misTaken = (operandO >= operandT) ^ pred;
           end
           `BLTU: begin
             BranchAddr = operandO <  operandT ? jmpAddr : nxtAddr;
-            misTaken = operandO < operandT;
+            misTaken = (operandO < operandT) ^ pred;
           end
           `BGEU: begin
             BranchAddr = operandO >= operandT ? jmpAddr : nxtAddr;
-            misTaken = operandO >= operandT;
+            misTaken = (operandO >= operandT) ^ pred;
           end
         endcase
       end

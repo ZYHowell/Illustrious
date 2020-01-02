@@ -16,21 +16,18 @@ module regfileLine(
   input wire enWrtT, 
   input wire[`DataBus] WrtDataT, 
   input wire[`TagBus] WrtTagT, 
-  output wire[`DataBus] dataS, 
+  output reg[`DataBus] Data, 
   output wire[`TagBus] tagS
 );
   reg[`TagBus] allTag[3:0];
-  reg[`DataBus] Data;
   wire[`TagBus] nxtPosTag[3:0];
-  wire[`DataBus] nxtPosData;
   reg[1:0] head, tail;
   wire[1:0] nxtHead, nxtTail;
 
   assign nxtHead = head < 3 ? head + 1 : 0;
   assign nxtTail = tail < 3 ? tail + 1 : 0;
 
-  assign dataS = nxtPosData;
-  assign tagS = nxtPosTag[tail];
+  assign tagS = allTag[tail];
   generate
     genvar j;
     for(j = 0;j < 4;j = j + 1) begin: nxtPosCounter
@@ -38,8 +35,6 @@ module regfileLine(
                             (enWrtT & (allTag[j] == WrtTagT)) ? `tagFree : allTag[j];
     end
   endgenerate
-  assign nxtPosData = (enWrtO & (allTag[head] == WrtTagO)) ? WrtDataO : 
-                      (enWrtT & (allTag[head] == WrtTagT)) ? WrtDataT : Data;
 
   integer i;
   always @(posedge clk) begin
@@ -54,7 +49,8 @@ module regfileLine(
       for (i = 0; i < 4;i = i + 1) begin
         allTag[i] <= (renamEn && (i == tail)) ? renamTag : nxtPosTag[i];
       end
-      Data <= nxtPosData;
+      Data <= (enWrtO & (allTag[head] == WrtTagO)) ? WrtDataO : 
+              (enWrtT & (allTag[head] == WrtTagT)) ? WrtDataT : Data;
       
       if (branchFree & ~misTaken) begin
         head <= nxtHead;
@@ -133,16 +129,43 @@ module Regfile(
           .WrtDataT(LSwrtData),
           .WrtTagT(LSwrtTag), 
           
-          .dataS(data[j]), 
+          .Data(data[j]), 
           .tagS(tag[j])
         );
       end
     endgenerate
 
     always @(*) begin
-      regDataO = regNameO ? data[regNameO] : 0;
-      regTagO = regNameO ? tag[regNameO] : `tagFree;
-      regDataT = regNameT ? data[regNameT] : 0;
-      regTagT = regNameT ? tag[regNameT] : `tagFree;
+      if (regNameO) begin
+        regTagO = tag[regNameO];
+        regDataO = data[regNameO];
+        if (ALUwrtEn && regTagO == ALUwrtTag) begin
+          regTagO = `tagFree;
+          regDataO = ALUwrtData;
+        end else if (LSwrtEn && regTagO == LSwrtTag) begin
+          regTagO = `tagFree;
+          regDataO = LSwrtData;
+        end
+      end else begin
+        regTagO = `tagFree;
+        regDataO = `dataFree;
+      end
+    end
+
+    always @(*) begin
+      if (regNameT) begin
+        regTagT = tag[regNameT];
+        regDataT = data[regNameT];
+        if (ALUwrtEn && regTagT == ALUwrtTag) begin
+          regTagT = `tagFree;
+          regDataT = ALUwrtData;
+        end else if (LSwrtEn && regTagT == LSwrtTag) begin
+          regTagT = `tagFree;
+          regDataT = LSwrtData;
+        end
+      end else begin
+        regTagT = `tagFree;
+        regDataT = `dataFree;
+      end
     end
 endmodule 

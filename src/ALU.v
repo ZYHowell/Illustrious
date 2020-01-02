@@ -10,7 +10,7 @@ module ALU(
     input wire[`InstAddrBus]instAddr, 
     input wire[`BranchTagBus] instBranchTag, 
     //to ROB
-    output wire ROBen, 
+    output reg ROBen, 
     output reg[`TagBus]     ROBtagW, 
     output reg[`DataBus]    ROBdataW,
     output reg[`BranchTagBus] ROBbranchW, 
@@ -23,17 +23,17 @@ module ALU(
     input wire[1:0]             bFreeNum
 );
     always @(*) begin
-      if (ALUworkEn & ~misTaken) begin
+      if (ALUworkEn) begin
         ROBbranchW = (bFreeEn & instBranchTag[bFreeNum]) ? (instBranchTag ^ (1 << bFreeNum)) : instBranchTag;
+        ROBen = !(misTaken && instBranchTag[bFreeNum]);
       end else begin
         ROBbranchW = 0;
+        ROBen = `Disable;
       end
     end
 
-    assign ROBen = ALUworkEn & ~misTaken;
-
     always @ (*) begin
-      if (ALUworkEn & ~misTaken) begin
+      if (ALUworkEn) begin
         ROBtagW = wrtTag;
         jumpEn = `Disable;
         jumpAddr = `addrFree;

@@ -20,6 +20,7 @@ module BRsLine(
     input wire[`OpBus]        allocOp, 
     input wire[`DataBus]      allocImm, 
     input wire[`InstAddrBus]  allocPC, 
+    input wire allocPred, 
     //
     input wire empty, 
     output wire ready, 
@@ -27,7 +28,8 @@ module BRsLine(
     output wire[`DataBus]     issueOperandT, 
     output reg[`OpBus]       issueOp, 
     output reg[`DataBus]     issueImm, 
-    output reg[`InstAddrBus] issuePC
+    output reg[`InstAddrBus] issuePC, 
+    output reg issuePred
     //the imm is pc in alu, is imm in ls; so bucket branchRS for it contains both
 );
     reg[`TagBus]  rsTagO, rsTagT;
@@ -72,6 +74,7 @@ module BRsLine(
         issuePC    <= `addrFree;
         issueImm   <= `dataFree;
         issueOp    <= `NOP;
+        issuePred <= 0;
       end else if (rdy) begin
         if (allocEn) begin
           rsTagO  <= allocTagO;
@@ -81,6 +84,7 @@ module BRsLine(
           issuePC    <= allocPC;
           issueImm   <= allocImm;
           issueOp    <= allocOp;
+          issuePred <= allocPred;
         end else begin
           rsTagO  <= nxtPosTagO;
           rsTagT  <= nxtPosTagT;
@@ -120,7 +124,9 @@ module BranchRS(
     output reg[`InstAddrBus]    PC,
     output reg[1:0]             bNum, 
     //from branch
-    input wire misTaken
+    input wire misTaken, 
+    input wire DecPred, 
+    output reg pred
 );
     wire [`branchRsSize - 1 : 0] ready;
     reg [`branchRsSize - 1 : 0] empty;
@@ -140,6 +146,7 @@ module BranchRS(
     wire[`NameBus] issueNameW[`branchRsSize - 1 : 0];
     wire[`DataBus] issueImm[`branchRsSize - 1 : 0];
     wire[`InstAddrBus] issuePC[`branchRsSize - 1 : 0];
+    wire issuePred[`branchRsSize - 1 : 0];
 
     reg [1:0]   head, tail;
     wire canIssue;
@@ -171,6 +178,7 @@ module BranchRS(
           .allocOp(AllocPostOp), 
           .allocImm(AllocPostImm),
           .allocPC(AllocPostAddr), 
+          .allocPred(DecPred), 
           //
           .empty(empty[j]), 
           .ready(ready[j]), 
@@ -178,7 +186,8 @@ module BranchRS(
           .issueOperandT(issueOperandT[j]), 
           .issueOp(issueOp[j]), 
           .issueImm(issueImm[j]), 
-          .issuePC(issuePC[j])
+          .issuePC(issuePC[j]), 
+          .issuePred(issuePred[j])
         );
       end
     endgenerate
@@ -208,6 +217,7 @@ module BranchRS(
         opCode <= `NOP; 
         PC <= `addrFree;
         bNum <= 0;
+        pred <= 0;
       end else begin
         bNum <= head;
         if (BranchEn) begin
@@ -221,6 +231,7 @@ module BranchRS(
           opCode <= issueOp[head];
           imm <= issueImm[head];
           PC <= issuePC[head];
+          pred <= issuePred[head];
           empty[head] <= 1;
           head <= (head == `branchRsSize - 1) ? 0 : head + 1;
         end else begin
@@ -230,6 +241,7 @@ module BranchRS(
           opCode <= `NOP;
           PC <= `addrFree;
           imm <= `dataFree;
+          pred <= 0;
         end
       end
     end

@@ -21,16 +21,19 @@
     I implemented a 512B I-cache in my project, then I made it a 2-way associative one, but there is little improvement. 
     I guess this is because the testbench only contains short codes. 
 
-    My 2-way associative cache is in /backup/Units. 
+    I've also implemented a D-cache with writing back. This performs well in simulation, 
+    but costs a great amount of logic units(20\% more LUT) so I give up. 
+
+    My 2-way associative cache and D-cache are in /backup/Units. 
 \subsection{Branch Policy}
     I first designed one without branch prediction and its policy is stall. Since branch instructions hold about sixth of instructions, 
     this one stalls frequently and is not so OoO. 
 
     Then I made one with branch prediction. Like what BOOM(Berkeley Out-of-Order Machine) does, it uses shadow registers and branch masks. 
     Each instruction has a branch mask to evidence if it follows in-flight branch instructions. After executing a branch instruction, 
-    it boardcasts to update others' branch masks. Only Execute load/store instructions with cleared branch mask. 
+    it boardcasts to update others' branch masks. Only Execute load/store instructions with cleared branch mask. Branch prediction policy is simply GShare. 
     
-    This one can run with a frequency of 70MHz. 
+    This one can run with a frequency of 100MHz. (I slow down to 80MHz with no neg delay)
 
     This sounds cool, but when I implemented it, I found the delay high, since to deal with the boardcast of branch instructions, 
     a large number of logic units are needed. (let alone the shadow registers cost considerable sources too)
@@ -55,4 +58,9 @@
 1. \url{https://docs.boom-core.org/en/latest/}, an out of order RISC-V CPU using chisel, with branch bits(named branch mask there)
 
 2. \url{http://www.kroening.com/diplom/diplom/main003.html}, details about the hardware of Tomasulo Architecture.
+\section{Design}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=165mm]{design.jpg}
+\end{figure}
 \end{document}

@@ -177,6 +177,7 @@ module ALUrs(
     reg[`TagBus]          AllocPostTagO; 
     reg[`TagBus]          AllocPostTagT;
     reg[`TagBus]          AllocPostTagW;
+    //remark: this is designed for normal Tomasulo that I gave up. 
     reg[`OpBus]           AllocPostOp; 
     reg[`InstAddrBus]     AllocPostAddr; 
     reg[`BranchTagBus]    AllocBranchTag;
@@ -188,6 +189,7 @@ module ALUrs(
     wire[`InstAddrBus]    issuePC       [`rsSize - 1 : 0];
     wire[`BranchTagBus]   issueBranchTag[`rsSize - 1 : 0];
     wire[`rsSize - 1 : 0] nxtPosEmpty;
+    reg straightlyIssue;
 
     integer i;
 
@@ -237,6 +239,10 @@ module ALUrs(
     endgenerate
 
     always @(*) begin
+      if (ALUen) straightlyIssue = ALUtagO == `tagFree && ALUtagT == `tagFree;
+      else straightlyIssue = 0;
+    end
+    always @(*) begin
       allocEn = 0;
       allocEn[ALUtagW[`TagRootBus]] = ALUen;
 
@@ -255,7 +261,7 @@ module ALUrs(
         empty <= {`rsSize{1'b1}};
         instBranchTag <= 0;
       end else begin
-        if (ALUen) empty[ALUtagW[`TagRootBus]] <= 0;
+        if (ALUen) empty[ALUtagW[`TagRootBus]] <= straightlyIssue && (!issueRS);
         if (issueRS) begin
           for (i = 0;i < `rsSize;i = i + 1) begin
             if (issueRS == (1'b1 << (`rsSize - 1)) >> (`rsSize - i - 1)) begin
@@ -271,6 +277,14 @@ module ALUrs(
               empty[i] <= nxtPosEmpty[i];
             end
           end
+        end else if (straightlyIssue) begin
+            ALUworkEn     <= `Enable;
+            operandO      <= ALUoperandO;
+            operandT      <= ALUoperandT;
+            opCode        <= ALUop;
+            wrtTag        <= ALUtagW;
+            instAddr      <= ALUaddr;
+            instBranchTag <= BranchTag;
         end else begin
           ALUworkEn     <= `Disable;
           operandO      <= `dataFree;

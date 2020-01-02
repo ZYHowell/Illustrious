@@ -20,7 +20,7 @@ module icache(
     reg[`memCacheSize - 1 : 0] memValid;
 
     wire [`memTagBus] tag;
-    wire [6:0] index;
+    wire [7:0] index;
     assign tag = Addr[`memAddrTagBus];
     assign index = Addr[`memAddrIndexBus];
 
