@@ -43,17 +43,17 @@ module RsLine(
     input wire[`InstAddrBus]allocImm, 
     input wire[`BranchTagBus] allocBranchTag, 
     //
-    input wire empty, 
+    input wire  empty, 
     output wire ready, 
     output wire[`DataBus] issueOperandO, 
     output wire[`DataBus] issueOperandT, 
     output reg[`OpBus]    issueOp,  
     output reg[`TagBus]   issueTagW,
     output reg[`DataBus]  issueImm, 
-    output wire[`BranchTagBus]  issueBranchTag, 
+    output wire[`BranchTagBus] issueBranchTag, 
     //the imm is pc in alu, is imm in ls; so bucket branchRS for it contains both
     input wire bFreeEn, 
-    input wire[1:0]             bFreeNum, 
+    input wire[1:0]       bFreeNum, 
     input wire misTaken, 
     output wire nxtPosEmpty
 );
@@ -62,7 +62,6 @@ module RsLine(
     reg[`BranchTagBus]  BranchTag;
     wire[`TagBus]       nxtPosTagO, nxtPosTagT;
     wire[`DataBus]      nxtPosDataO, nxtPosDataT;
-    wire[`BranchTagBus] nxtPosBranchTag;
     wire discard;
 
     assign discard = ~empty & misTaken & BranchTag[bFreeNum];
@@ -70,8 +69,7 @@ module RsLine(
     assign ready = ~empty & (nxtPosTagO == `tagFree) & (nxtPosTagT == `tagFree) & ~discard;
     assign issueOperandO = (nxtPosTagO == `tagFree) ? nxtPosDataO : rsDataO;
     assign issueOperandT = (nxtPosTagT == `tagFree) ? nxtPosDataT : rsDataT;
-    assign nxtPosBranchTag = (bFreeEn & BranchTag[bFreeNum]) ? (BranchTag ^ (1 << bFreeNum)) : BranchTag;
-    assign issueBranchTag = nxtPosBranchTag;
+    assign issueBranchTag = (bFreeEn & BranchTag[bFreeNum]) ? (BranchTag ^ (1 << bFreeNum)) : BranchTag;
 
     nxtPosCal nxtPosCalO(
       .enWrtO(enWrtO), 
@@ -122,7 +120,7 @@ module RsLine(
           rsTagT <= nxtPosTagT;
           rsDataO <= nxtPosDataO;
           rsDataT <= nxtPosDataT;
-          BranchTag <= nxtPosBranchTag;
+          BranchTag <= issueBranchTag;
         end
       end
     end

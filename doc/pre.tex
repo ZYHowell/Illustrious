@@ -80,6 +80,9 @@
 \usepackage{booktabs} % Allows the use of \toprule, \midrule and \bottomrule in tables
 %\usepackage {tikz}
 \usepackage{tkz-graph}
+\usepackage{listings}
+\usepackage{fontspec}
+\newfontfamily\consolas{Consolas}
 \GraphInit[vstyle = Shade]
 \tikzset{
   LabelStyle/.style = { rectangle, rounded corners, draw,
@@ -134,10 +137,28 @@ Pitfall, Stories and Great Ideas(from others)\\ % Your institution for the title
  \end{figure}
 \end{frame}
 
+\begin{frame}[containsverbatim]{Branch Mask and Shadow Regfile}
+    Consider the following code:
+    \\[3mm]
+\begin{lstlisting}[language=C,basicstyle=\footnotesize\consolas]
+      lw  r10 0(r5)      #mask: 000
+      bne r11 r12 jump;  #mask: 000, branch num:0
+      add r10 r13 r14;   #mask: 001, so mask[0]=1
+      ...
+jump: add r11 r10 r12    #mask: 000
+\end{lstlisting}
+
+    The jump needs to know it should receive from the "lw r10 0(r5)" instead of "addi r10 r13 r14"
+    \\[3mm]
+    Just like a stack: \\
+    ---------------------------------------------------------------------\\
+    |data tag1 (branch free,lw) tag2 (branch num0,add r10)\\
+    ---------------------------------------------------------------------\\
+\end{frame}
+
 \begin{frame}{Branch Mask}
     \begin{itemize}
-        \item The reason for large ALUrs and regfile is and only is logic for branch. 
-        \item Faster
+        \item The reason why ALUrs and regfile so large is mainly logic for branch. 
     \end{itemize}
     \begin{figure}
     \includegraphics[width=110mm]{figure.png}
@@ -150,13 +171,16 @@ Pitfall, Stories and Great Ideas(from others)\\ % Your institution for the title
     \begin{itemize}
         \item Simply adding ROB line or RS has no improvement; 
         \item It costs a lot to enlarge the shadow page but is obviously useless. 
-        
+        \\[3mm]
         However, 
-        
+        \\[3mm]
         \item Enlarging the Cache seems useless, due to the limited testbench. 
         (admitting that meeting the testbench is the most important for a design)
-
+        
         Itanium 2(well, it is also a failure) and i7 vs. Pentium 4. 
+        \item Small cache may lead to worse performance(even write back)
+        
+        Load and replace, then done. So wait for a load more. 
     \end{itemize}
 \end{frame}
 
@@ -168,7 +192,11 @@ Pitfall, Stories and Great Ideas(from others)\\ % Your institution for the title
     However: 
 
     \item The result of branch masks; 
-    \item The result of special judge when entering RS. 
+    \item The result of special judge when entering RS and ROB. $\star\star\star$
+            
+    posedge 1: ID; \\
+    posedge 2: in RS, then ready; (can let it work here)\\
+    posedge 3: notice ready so do it;
 \end{itemize}
     CAAQA mentions to consider the situation. 
 \end{frame}
@@ -178,7 +206,7 @@ Pitfall, Stories and Great Ideas(from others)\\ % Your institution for the title
     \begin{itemize}
         \item Learn and design;(6th Sep - 1st assignment)
         \item One without ROB first; 
-        (after python interpreter - 23rd Nov, debug until 5th Dec)
+        (after python interpreter - 23rd Nov, debug till 5th Dec)
         \item Add ROB, branch policy is stall; (23rd Nov - 9th Dec)
         \item Add branch mask, then make ROB a pseudo one to simplify. 
         Shadow regfile also;(till 15th Dec) 
@@ -186,22 +214,32 @@ Pitfall, Stories and Great Ideas(from others)\\ % Your institution for the title
     \end{itemize}
 \end{frame}
 
-\begin{frame}{More stories}
+\begin{frame}[containsverbatim]{More stories}
     \begin{itemize}
-        \item Shadow register again: only shadow tag, no shadow data: $99\%\rightarrow50\%$ LUT; 
-        
+        \item Shadow register again: No shadow data: $99\%\rightarrow50\%$ LUT; \\
         remark: considering the most complex logic, instead of the largest reg. (FF is no more than 20\%)
-
-        \item Misprediction judgement; (more LUT but not that more, 1ns less delay)
+        \item Misprediction judgement; (more LUT but not very, 1ns less delay)
         \item Not assign a=b, simply use b; (not elegant, but 0.7ns less delay)
         \item Only control Enable signal strictly and others loosely. 
     \end{itemize}
+\begin{lstlisting}[language=Verilog,
+    keywordstyle=\color{blue!70}, 
+    commentstyle=\color{red!50!green!50!blue!50}, 
+    basicstyle=\footnotesize\consolas] 
+    finalAddr = (op1 < op2) ? jumpAddr : nxtAddr;
+    assign mispredict = (finalAddr == jumpAddr) ^ predict;
+    //v.s.
+    begin
+        finalAddr = (op1 < op2) ? jumpAddr : nxtAddr;
+        mispredict = (op1 < op2) ^ predict;
+    end
+\end{lstlisting}
 \end{frame}
 
 \section{Remark}
 \begin{frame}{How to judge a design?}
     \begin{itemize}
-        \item testbench? 2.25s for pi under 80MHz, delay is positive. 
+        \item testbench? 2.2-2.25s for pi under 80MHz, delay is positive. 
         
         -actually not enough this time(still wrong once after passing);
         \item CPI? 

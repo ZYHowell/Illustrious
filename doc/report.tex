@@ -29,18 +29,18 @@
     I first designed one without branch prediction and its policy is stall. Since branch instructions hold about sixth of instructions, 
     this one stalls frequently and is not so OoO. 
 
-    Then I made one with branch prediction. Like what BOOM(Berkeley Out-of-Order Machine) does, it uses shadow registers and branch masks. 
+    Then I made one with branch prediction. Like BOOM(Berkeley OoO Machine), it uses shadow registers and branch masks. 
     Each instruction has a branch mask to evidence if it follows in-flight branch instructions. After executing a branch instruction, 
-    it boardcasts to update others' branch masks. Only Execute load/store instructions with cleared branch mask. Branch prediction policy is simply GShare. 
+    it boardcasts to update others' branch masks. Only Execute load/store instructions without branch mask. 
     
-    This one can run with a frequency of 100MHz. (I slow down to 80MHz with no neg delay)
+    Branch prediction policy is simply GShare, and this one can run at 100MHz. 
 
     This sounds cool, but when I implemented it, I found the delay high, since to deal with the boardcast of branch instructions, 
     a large number of logic units are needed. (let alone the shadow registers cost considerable sources too)
 
     But it runs faster and is really COOOOOOOOL. 
 \section{Summary}
-    1. The main problem I face is not understanding how to make improvement in organization and hardware level. 
+    1. The main problem I face is not understanding how improve in organization and hardware level. 
     Once I noticed that I had repeated calculating one same thing in each RS, so I picked it out: 
     calculate it outside and send the result to each RS. 
 
@@ -48,12 +48,17 @@
 
     2. The Tomasulo is significantly efficient when handling a set of load/store instructions. 
 
-    3. The biggest drawbck is unsupporting precise exceptions, as it does not handle branch misprediction in ROB. 
-    Other can-be improvements include superscalar and superpipeline. 
+    3. The greatest creation is executing some instructions the moment it enters ROB, instead of waiting until 
+    the next clock(which is the moment ready becomes 1). 10\% faster. 
 
-    4.1 Pitfall: sometimes bigger and dumber is better. (CAAQA, ed.6, charpter three)
+    4. The biggest drawbck is unsupporting some kinds of precise exceptions, as it does not handle branch misprediction in ROB. 
 
-    4.2 Pitfall: and sometimes smarter is better than bigger and dumber. (from ditto)
+    This is easy to fix: simply making all results of Load/Store/Branch instructions enter the ROB with free branch mask 
+    and commit them is OK. 
+
+    Other can-be improvements include superscalar, superpipeline and some design details, 
+    such as how to get an instruction from RAM in only 4 cycles(can called prefetch), 
+    how to write faster(write buffer), how to calculate faster(distributed ALUs and a big mux) etc.. 
 \section{Reference}
 1. \url{https://docs.boom-core.org/en/latest/}, an out of order RISC-V CPU using chisel, with branch bits(named branch mask there)
 

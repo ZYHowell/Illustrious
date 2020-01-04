@@ -13,3 +13,4 @@
 /doc/*.synctex.gz
 /doc/*.pptx
 /src/dcache_bk.v
+/src/test.data

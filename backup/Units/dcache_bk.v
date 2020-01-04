@@ -1,4 +1,4 @@
-//this is a dcache
+//this is a dcache with write back policy. but it costs 12% LUT dispite it has only 64 entries. 
 `include "defines.v"
 
 module dcache(
@@ -23,7 +23,7 @@ module dcache(
     output reg[`DataBus] memSdata, 
     output reg[`InstAddrBus] memLSAddr
 );
-    localparam TagLen = 24;
+    localparam TagLen = 10;
     localparam IndexLen = 6;
     localparam CacheSize = 64;
     reg[`DataBus]   memData[CacheSize - 1 : 0];
@@ -34,16 +34,42 @@ module dcache(
     wire[IndexLen - 1 : 0] index;
     wire[TagLen - 1 : 0]  tag;
     wire hit;
+    reg[`DataBus] otData;
+    reg[`DataBus] wrtData;
 
-    assign tag = Addr[`memTagBus];
-    assign index = Addr[`memAddrIndexBus];
+    assign tag = Addr[17 : 8];
+    assign index = Addr[7 : 2];
 
     assign hit = (memTag[index] == tag) & (memValid[index]);
 
     reg IsLoad; 
     wire IsWord, DoMore;
     assign DoMore = IsLoad & IsWord & memDirty[index];
-    assign IsWord = LSlen + LSRW == 3'b100;
+    assign IsWord = (LSlen + LSRW == 3'b100) && Addr[17:16] != 2'b11;
+    always @(*) begin
+      otData = memData[index];
+    end
+    always @(*) begin
+      wrtData = memData[index];
+      case(LSlen)
+        3'b000:begin
+          case(Addr[1:0])
+          2'b00:wrtData[7:0] = Sdata[7:0];
+          2'b01:wrtData[15:8] = Sdata[7:0];
+          2'b10:wrtData[23:16] = Sdata[7:0];
+          2'b11:wrtData[31:24] = Sdata[7:0];
+          endcase
+        end
+        3'b001:begin
+          case(Addr[1:0])
+          2'b00:wrtData[15:0] = Sdata[15:0];
+          2'b01:wrtData[23:8] = Sdata[15:0];
+          2'b10:wrtData[31:16] = Sdata[15:0];
+          endcase
+        end
+        3'b011:wrtData = Sdata;
+      endcase
+    end
 
     //the one is load or not
     always @(posedge clk) begin
@@ -66,21 +92,21 @@ module dcache(
             case(LSlen)
               3'b001:begin
                 case(Addr[1:0])
-                2'b00:LdData = memData[index][7:0];
-                2'b01:LdData = memData[index][15:8];
-                2'b10:LdData = memData[index][23:16];
-                2'b11:LdData = memData[index][31:24];
+                2'b00:LdData <= otData[7:0];
+                2'b01:LdData <= otData[15:8];
+                2'b10:LdData <= otData[23:16];
+                2'b11:LdData <= otData[31:24];
                 endcase
               end
               3'b010:begin
                 case(Addr[1:0])
-                2'b00:LdData = memData[index][15:0];
-                2'b01:LdData = memData[index][23:8];
-                2'b10:LdData = memData[index][31:16];
+                2'b00:LdData <= otData[15:0];
+                2'b01:LdData <= otData[23:8];
+                2'b10:LdData <= otData[31:16];
                 endcase
               end
-              3'b100:LdData = memData[index];
-              default:LdData = `dataFree;
+              3'b100:LdData <= otData;
+              default:LdData <= `dataFree;
             endcase
           end 
         end else if (memDone) begin
@@ -96,11 +122,10 @@ module dcache(
       end else if (rdy) begin
         if (LSen & ~hit) begin
           memLSen <= !(LSRW && ~memDirty[index] && IsWord);
-          //no need to judge if addr[17:16]=2'b11 for it canont be a word
           memLSRW <= LSRW;
           memLSlen <= LSlen;
           if (IsWord & LSRW) begin
-            memSdata <= memData[index];
+            memSdata <= otData;
             memLSAddr <= {memTag[index], index, 2'b00};
           end else begin
             memSdata <= Sdata;
@@ -110,7 +135,7 @@ module dcache(
           memLSen <= `Enable;
           memLSRW <= `Write;
           memLSlen <= 3'b011;
-          memSdata <= memData[index];
+          memSdata <= otData;
           memLSAddr <= {memTag[index], index, 2'b00};
         end else begin
           memLSen <= `Disable;
@@ -125,39 +150,18 @@ module dcache(
       if (rst) begin
         memValid <= 0;
         memDirty <= 0;
-        for (i = 0; i < CacheSize;i = i + 1) begin
-          memData[i] <= 0;
-          memTag[i] <= 0;
-        end
       end else if (rdy) begin
-        if (memDone & IsWord & IsLoad & (Addr[17:16] != 2'b11)) begin
+        if (memDone & IsWord & IsLoad) begin
           memValid[index] <= `Valid;
           memDirty[index] <= 0;
           memTag[index] <= tag;
           memData[index] <= memLdData;
         end
-        if (LSen & LSRW & (Addr[17:16] != 2'b11) & (hit | IsWord)) begin
+        if (LSen & LSRW & (hit | IsWord)) begin
           memValid[index] <= `Valid;
           memDirty[index] <= 1;
           memTag[index] <= tag;
-          case(LSlen)
-            3'b000:begin
-              case(Addr[1:0])
-              2'b00:memData[index][7:0] <= Sdata[7:0];
-              2'b01:memData[index][15:8] <= Sdata[7:0];
-              2'b10:memData[index][23:16] <= Sdata[7:0];
-              2'b11:memData[index][31:24] <= Sdata[7:0];
-              endcase
-            end
-            3'b001:begin
-              case(Addr[1:0])
-              2'b00:memData[index][15:0] <= Sdata[15:0];
-              2'b01:memData[index][23:8] <= Sdata[15:0];
-              2'b10:memData[index][31:16] <= Sdata[15:0];
-              endcase
-            end
-            3'b011:memData[index] <= Sdata;
-          endcase
+          memData[index] <= wrtData;
         end
       end
     end
