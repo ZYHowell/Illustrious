@@ -27,7 +27,7 @@ MS108, Computer Architecture project in ACM class. Just try something new instea
 
 * The biggest problem is that I do not understand how Vivado works to design, even simply removing some register may lead to a  higher delay, and, the strangest, **more LUT**. 
 
-    <font size=1>In this condition: I repeat calculating something in 32 units(see the head, tail and nxtTail in regfile/regfileLine), but if I calculate them outside and send the result to each unit, The LUT useage increases considerably. </font>
+    <font size=1>Consider this condition: I repeat calculating something in 32 units(see the head, tail and nxtTail in regfile/regfileLine), but if I calculate them outside and send the result to each unit, The LUT useage increases considerably. </font>
 
 #### Remark: 
 
